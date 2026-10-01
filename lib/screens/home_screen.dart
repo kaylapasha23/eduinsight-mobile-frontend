@@ -219,9 +219,15 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+          if (index == 1) {
+            Navigator.pushReplacementNamed(context, '/academic');
+          } else if (index == 3) {
+            Navigator.pushReplacementNamed(context, '/profile');
+          } else {
+            setState(() {
+              _selectedIndex = index;
+            });
+          }
         },
         type: BottomNavigationBarType.fixed,
         backgroundColor: bottomNavColor,
@@ -261,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 12, color: textColor.withOpacity(0.8)),
+                    style: TextStyle(fontSize: 12, color: textColor.withValues(alpha: 0.8)),
                   ),
                 ],
               ],

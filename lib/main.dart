@@ -5,6 +5,8 @@ import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'screens/academic/academic_screen.dart';
+import 'screens/profile_screen.dart';
 
 void main() {
   runApp(
@@ -35,6 +37,8 @@ class MyApp extends StatelessWidget {
             '/': (context) => const SplashScreen(),
             '/login': (context) => const LoginScreen(),
             '/home': (context) => const HomeScreen(),
+            '/academic': (context) => const AcademicScreen(),
+            '/profile':(context) => const ProfileScreen(), 
           },
         );
       },

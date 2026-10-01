@@ -25,8 +25,7 @@ class ThemeProvider with ChangeNotifier {
     colorScheme: const ColorScheme.light(
       primary: Color(0xFF0D47A1),
       secondary: Color(0xFFFF9800), // Orange
-      surface: Colors.white,
-      background: Color(0xFFF5F5F5),
+      surface: Color(0xFFF5F5F5),
     ),
     appBarTheme: const AppBarTheme(
       backgroundColor: Color(0xFF1E293B),
@@ -50,7 +49,6 @@ class ThemeProvider with ChangeNotifier {
       primary: Color(0xFF82B1FF),
       secondary: Color(0xFFFFB74D), // Light Orange
       surface: Color(0xFF1E1E1E),
-      background: Colors.black,
     ),
     appBarTheme: const AppBarTheme(
       backgroundColor: Color(0xFF2C3E50), // Darker blue for app bar in dark mode
