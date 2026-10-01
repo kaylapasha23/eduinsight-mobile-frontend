@@ -221,6 +221,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (index) {
           if (index == 1) {
             Navigator.pushReplacementNamed(context, '/academic');
+          } else if (index == 2) {
+            Navigator.pushReplacementNamed(context, '/ai');
           } else if (index == 3) {
             Navigator.pushReplacementNamed(context, '/profile');
           } else {

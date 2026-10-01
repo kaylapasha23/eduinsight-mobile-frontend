@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/academic/academic_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/ai_evalution_card.dart';
 
 const Color kNavy = Color(0xFF1E2B52);
 const Color kCardBlue = Color(0xFFCCDAFC);
@@ -78,9 +79,9 @@ class BottomBar extends StatelessWidget {
 
   void _goTo(BuildContext context, int index, Widget page) {
     if (index == currentIndex) return;
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => page),
+      MaterialPageRoute(builder: (context) => page,),
     );
   }
 
@@ -105,10 +106,15 @@ class BottomBar extends StatelessWidget {
                 size: currentIndex == 1 ? 42 : 30,
                 color: currentIndex == 1 ? kActive : Colors.white),
           ),
-          TextButton(
-            onPressed: () {},
-            child: const Text('Ai',
-                style: TextStyle(color: Colors.white, fontSize: 24)),
+          IconButton(
+            onPressed: () => _goTo(context, 2, const AiEvalutionScreen()),
+            icon: Text('Ai',
+            style: TextStyle(
+              fontSize: currentIndex == 2 ? 42 : 30,
+                fontWeight: FontWeight.bold,
+                fontStyle: FontStyle.italic,
+                color: currentIndex == 2 ? kActive : Colors.white,),
+            ),
           ),
           IconButton(
             onPressed: () => _goTo(context, 3, const ProfileScreen()),

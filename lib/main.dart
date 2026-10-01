@@ -7,6 +7,7 @@ import 'screens/home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/academic/academic_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/ai_evalution_card.dart';
 
 void main() {
   runApp(
@@ -39,6 +40,7 @@ class MyApp extends StatelessWidget {
             '/home': (context) => const HomeScreen(),
             '/academic': (context) => const AcademicScreen(),
             '/profile':(context) => const ProfileScreen(), 
+            '/ai':(context) => const AiEvalutionScreen(),
           },
         );
       },

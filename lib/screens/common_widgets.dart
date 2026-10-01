@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'academic/academic_screen.dart';
 import 'profile_screen.dart';
+import 'ai_evalution_card.dart';
 
 const Color kNavy = Color(0xFF1E2B52);
 const Color kCardBlue = Color(0xFFCCDAFC);
@@ -106,9 +107,12 @@ class BottomBar extends StatelessWidget {
                 color: currentIndex == 1 ? kActive : Colors.white),
           ),
           TextButton(
-            onPressed: () {},
-            child: const Text('Ai',
-                style: TextStyle(color: Colors.white, fontSize: 24)),
+            onPressed: () => _goTo(context, 2, const AiEvalutionScreen()),
+            child: Text('Ai',
+            style: TextStyle(
+              color: currentIndex == 2 ? kActive : Colors.white,
+              fontSize: currentIndex == 2 ? 32 : 24,),
+            ),
           ),
           IconButton(
             onPressed: () => _goTo(context, 3, const ProfileScreen()),
