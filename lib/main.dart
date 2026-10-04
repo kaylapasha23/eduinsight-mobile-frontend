@@ -5,9 +5,12 @@ import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'screens/academic/academic_screen.dart';
+import 'screens/academic/academic.dart';
 import 'screens/profile_screen.dart';
 import 'screens/ai_evalution_card.dart';
+import 'screens/academic/ipk.dart';
+import 'screens/academic/kehadiran.dart';
+import 'screens/academic/nilai.dart';
 
 void main() {
   runApp(
@@ -41,6 +44,9 @@ class MyApp extends StatelessWidget {
             '/academic': (context) => const AcademicScreen(),
             '/profile':(context) => const ProfileScreen(), 
             '/ai':(context) => const AiEvalutionScreen(),
+            '/ipk' :(context) => const IpkScreen(),
+            '/kehadiran' :(context) => const KehadiranScreen(),
+            '/nilai' :(context) => const NilaiScreen(),
           },
         );
       },

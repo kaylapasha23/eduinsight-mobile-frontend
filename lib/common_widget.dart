@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
-import 'screens/academic/academic_screen.dart';
+import 'screens/academic/academic.dart';
 import 'screens/profile_screen.dart';
 import 'screens/ai_evalution_card.dart';
 

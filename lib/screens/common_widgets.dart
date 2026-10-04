@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
-import 'academic/academic_screen.dart';
+import 'academic/academic.dart';
 import 'profile_screen.dart';
 import 'ai_evalution_card.dart';
 
@@ -13,7 +13,12 @@ const Color kLogout = Color(0xFFE5484D);
 
 class HeaderBar extends StatelessWidget {
   final bool showLogout;
-  const HeaderBar({super.key, this.showLogout = false});
+  final String title;
+  const HeaderBar({
+    super.key,
+    this.showLogout = false,
+    this.title = 'EduInsight',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -45,15 +50,15 @@ class HeaderBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('EduInsight',
-                  style: TextStyle(
+              Text(title,
+                  style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold)),
-              Text('Tagline Aplikasi',
+              const Text('Tagline Aplikasi',
                   style: TextStyle(
                       color: Colors.white70,
                       fontSize: 12,
@@ -87,6 +92,8 @@ class BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool aiActive = currentIndex == 2;
+
     return Container(
       width: double.infinity,
       color: kNavy,
@@ -108,10 +115,26 @@ class BottomBar extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => _goTo(context, 2, const AiEvalutionScreen()),
-            child: Text('Ai',
-            style: TextStyle(
-              color: currentIndex == 2 ? kActive : Colors.white,
-              fontSize: currentIndex == 2 ? 32 : 24,),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Text(
+                  'Ai',
+                  style: TextStyle(
+                    color: aiActive ? kActive : Colors.white,
+                    fontSize: aiActive ? 32 : 24,
+                  ),
+                ),
+                Positioned(
+                  top: 0,
+                  right: -8,
+                  child: Icon(
+                    Icons.auto_awesome,
+                    size: aiActive ? 14 : 10,
+                    color: aiActive ? kActive : Colors.white,
+                  ),
+                ),
+              ],
             ),
           ),
           IconButton(
