@@ -12,10 +12,15 @@ import 'screens/academic/ipk.dart';
 import 'screens/academic/kehadiran.dart';
 import 'screens/academic/nilai.dart';
 
+import 'screens/kelas/kelas_provider.dart';
+
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => ThemeProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => ThemeProvider()),
+        ChangeNotifierProvider(create: (context) => KelasProvider()),
+      ],
       child: const MyApp(),
     ),
   );

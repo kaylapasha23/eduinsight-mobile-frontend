@@ -3,6 +3,7 @@ import './../common_widgets.dart';
 import 'ipk.dart';
 import 'kehadiran.dart';
 import 'nilai.dart';
+import '../kelas/kelas_screen.dart';
 
 class MenuItem {
   final String title;
@@ -15,7 +16,7 @@ const List<MenuItem> menuItems = [
   MenuItem(title: 'IPK', page: IpkScreen()),
   MenuItem(title: 'Kehadiran', page: KehadiranScreen()),
   MenuItem(title: 'Nilai', page: NilaiScreen()),
-  MenuItem(title: 'Kelas'),
+  MenuItem(title: 'Kelas', page: KelasScreen()),
 ];
 
 class AcademicScreen extends StatelessWidget {

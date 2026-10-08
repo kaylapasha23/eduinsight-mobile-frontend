@@ -84,9 +84,13 @@ class BottomBar extends StatelessWidget {
 
   void _goTo(BuildContext context, int index, Widget page) {
     if (index == currentIndex) return;
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => page),
+      PageRouteBuilder(
+        pageBuilder: (context, animation1, animation2) => page,
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
     );
   }
 
@@ -104,13 +108,13 @@ class BottomBar extends StatelessWidget {
           IconButton(
             onPressed: () => _goTo(context, 0, const HomeScreen()),
             icon: Icon(Icons.home_outlined,
-                size: currentIndex == 0 ? 42 : 30,
+                size: currentIndex == 0 ? 42 : 24,
                 color: currentIndex == 0 ? kActive : Colors.white),
           ),
           IconButton(
             onPressed: () => _goTo(context, 1, const AcademicScreen()),
             icon: Icon(Icons.school_outlined,
-                size: currentIndex == 1 ? 42 : 30,
+                size: currentIndex == 1 ? 42 : 24,
                 color: currentIndex == 1 ? kActive : Colors.white),
           ),
           TextButton(
@@ -122,7 +126,7 @@ class BottomBar extends StatelessWidget {
                   'Ai',
                   style: TextStyle(
                     color: aiActive ? kActive : Colors.white,
-                    fontSize: aiActive ? 32 : 24,
+                    fontSize: aiActive ? 32 : 20,
                   ),
                 ),
                 Positioned(
@@ -140,7 +144,7 @@ class BottomBar extends StatelessWidget {
           IconButton(
             onPressed: () => _goTo(context, 3, const ProfileScreen()),
             icon: Icon(Icons.person_outline,
-                size: currentIndex == 3 ? 42 : 30,
+                size: currentIndex == 3 ? 42 : 24,
                 color: currentIndex == 3 ? kActive : Colors.white),
           ),
         ],
