@@ -24,53 +24,78 @@ class HeaderBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: kNavy,
-      padding: const EdgeInsets.fromLTRB(20, 44, 20, 14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1A2547), Color(0xFF253672)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E2B52).withValues(alpha: 0.35),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 48, 20, 18),
       child: Row(
         children: [
-          SizedBox(
-            width: 52,
-            height: 52,
-            child: Stack(
-              alignment: Alignment.bottomCenter,
-              children: [
-                const Icon(Icons.menu_book, size: 52, color: kBookBlue),
-                Positioned(
-                  top: 2,
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: const BoxDecoration(
-                      color: kSun,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+          Container(
+            width: 44,
+            height: 44,
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
+            child: Image.asset(
+              'assets/images/logo.png',
+              fit: BoxFit.contain,
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold)),
-              const Text('Tagline Aplikasi',
-                  style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic)),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const Text(
+                'Tagline Aplikasi',
+                style: TextStyle(
+                  color: Colors.white60,
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
             ],
           ),
           const Spacer(),
           if (showLogout)
-            IconButton(
-              onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                  context, '/login', (route) => false),
-              icon: const Icon(Icons.logout, size: 28, color: kLogout),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IconButton(
+                onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                    context, '/login', (route) => false),
+                icon: const Icon(Icons.logout, size: 24, color: kLogout),
+              ),
             ),
         ],
       ),
@@ -100,54 +125,115 @@ class BottomBar extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      color: kNavy,
-      padding: const EdgeInsets.only(top: 14, bottom: 24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1A2547), Color(0xFF253672)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E2B52).withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.only(top: 10, bottom: 26),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          IconButton(
-            onPressed: () => _goTo(context, 0, const HomeScreen()),
-            icon: Icon(Icons.home_outlined,
-                size: currentIndex == 0 ? 42 : 24,
-                color: currentIndex == 0 ? kActive : Colors.white),
+          _NavItem(
+            icon: Icons.home_rounded,
+            iconOutlined: Icons.home_outlined,
+            isActive: currentIndex == 0,
+            onTap: () => _goTo(context, 0, const HomeScreen()),
           ),
-          IconButton(
-            onPressed: () => _goTo(context, 1, const AcademicScreen()),
-            icon: Icon(Icons.school_outlined,
-                size: currentIndex == 1 ? 42 : 24,
-                color: currentIndex == 1 ? kActive : Colors.white),
+          _NavItem(
+            icon: Icons.school_rounded,
+            iconOutlined: Icons.school_outlined,
+            isActive: currentIndex == 1,
+            onTap: () => _goTo(context, 1, const AcademicScreen()),
           ),
-          TextButton(
-            onPressed: () => _goTo(context, 2, const AiEvalutionScreen()),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Text(
-                  'Ai',
-                  style: TextStyle(
-                    color: aiActive ? kActive : Colors.white,
-                    fontSize: aiActive ? 32 : 20,
+          GestureDetector(
+            onTap: () => _goTo(context, 2, const AiEvalutionScreen()),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: EdgeInsets.symmetric(
+                horizontal: aiActive ? 18 : 14,
+                vertical: aiActive ? 10 : 8,
+              ),
+              decoration: BoxDecoration(
+                color: aiActive
+                    ? kActive.withValues(alpha: 0.2)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Text(
+                    'Ai',
+                    style: TextStyle(
+                      color: aiActive ? kActive : Colors.white70,
+                      fontSize: aiActive ? 30 : 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                Positioned(
-                  top: 0,
-                  right: -8,
-                  child: Icon(
-                    Icons.auto_awesome,
-                    size: aiActive ? 14 : 10,
-                    color: aiActive ? kActive : Colors.white,
+                  Positioned(
+                    top: 0,
+                    right: -8,
+                    child: Icon(
+                      Icons.auto_awesome,
+                      size: aiActive ? 14 : 10,
+                      color: aiActive ? kActive : Colors.white70,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-          IconButton(
-            onPressed: () => _goTo(context, 3, const ProfileScreen()),
-            icon: Icon(Icons.person_outline,
-                size: currentIndex == 3 ? 42 : 24,
-                color: currentIndex == 3 ? kActive : Colors.white),
+          _NavItem(
+            icon: Icons.person_rounded,
+            iconOutlined: Icons.person_outline,
+            isActive: currentIndex == 3,
+            onTap: () => _goTo(context, 3, const ProfileScreen()),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final IconData iconOutlined;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.iconOutlined,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? kActive.withValues(alpha: 0.18) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Icon(
+          isActive ? icon : iconOutlined,
+          size: isActive ? 32 : 26,
+          color: isActive ? kActive : Colors.white70,
+        ),
       ),
     );
   }

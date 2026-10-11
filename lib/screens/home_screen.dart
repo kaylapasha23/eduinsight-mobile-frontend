@@ -20,113 +20,202 @@ class _HomeScreenState extends State<HomeScreen> {
     final isDark = themeProvider.isDarkMode;
 
     // Dark mode colors for Beranda
-    final backgroundColor = isDark ? const Color(0xFF333333) : const Color(0xFFF5F5F5);
-    final sectionTitleColor = isDark ? const Color(0xFF82B1FF) : Colors.black87;
-    final nameColor = isDark ? Colors.white : Colors.black;
-    final appBarColor = isDark ? const Color(0xFF2C3E50) : const Color(0xFF1E293B);
-    final bottomNavColor = isDark ? const Color(0xFF2C3E50) : const Color(0xFF1E293B);
-    
+    final backgroundColor = isDark ? const Color(0xFF1A1F2E) : const Color(0xFFF0F4FF);
+    final sectionTitleColor = isDark ? const Color(0xFF82B1FF) : const Color(0xFF1E2B52);
+    final nameColor = isDark ? Colors.white : const Color(0xFF0D1B40);
+    final greetingColor = isDark ? Colors.white60 : const Color(0xFF5C6B8A);
+    final appBarGradientStart = isDark ? const Color(0xFF1A2030) : const Color(0xFF1A2547);
+    final appBarGradientEnd = isDark ? const Color(0xFF2A3050) : const Color(0xFF253672);
+    final bottomNavGradientStart = isDark ? const Color(0xFF1A2030) : const Color(0xFF1A2547);
+    final bottomNavGradientEnd = isDark ? const Color(0xFF2A3050) : const Color(0xFF253672);
+
     // Cards are always light colored with black text
-    const lightBlueCard = Color(0xFFC4D7FF);
-    const yellowCard = Color(0xFFFFF9C4);
-    const cardTextColor = Colors.black87;
+    const lightBlueCard = Color(0xFFDDE8FF);
+    const yellowCard = Color(0xFFFFF3CD);
+    const cardTextColor = Color(0xFF1A2B4A);
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        backgroundColor: appBarColor,
-        title: Row(
-          children: [
-            const SizedBox(
-              width: 30,
-              height: 30,
-              child: FittedBox(child: LogoWidget()),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [appBarGradientStart, appBarGradientEnd],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'EduInsight',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-                Text(
-                  'Tagline Aplikasi',
-                  style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic, color: Colors.white70),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              isDark ? Icons.light_mode : Icons.dark_mode,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              themeProvider.toggleTheme();
-            },
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF1E2B52).withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const FittedBox(
+                      fit: BoxFit.contain,
+                      child: Padding(
+                        padding: EdgeInsets.all(4),
+                        child: LogoWidget(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Text(
+                        'EduInsight',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      Text(
+                        'Tagline Aplikasi',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.white60,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                      onPressed: () {
+                        themeProvider.toggleTheme();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Selamat Pagi',
-              style: TextStyle(fontSize: 14, color: sectionTitleColor),
+              style: TextStyle(
+                fontSize: 14,
+                color: greetingColor,
+                letterSpacing: 0.2,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               'Nama Mahasiswa',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: nameColor),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: nameColor,
+                letterSpacing: -0.3,
+              ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             Row(
               children: [
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
                     decoration: BoxDecoration(
                       color: lightBlueCard,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF3B6FE8).withValues(alpha: 0.15),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Column(
-                      children: [
-                        const Text(
+                      children: const [
+                        Text(
                           'IPK Sementara',
-                          style: TextStyle(fontSize: 12, color: cardTextColor),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF3A5A9B),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
+                        SizedBox(height: 10),
+                        Text(
                           '3,78',
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: cardTextColor),
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: cardTextColor,
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
                     decoration: BoxDecoration(
                       color: lightBlueCard,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF3B6FE8).withValues(alpha: 0.15),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Column(
-                      children: [
-                        const Text(
+                      children: const [
+                        Text(
                           'Kehadiran',
-                          style: TextStyle(fontSize: 12, color: cardTextColor),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF3A5A9B),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
+                        SizedBox(height: 10),
+                        Text(
                           '90%',
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: cardTextColor),
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: cardTextColor,
+                          ),
                         ),
                       ],
                     ),
@@ -134,76 +223,114 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            Divider(color: isDark ? Colors.grey[600] : Colors.grey[300]),
-            const SizedBox(height: 8),
+            const SizedBox(height: 30),
             Row(
               children: [
                 Text(
                   'Kelas & Tugas Terdekat',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: sectionTitleColor),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: sectionTitleColor,
+                    letterSpacing: -0.2,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Container(
                   width: 8,
                   height: 8,
                   decoration: const BoxDecoration(
-                    color: Colors.red,
+                    color: Color(0xFFFF4757),
                     shape: BoxShape.circle,
                   ),
-                )
+                ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             _buildTaskCard('Kecerdasan Buatan', '14.00 - 15.20 Lantai 7, Ruangan 701', 'Dalam 1 Jam', yellowCard, cardTextColor),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             _buildTaskCard('Tugas 1 - Quiziz\nKewirausahaan', '', 'Hari ini, 23.59', yellowCard, cardTextColor),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             _buildTaskCard('Tugas 1 - Analisa Aplikasi\nUI/UX Design', '', 'Hari ini, 23.59', yellowCard, cardTextColor),
-            const SizedBox(height: 24),
-            Divider(color: isDark ? Colors.grey[600] : Colors.grey[300]),
-            const SizedBox(height: 8),
+            const SizedBox(height: 30),
             Text(
               'Perkembangan Nilai',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: sectionTitleColor),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: sectionTitleColor,
+                letterSpacing: -0.2,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             Container(
-              height: 150,
-              padding: const EdgeInsets.all(16),
+              height: 160,
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: lightBlueCard,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF3B6FE8).withValues(alpha: 0.15),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: LineChart(
                 LineChartData(
-                  gridData: const FlGridData(show: false),
+                  minY: 0.5,
+                  maxY: 3.2,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: 0.8,
+                    getDrawingHorizontalLine: (value) => FlLine(
+                      color: const Color(0xFF1E2B52).withValues(alpha: 0.08),
+                      strokeWidth: 1,
+                      dashArray: [4, 4],
+                    ),
+                  ),
                   titlesData: const FlTitlesData(show: false),
                   borderData: FlBorderData(show: false),
                   lineBarsData: [
                     LineChartBarData(
                       spots: const [
-                        FlSpot(0, 1),
-                        FlSpot(1, 1.5),
-                        FlSpot(2, 2.5),
-                        FlSpot(3, 2.0),
-                        FlSpot(4, 2.6),
-                        FlSpot(5, 2.1),
-                        FlSpot(6, 1.5),
-                        FlSpot(7, 2.7),
-                        FlSpot(8, 1.8),
-                        FlSpot(9, 1.6),
+                        FlSpot(0, 1.2),
+                        FlSpot(1, 1.6),
+                        FlSpot(2, 2.4),
+                        FlSpot(3, 2.1),
+                        FlSpot(4, 2.7),
+                        FlSpot(5, 2.3),
+                        FlSpot(6, 1.8),
+                        FlSpot(7, 2.8),
+                        FlSpot(8, 2.2),
+                        FlSpot(9, 2.5),
                       ],
-                      isCurved: false,
-                      color: const Color(0xFF1E293B), // Dark line inside light blue chart
-                      barWidth: 1.5,
+                      isCurved: true,
+                      curveSmoothness: 0.35,
+                      color: const Color(0xFF1E2B52),
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF1E2B52).withValues(alpha: 0.25),
+                            const Color(0xFF1E2B52).withValues(alpha: 0.0),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
                       dotData: FlDotData(
                         show: true,
                         getDotPainter: (spot, percent, barData, index) {
                           return FlDotCirclePainter(
-                            radius: 2,
-                            color: const Color(0xFF1E293B),
-                            strokeWidth: 0,
+                            radius: 3.5,
+                            color: Colors.white,
+                            strokeColor: const Color(0xFF1E2B52),
+                            strokeWidth: 2.5,
                           );
                         },
                       ),
@@ -212,47 +339,72 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          if (index == 1) {
-            Navigator.pushReplacementNamed(context, '/academic');
-          } else if (index == 2) {
-            Navigator.pushReplacementNamed(context, '/ai');
-          } else if (index == 3) {
-            Navigator.pushReplacementNamed(context, '/profile');
-          } else {
-            setState(() {
-              _selectedIndex = index;
-            });
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: bottomNavColor,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white54,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.school_outlined), label: 'Academic'),
-          BottomNavigationBarItem(icon: Icon(Icons.auto_awesome_outlined), label: 'AI'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [bottomNavGradientStart, bottomNavGradientEnd],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1E2B52).withValues(alpha: 0.4),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: (index) {
+            if (index == 1) {
+              Navigator.pushReplacementNamed(context, '/academic');
+            } else if (index == 2) {
+              Navigator.pushReplacementNamed(context, '/ai');
+            } else if (index == 3) {
+              Navigator.pushReplacementNamed(context, '/profile');
+            } else {
+              setState(() {
+                _selectedIndex = index;
+              });
+            }
+          },
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.transparent,
+          selectedItemColor: const Color(0xFFFFFBB5),
+          unselectedItemColor: Colors.white54,
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          elevation: 0,
+          iconSize: 26,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Icons.school_rounded), label: 'Academic'),
+            BottomNavigationBarItem(icon: Icon(Icons.auto_awesome_rounded), label: 'AI'),
+            BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTaskCard(String title, String subtitle, String time, Color bgColor, Color textColor) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFD4A300).withValues(alpha: 0.12),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -263,21 +415,36 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textColor),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
                 ),
                 if (subtitle.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 12, color: textColor.withValues(alpha: 0.8)),
+                    style: TextStyle(fontSize: 12, color: textColor.withValues(alpha: 0.7)),
                   ),
                 ],
               ],
             ),
           ),
-          Text(
-            time,
-            style: TextStyle(fontSize: 12, color: textColor),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              time,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
+            ),
           ),
         ],
       ),

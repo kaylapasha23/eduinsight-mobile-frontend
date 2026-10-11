@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import './common_widgets.dart';
-import 'academic/academic_widgets.dart';
 
 const Color kAiGood = Color(0xFFE4FFDF);
 const Color kAiBad = Color(0xFFFFDEE0);
@@ -14,35 +13,22 @@ class AiMessage {
 
 class AiDateGroup {
   final String dateText;
-  final int tanggal;
-  final int bulan;
+  final DateTime dateTime;
   final List<AiMessage> messages;
+  final String? lecturerNote;
 
   const AiDateGroup({
     required this.dateText,
-    required this.tanggal,
-    required this.bulan,
+    required this.dateTime,
     required this.messages,
+    this.lecturerNote,
   });
 }
 
-const List<ListItem> pilihanTanggal = [
-  ListItem(value: 0, name: 'Tanggal'),
-  ListItem(value: 22, name: '22'),
-  ListItem(value: 23, name: '23'),
-  ListItem(value: 24, name: '24'),
-];
-
-const List<ListItem> pilihanBulan = [
-  ListItem(value: 0, name: 'Bulan'),
-  ListItem(value: 1, name: 'Januari'),
-];
-
-const List<AiDateGroup> dataEvaluasi = [
+final List<AiDateGroup> dataEvaluasi = [
   AiDateGroup(
-    dateText: 'Senin, 24 Januari',
-    tanggal: 24,
-    bulan: 1,
+    dateText: 'Senin, 24 Januari 2026',
+    dateTime: DateTime(2026, 1, 24),
     messages: [
       AiMessage(
         text:
@@ -55,11 +41,12 @@ const List<AiDateGroup> dataEvaluasi = [
         isPositive: false,
       ),
     ],
+    lecturerNote:
+        'Mohon temui saya di ruang dosen pada hari Rabu jam 10.00 untuk membahas remedial kuis dan perbaikan presensi sebelum UTS.',
   ),
   AiDateGroup(
-    dateText: 'Minggu, 23 Januari',
-    tanggal: 23,
-    bulan: 1,
+    dateText: 'Minggu, 23 Januari 2026',
+    dateTime: DateTime(2026, 1, 23),
     messages: [
       AiMessage(
         text:
@@ -76,11 +63,11 @@ const List<AiDateGroup> dataEvaluasi = [
         isPositive: false,
       ),
     ],
+    lecturerNote: null,
   ),
   AiDateGroup(
-    dateText: 'Sabtu, 22 Januari',
-    tanggal: 22,
-    bulan: 1,
+    dateText: 'Sabtu, 22 Januari 2026',
+    dateTime: DateTime(2026, 1, 22),
     messages: [
       AiMessage(
         text: 'Kehadiran telah memenuhi batas minimum.',
@@ -92,6 +79,7 @@ const List<AiDateGroup> dataEvaluasi = [
         isPositive: false,
       ),
     ],
+    lecturerNote: null,
   ),
 ];
 
@@ -103,57 +91,137 @@ class AiEvalutionScreen extends StatefulWidget {
 }
 
 class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
-  ListItem _tanggal = pilihanTanggal[0];
-  ListItem _bulan = pilihanBulan[0];
+  DateTime? _selectedDate;
+
+  String _formatDate(DateTime date) {
+    final mm = date.month.toString().padLeft(2, '0');
+    final dd = date.day.toString().padLeft(2, '0');
+    final yy = (date.year % 100).toString().padLeft(2, '0');
+    return '$mm/$dd/$yy';
+  }
+
+  Future<void> _pickDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime(2026, 1, 24),
+      firstDate: DateTime(2023, 8, 1), // Masuk kuliah FILKOM angkatan 2023
+      lastDate: DateTime(2026, 6, 30), // Perkiraan wisuda semester 6 Juni 2026
+      helpText: 'Pilih Tanggal Evaluasi (MM/DD/YY)',
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF0F4FF),
       body: Column(
         children: [
           const HeaderBar(title: 'EduInsight AI'),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 38, vertical: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: YellowDropdown(
-                          height: 42,
-                          items: pilihanTanggal,
-                          selectedItem: _tanggal,
-                          onChanged: (ListItem? value) {
-                            if (value != null) {
-                              setState(() {
-                                _tanggal = value;
-                              });
-                            }
-                          },
-                        ),
+                  // Kalender Date Picker Filter dengan format MM/DD/YY
+                  GestureDetector(
+                    onTap: _pickDate,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFDE7),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFFFEE87), width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFD4A300).withValues(alpha: 0.12),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: YellowDropdown(
-                          height: 42,
-                          items: pilihanBulan,
-                          selectedItem: _bulan,
-                          onChanged: (ListItem? value) {
-                            if (value != null) {
-                              setState(() {
-                                _bulan = value;
-                              });
-                            }
-                          },
-                        ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFEE87).withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.calendar_month_rounded,
+                              color: Color(0xFF7A6500),
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Filter Kalender (MM/DD/YY)',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF8A7000),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _selectedDate != null
+                                      ? _formatDate(_selectedDate!)
+                                      : 'Semua Tanggal (Ketuk untuk memilih)',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: _selectedDate != null
+                                        ? const Color(0xFF3A3000)
+                                        : const Color(0xFF8A7000),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (_selectedDate != null)
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedDate = null;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: const Color(0xFFFFEE87)),
+                                ),
+                                child: const Icon(
+                                  Icons.close_rounded,
+                                  color: Color(0xFF7A6500),
+                                  size: 18,
+                                ),
+                              ),
+                            )
+                          else
+                            const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: Color(0xFF8A7000),
+                              size: 24,
+                            ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 26),
+                  const SizedBox(height: 28),
                   Column(children: _buildGroups()),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -168,15 +236,21 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
     List<Widget> hasil = [];
 
     for (AiDateGroup g in dataEvaluasi) {
-      bool cocokTanggal = _tanggal.value == 0 || g.tanggal == _tanggal.value;
-      bool cocokBulan = _bulan.value == 0 || g.bulan == _bulan.value;
+      bool cocok = _selectedDate == null ||
+          (g.dateTime.year == _selectedDate!.year &&
+              g.dateTime.month == _selectedDate!.month &&
+              g.dateTime.day == _selectedDate!.day);
 
-      if (cocokTanggal && cocokBulan) {
+      if (cocok) {
         if (hasil.isNotEmpty) {
           hasil.add(
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Divider(color: Colors.black54, thickness: 0.8, height: 1),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Divider(
+                color: Colors.black.withValues(alpha: 0.1),
+                thickness: 1,
+                height: 1,
+              ),
             ),
           );
         }
@@ -186,12 +260,44 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
 
     if (hasil.isEmpty) {
       hasil.add(
-        const Padding(
-          padding: EdgeInsets.only(top: 60),
-          child: Text(
-            'Belum ada evaluasi pada tanggal yang dipilih.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.black54),
+        Padding(
+          padding: const EdgeInsets.only(top: 48),
+          child: Column(
+            children: [
+              Icon(
+                Icons.event_busy_rounded,
+                size: 48,
+                color: Colors.black.withValues(alpha: 0.2),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _selectedDate != null
+                    ? 'Tidak ada evaluasi pada tanggal ${_formatDate(_selectedDate!)}.'
+                    : 'Belum ada evaluasi.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF5C6B8A),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _selectedDate = null;
+                  });
+                },
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Tampilkan Semua Evaluasi'),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF1E2B52),
+                  backgroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -204,29 +310,168 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: Text(
-            group.dateText,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF3A6BBF),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  group.dateText,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A2B4A),
+                    letterSpacing: 0.1,
+                  ),
+                ),
+              ],
             ),
-          ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFDDE8FF)),
+              ),
+              child: Text(
+                _formatDate(group.dateTime),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF3A6BBF),
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 5),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
           decoration: BoxDecoration(
-            color: kCardBlue,
-            borderRadius: BorderRadius.circular(16),
+            color: const Color(0xFFDDE8FF),
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF3B6FE8).withValues(alpha: 0.12),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
-            children: group.messages
-                .map((msg) => _MessageTile(message: msg))
-                .toList(),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header AI dengan Sparkle
+              Row(
+                children: const [
+                  Text(
+                    'AI Evaluation',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A2B4A),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  SizedBox(width: 6),
+                  Icon(
+                    Icons.auto_awesome,
+                    size: 16,
+                    color: Color(0xFF1E2B52),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Pesan-pesan evaluasi AI
+              ...group.messages.map((msg) => _MessageTile(message: msg)),
+
+              // Catatan Dosen (selalu ada kolomnya pada setiap tanggal)
+              const SizedBox(height: 14),
+              Divider(
+                color: const Color(0xFF1E2B52).withValues(alpha: 0.12),
+                thickness: 1,
+                height: 1,
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: const [
+                  Icon(
+                    Icons.person_pin_rounded,
+                    size: 18,
+                    color: Color(0xFF1A2B4A),
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    'Catatan Dosen',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A2B4A),
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              // Container putih catatan dosen
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      group.lecturerNote != null
+                          ? Icons.edit_note_rounded
+                          : Icons.info_outline_rounded,
+                      size: 20,
+                      color: group.lecturerNote != null
+                          ? const Color(0xFF3A6BBF)
+                          : const Color(0xFF8EA3BF),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        group.lecturerNote != null
+                            ? group.lecturerNote!
+                            : 'Tidak ada catatan dari dosen',
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.5,
+                          fontStyle: group.lecturerNote != null
+                              ? FontStyle.normal
+                              : FontStyle.italic,
+                          color: group.lecturerNote != null
+                              ? const Color(0xFF1A2B4A)
+                              : const Color(0xFF7A8FAB),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -241,17 +486,47 @@ class _MessageTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bgColor = message.isPositive
+        ? const Color(0xFFEAFFF0)
+        : const Color(0xFFFFEDED);
+    final borderColor = message.isPositive
+        ? const Color(0xFF34C759).withValues(alpha: 0.3)
+        : const Color(0xFFFF3B30).withValues(alpha: 0.3);
+    final iconColor = message.isPositive
+        ? const Color(0xFF34C759)
+        : const Color(0xFFFF3B30);
+    final icon = message.isPositive
+        ? Icons.check_circle_outline_rounded
+        : Icons.info_outline_rounded;
+
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 7),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: message.isPositive ? kAiGood : kAiBad,
-        borderRadius: BorderRadius.circular(12),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor, width: 1),
       ),
-      child: Text(
-        message.text,
-        style: const TextStyle(fontSize: 13.5, height: 1.4, color: Colors.black),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(icon, size: 16, color: iconColor),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message.text,
+              style: const TextStyle(
+                fontSize: 13.5,
+                height: 1.5,
+                color: Color(0xFF1A2B4A),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

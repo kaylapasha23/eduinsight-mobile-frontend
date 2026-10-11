@@ -47,7 +47,9 @@ class _TugasListScreenState extends State<TugasListScreen> {
       }
 
       final classOptions = <String>{'Semua Kelas'};
-      for (var t in activeTasks) { classOptions.add(t.className); }
+      for (var t in activeTasks) {
+        classOptions.add(t.className);
+      }
 
       // Reset if filter no longer valid
       if (!classOptions.contains(_selectedClass)) _selectedClass = 'Semua Kelas';
@@ -57,58 +59,110 @@ class _TugasListScreenState extends State<TugasListScreen> {
           : activeTasks.where((t) => t.className == _selectedClass).toList();
 
       return Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: kNavy,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: const Text('Kelas',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-        ),
-        body: Column(children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
-                const SizedBox(height: 16),
-                // Dropdown filter
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: kActive,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      value: _selectedClass,
-                      style: const TextStyle(fontSize: 14, color: Colors.black),
-                      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black87),
-                      dropdownColor: kActive,
-                      items: classOptions.map((v) {
-                        return DropdownMenuItem(
-                          value: v,
-                          child: Text(v, style: const TextStyle(fontSize: 14, color: Colors.black)),
-                        );
-                      }).toList(),
-                      onChanged: (v) {
-                        if (v != null) setState(() => _selectedClass = v);
-                      },
-                    ),
-                  ),
+        backgroundColor: const Color(0xFFF0F4FF),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(64),
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF1A2547), Color(0xFF253672)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x551E2B52),
+                  blurRadius: 16,
+                  offset: Offset(0, 4),
                 ),
-                const SizedBox(height: 24),
-                _buildContent(context, filtered),
-              ]),
+              ],
+            ),
+            child: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
+              title: const Text(
+                'Kelas',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.2,
+                ),
+              ),
             ),
           ),
-          const BottomBar(currentIndex: 1),
-        ]),
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A2B4A),
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Dropdown filter
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF9DB),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFD4A300).withValues(alpha: 0.14),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                        border: Border.all(color: const Color(0xFFFFEE87), width: 1),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: _selectedClass,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF3A3000),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                              color: Color(0xFF8A7000)),
+                          dropdownColor: const Color(0xFFFFFDE7),
+                          items: classOptions.map((v) {
+                            return DropdownMenuItem(
+                              value: v,
+                              child: Text(v),
+                            );
+                          }).toList(),
+                          onChanged: (v) {
+                            if (v != null) setState(() => _selectedClass = v);
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildContent(context, filtered),
+                  ],
+                ),
+              ),
+            ),
+            const BottomBar(currentIndex: 1),
+          ],
+        ),
       );
     });
   }
@@ -116,23 +170,46 @@ class _TugasListScreenState extends State<TugasListScreen> {
   Widget _buildContent(BuildContext context, List<TaskItem> tasks) {
     if (widget.type == 'terlambat' || tasks.isEmpty) {
       return Container(
-        height: 200,
+        height: 220,
         width: double.infinity,
-        decoration: BoxDecoration(color: kCardBlue, borderRadius: BorderRadius.circular(16)),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.black38, width: 1.5),
+        decoration: BoxDecoration(
+          color: const Color(0xFFDDE8FF),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF3B6FE8).withValues(alpha: 0.12),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
-            child: const Icon(Icons.check, color: Colors.black38, size: 28),
-          ),
-          const SizedBox(height: 16),
-          const Text('Tidak Ada Tugas Yang Terlambat Diserahkan',
-              style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w400, fontSize: 13)),
-        ]),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.7),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle_outline_rounded,
+                color: Color(0xFF34C759),
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Tidak Ada Tugas Yang Terlambat Diserahkan',
+              style: TextStyle(
+                color: Color(0xFF1A2B4A),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -142,6 +219,8 @@ class _TugasListScreenState extends State<TugasListScreen> {
   }
 
   Widget _buildTaskCard(BuildContext context, TaskItem task) {
+    final bool isDone = task.status == 'Diserahkan';
+
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -153,24 +232,79 @@ class _TugasListScreenState extends State<TugasListScreen> {
         ),
       ),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: kCardBlue, borderRadius: BorderRadius.circular(16)),
-        child: Row(children: [
-          const Icon(Icons.assignment_outlined, size: 32, color: Colors.black87),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(task.title,
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)),
-              const SizedBox(height: 4),
-              Text(task.subtitle,
-                  style: const TextStyle(fontSize: 10, color: Colors.black54)),
-            ]),
-          ),
-          Text(task.status, style: const TextStyle(fontSize: 10, color: Colors.black87)),
-        ]),
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: const Color(0xFFDDE8FF),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF3B6FE8).withValues(alpha: 0.12),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.assignment_outlined,
+                size: 24,
+                color: Color(0xFF1A2547),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task.title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A2B4A),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    task.subtitle,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF5C6B8A),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: isDone
+                    ? const Color(0xFF34C759).withValues(alpha: 0.15)
+                    : Colors.white.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                task.status,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isDone
+                      ? const Color(0xFF248A3D)
+                      : const Color(0xFF1A2B4A),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

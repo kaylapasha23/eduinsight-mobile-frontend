@@ -30,17 +30,17 @@ class KelasProvider extends ChangeNotifier {
 
   void uploadDoc(String key) {
     _docUploaded.add(key);
+    _userCompleted.add(key); // When user uploads doc, it marks task as submitted
     notifyListeners();
   }
 
   void markComplete(String key) {
-    _userCompleted.add(key);
-    _docUploaded.add(key); // auto-mark as uploaded too
+    _userCompleted.add(key); // Marked complete without attaching document
     notifyListeners();
   }
 
   void cancelSubmission(String key) {
-    if (_initiallyCompleted.contains(key)) return; // cannot cancel initial ones
+    _initiallyCompleted.remove(key);
     _userCompleted.remove(key);
     _docUploaded.remove(key);
     notifyListeners();
