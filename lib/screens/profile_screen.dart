@@ -21,8 +21,11 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4FF),
+      backgroundColor: bgColor,
       body: Column(
         children: [
           const HeaderBar(showLogout: true),
@@ -31,14 +34,14 @@ class ProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  SizedBox(height: 28),
+                children: [
+                  const SizedBox(height: 28),
                   Text(
                     'Profil Saya',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF0D1B40),
+                      color: isDark ? const Color(0xFF82B1FF) : const Color(0xFF0D1B40),
                       letterSpacing: -0.3,
                     ),
                   ),

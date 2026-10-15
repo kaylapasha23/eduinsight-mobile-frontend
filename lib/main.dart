@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'theme_provider.dart';
+import 'providers/auth_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/academic/academic.dart';
@@ -20,6 +22,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => KelasProvider()),
+        ChangeNotifierProvider(create: (context) => AuthProvider()),
       ],
       child: const MyApp(),
     ),
@@ -42,9 +45,13 @@ class MyApp extends StatelessWidget {
             ),
           ),
           initialRoute: '/',
+          onGenerateInitialRoutes: (initialRoute) => [
+            MaterialPageRoute(builder: (context) => const SplashScreen()),
+          ],
           routes: {
             '/': (context) => const SplashScreen(),
             '/login': (context) => const LoginScreen(),
+            '/register': (context) => const RegisterScreen(),
             '/home': (context) => const HomeScreen(),
             '/academic': (context) => const AcademicScreen(),
             '/profile':(context) => const ProfileScreen(), 

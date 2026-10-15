@@ -39,8 +39,11 @@ class IpkScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4FF),
+      backgroundColor: bgColor,
       body: Column(
         children: [
           const BackHeaderBar(title: 'IPK'),
@@ -51,14 +54,14 @@ class IpkScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 28),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
                     child: Text(
                       'Grafik',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A2B4A),
+                        color: isDark ? Colors.white : const Color(0xFF1A2B4A),
                         letterSpacing: -0.2,
                       ),
                     ),
@@ -66,7 +69,7 @@ class IpkScreen extends StatelessWidget {
                   const SizedBox(height: 14),
                   _buildChart(),
                   const SizedBox(height: 24),
-                  _buildDetailCard(),
+                  _buildDetailCard(isDark),
                   const SizedBox(height: 28),
                 ],
               ),
@@ -147,11 +150,11 @@ class IpkScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailCard() {
+  Widget _buildDetailCard(bool isDark) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFFFFF3B8) : Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(

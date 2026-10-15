@@ -200,8 +200,11 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
       final hasDoc = kelas.hasDoc(key);
       final fileName = kelas.mockFileName(key);
 
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
+
       return Scaffold(
-        backgroundColor: const Color(0xFFF0F4FF),
+        backgroundColor: bgColor,
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(64),
           child: Container(

@@ -91,10 +91,12 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
     MataKuliahHadir mk = dataKehadiran[_selected.value];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4FF),
+      backgroundColor: bgColor,
       body: Column(
         children: [
           const BackHeaderBar(title: 'Kehadiran'),
@@ -124,19 +126,19 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
                       children: [
                         Text(
                           mk.nama,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF0D1B40),
+                            color: isDark ? Colors.white : const Color(0xFF0D1B40),
                             letterSpacing: -0.3,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           mk.jadwal,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF5C6B8A),
+                            color: isDark ? Colors.white60 : const Color(0xFF5C6B8A),
                           ),
                         ),
                         const SizedBox(height: 20),

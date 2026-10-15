@@ -14,12 +14,16 @@ class AiMessage {
 class AiDateGroup {
   final String dateText;
   final DateTime dateTime;
+  final String courseName;
+  final String lecturerName;
   final List<AiMessage> messages;
   final String? lecturerNote;
 
   const AiDateGroup({
     required this.dateText,
     required this.dateTime,
+    required this.courseName,
+    required this.lecturerName,
     required this.messages,
     this.lecturerNote,
   });
@@ -29,6 +33,8 @@ final List<AiDateGroup> dataEvaluasi = [
   AiDateGroup(
     dateText: 'Senin, 24 Januari 2026',
     dateTime: DateTime(2026, 1, 24),
+    courseName: 'Pemrograman Web (Kelas A)',
+    lecturerName: 'Dr. Ahmad Sahroni, M.Kom.',
     messages: [
       AiMessage(
         text:
@@ -47,6 +53,8 @@ final List<AiDateGroup> dataEvaluasi = [
   AiDateGroup(
     dateText: 'Minggu, 23 Januari 2026',
     dateTime: DateTime(2026, 1, 23),
+    courseName: 'Kecerdasan Buatan (Kelas C)',
+    lecturerName: 'Ir. Tri Astuti, M.T.',
     messages: [
       AiMessage(
         text:
@@ -68,6 +76,8 @@ final List<AiDateGroup> dataEvaluasi = [
   AiDateGroup(
     dateText: 'Sabtu, 22 Januari 2026',
     dateTime: DateTime(2026, 1, 22),
+    courseName: 'Basis Data Lanjut (Kelas B)',
+    lecturerName: 'Prof. Bambang Hariyanto, Ph.D.',
     messages: [
       AiMessage(
         text: 'Kehadiran telah memenuhi batas minimum.',
@@ -117,8 +127,11 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4FF),
+      backgroundColor: bgColor,
       body: Column(
         children: [
           const HeaderBar(title: 'EduInsight AI'),
@@ -326,10 +339,12 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
                 const SizedBox(width: 8),
                 Text(
                   group.dateText,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A2B4A),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF82B1FF)
+                        : const Color(0xFF1A2B4A),
                     letterSpacing: 0.1,
                   ),
                 ),
@@ -371,23 +386,65 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header AI dengan Sparkle
+              // Header AI dengan Sparkle & Status Mata Kuliah
               Row(
-                children: const [
-                  Text(
-                    'AI Evaluation',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A2B4A),
-                      letterSpacing: 0.2,
-                    ),
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: const [
+                      Text(
+                        'AI Evaluation',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A2B4A),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      SizedBox(width: 6),
+                      Icon(
+                        Icons.auto_awesome,
+                        size: 16,
+                        color: Color(0xFF1E2B52),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: 6),
-                  Icon(
-                    Icons.auto_awesome,
-                    size: 16,
-                    color: Color(0xFF1E2B52),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF3A6BBF).withValues(alpha: 0.25),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF1E2B52).withValues(alpha: 0.05),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.menu_book_rounded,
+                          size: 13,
+                          color: Color(0xFF1E2B52),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          group.courseName,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E2B52),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -395,7 +452,7 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
               // Pesan-pesan evaluasi AI
               ...group.messages.map((msg) => _MessageTile(message: msg)),
 
-              // Catatan Dosen (selalu ada kolomnya pada setiap tanggal)
+              // Catatan Dosen (selalu ada kolomnya pada setiap tanggal dengan nama dosen)
               const SizedBox(height: 14),
               Divider(
                 color: const Color(0xFF1E2B52).withValues(alpha: 0.12),
@@ -404,20 +461,22 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
               ),
               const SizedBox(height: 14),
               Row(
-                children: const [
-                  Icon(
+                children: [
+                  const Icon(
                     Icons.person_pin_rounded,
                     size: 18,
                     color: Color(0xFF1A2B4A),
                   ),
-                  SizedBox(width: 6),
-                  Text(
-                    'Catatan Dosen',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A2B4A),
-                      letterSpacing: 0.1,
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Catatan Dosen (${group.lecturerName})',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A2B4A),
+                        letterSpacing: 0.1,
+                      ),
                     ),
                   ),
                 ],

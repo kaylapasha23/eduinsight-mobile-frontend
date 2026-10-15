@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../theme_provider.dart';
-import 'splash_screen.dart'; // for LogoWidget
+import 'common_widgets.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,22 +12,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
 
     // Dark mode colors for Beranda
-    final backgroundColor = isDark ? const Color(0xFF1A1F2E) : const Color(0xFFF0F4FF);
+    final backgroundColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
     final sectionTitleColor = isDark ? const Color(0xFF82B1FF) : const Color(0xFF1E2B52);
     final nameColor = isDark ? Colors.white : const Color(0xFF0D1B40);
     final greetingColor = isDark ? Colors.white60 : const Color(0xFF5C6B8A);
-    final appBarGradientStart = isDark ? const Color(0xFF1A2030) : const Color(0xFF1A2547);
-    final appBarGradientEnd = isDark ? const Color(0xFF2A3050) : const Color(0xFF253672);
-    final bottomNavGradientStart = isDark ? const Color(0xFF1A2030) : const Color(0xFF1A2547);
-    final bottomNavGradientEnd = isDark ? const Color(0xFF2A3050) : const Color(0xFF253672);
 
     // Cards are always light colored with black text
     const lightBlueCard = Color(0xFFDDE8FF);
@@ -36,95 +30,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [appBarGradientStart, appBarGradientEnd],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF1E2B52).withValues(alpha: 0.3),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+      body: Column(
+        children: [
+          HeaderBar(
+            title: 'EduInsight',
+            trailing: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
               ),
-            ],
+              child: IconButton(
+                icon: Icon(
+                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+                onPressed: () {
+                  themeProvider.toggleTheme();
+                },
+              ),
+            ),
           ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const FittedBox(
-                      fit: BoxFit.contain,
-                      child: Padding(
-                        padding: EdgeInsets.all(4),
-                        child: LogoWidget(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Text(
-                        'EduInsight',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      Text(
-                        'Tagline Aplikasi',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontStyle: FontStyle.italic,
-                          color: Colors.white60,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                      onPressed: () {
-                        themeProvider.toggleTheme();
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
             Text(
               'Selamat Pagi',
               style: TextStyle(
@@ -343,53 +275,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [bottomNavGradientStart, bottomNavGradientEnd],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF1E2B52).withValues(alpha: 0.4),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: (index) {
-            if (index == 1) {
-              Navigator.pushReplacementNamed(context, '/academic');
-            } else if (index == 2) {
-              Navigator.pushReplacementNamed(context, '/ai');
-            } else if (index == 3) {
-              Navigator.pushReplacementNamed(context, '/profile');
-            } else {
-              setState(() {
-                _selectedIndex = index;
-              });
-            }
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.transparent,
-          selectedItemColor: const Color(0xFFFFFBB5),
-          unselectedItemColor: Colors.white54,
-          showSelectedLabels: false,
-          showUnselectedLabels: false,
-          elevation: 0,
-          iconSize: 26,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.school_rounded), label: 'Academic'),
-            BottomNavigationBarItem(icon: Icon(Icons.auto_awesome_rounded), label: 'AI'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
-          ],
-        ),
-      ),
-    );
+    ),
+  ],
+),
+bottomNavigationBar: const BottomBar(currentIndex: 0),
+);
   }
 
   Widget _buildTaskCard(String title, String subtitle, String time, Color bgColor, Color textColor) {

@@ -58,8 +58,11 @@ class _TugasListScreenState extends State<TugasListScreen> {
           ? activeTasks
           : activeTasks.where((t) => t.className == _selectedClass).toList();
 
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
+
       return Scaffold(
-        backgroundColor: const Color(0xFFF0F4FF),
+        backgroundColor: bgColor,
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(64),
           child: Container(
@@ -107,10 +110,10 @@ class _TugasListScreenState extends State<TugasListScreen> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A2B4A),
+                        color: isDark ? Colors.white : const Color(0xFF1A2B4A),
                         letterSpacing: -0.2,
                       ),
                     ),

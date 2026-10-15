@@ -43,9 +43,11 @@ class KelasScreen extends StatelessWidget {
             .toList();
         // Selesai = total completed tasks tracked in provider
         final selesaiCount = kelas.selesaiCount;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF0F4FF),
+          backgroundColor: bgColor,
           appBar: PreferredSize(
             preferredSize: const Size.fromHeight(64),
             child: Container(
@@ -114,12 +116,12 @@ class KelasScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Ringkasan Tugas',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A2B4A),
+                          color: isDark ? Colors.white : const Color(0xFF1A2B4A),
                           letterSpacing: -0.2,
                         ),
                       ),
