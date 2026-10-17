@@ -81,20 +81,22 @@ class _NilaiScreenState extends State<NilaiScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
     NilaiSemester smt = dataNilai[_selected.value];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       body: Column(
         children: [
           const BackHeaderBar(title: 'Nilai'),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 26),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
                   YellowDropdown(
                     items: pilihanSemester,
                     selectedItem: _selected,
@@ -108,27 +110,31 @@ class _NilaiScreenState extends State<NilaiScreen> {
                   ),
                   const SizedBox(height: 28),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           smt.judul,
-                          style: const TextStyle(
-                            fontSize: 26,
+                          style: TextStyle(
+                            fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Color.fromARGB(255, 0, 0, 0),
+                            color: isDark ? Colors.white : const Color(0xFF0D1B40),
+                            letterSpacing: -0.3,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         Text(
                           smt.tahunAjaran,
-                          style: const TextStyle(fontSize: 14, color: Colors.black),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? Colors.white60 : const Color(0xFF5C6B8A),
+                          ),
                         ),
                         const SizedBox(height: 24),
                         TitledCard(
                           title: 'Ringkasan Nilai',
-                          color: kCardBlue,
+                          color: const Color(0xFFDDE8FF),
                           child: Padding(
                             padding: const EdgeInsets.all(14),
                             child: Column(
@@ -138,7 +144,7 @@ class _NilaiScreenState extends State<NilaiScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 28),
                       ],
                     ),
                   ),
@@ -158,29 +164,51 @@ class _NilaiTile extends StatelessWidget {
 
   const _NilaiTile({required this.matkul});
 
+  Color _gradeColor(String grade) {
+    if (grade.startsWith('A')) return const Color(0xFF34C759);
+    if (grade.startsWith('B')) return const Color(0xFF007AFF);
+    if (grade.startsWith('C')) return const Color(0xFFFF9F0A);
+    return const Color(0xFFFF3B30);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: kTileBlue,
-        borderRadius: BorderRadius.circular(22),
+        color: const Color(0xFFF4F7FF),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          SizedBox(
-            width: 36,
-            child: Text(
-              '${matkul.nomor}',
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A2B4A).withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                '${matkul.nomor}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A2B4A),
+                ),
               ),
             ),
           ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,21 +216,35 @@ class _NilaiTile extends StatelessWidget {
                 Text(
                   matkul.nama,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: Color(0xFF1A2B4A),
                   ),
                 ),
                 Text(
-                  '${matkul.kode} - ${matkul.sks} SKS',
-                  style: const TextStyle(fontSize: 12, color: Colors.black),
+                  '${matkul.kode} · ${matkul.sks} SKS',
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF5C6B8A)),
                 ),
               ],
             ),
           ),
-          Text(
-            matkul.grade,
-            style: const TextStyle(fontSize: 18, color: Colors.black),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _gradeColor(matkul.grade).withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                matkul.grade,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: _gradeColor(matkul.grade),
+                ),
+              ),
+            ),
           ),
         ],
       ),

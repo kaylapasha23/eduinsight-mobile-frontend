@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'theme_provider.dart';
+import 'providers/auth_provider.dart';
 import 'screens/splash_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/login/login_screen.dart';
+import 'screens/login/register_screen.dart';
+import 'screens/beranda/home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/academic/academic.dart';
-import 'screens/profile_screen.dart';
-import 'screens/ai_evalution_card.dart';
+import 'screens/profil/profile_screen.dart';
+import 'screens/ai_evaluation/ai_evalution_card.dart';
 import 'screens/academic/ipk.dart';
 import 'screens/academic/kehadiran.dart';
 import 'screens/academic/nilai.dart';
 
-import 'screens/kelas/kelas_provider.dart';
+import 'screens/academic/kelas/kelas_provider.dart';
 
 void main() {
   runApp(
@@ -20,6 +22,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => KelasProvider()),
+        ChangeNotifierProvider(create: (context) => AuthProvider()),
       ],
       child: const MyApp(),
     ),
@@ -42,9 +45,13 @@ class MyApp extends StatelessWidget {
             ),
           ),
           initialRoute: '/',
+          onGenerateInitialRoutes: (initialRoute) => [
+            MaterialPageRoute(builder: (context) => const SplashScreen()),
+          ],
           routes: {
             '/': (context) => const SplashScreen(),
             '/login': (context) => const LoginScreen(),
+            '/register': (context) => const RegisterScreen(),
             '/home': (context) => const HomeScreen(),
             '/academic': (context) => const AcademicScreen(),
             '/profile':(context) => const ProfileScreen(), 

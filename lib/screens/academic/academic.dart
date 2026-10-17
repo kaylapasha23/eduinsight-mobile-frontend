@@ -3,7 +3,7 @@ import './../common_widgets.dart';
 import 'ipk.dart';
 import 'kehadiran.dart';
 import 'nilai.dart';
-import '../kelas/kelas_screen.dart';
+import 'kelas/kelas_screen.dart';
 
 class MenuItem {
   final String title;
@@ -24,15 +24,18 @@ class AcademicScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       body: Column(
         children: [
           const HeaderBar(),
           Expanded(
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 27),
+                padding: const EdgeInsets.symmetric(horizontal: 28),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: menuItems
@@ -74,12 +77,19 @@ class MenuCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        height: 60,
-        margin: const EdgeInsets.only(bottom: 19),
-        padding: const EdgeInsets.symmetric(horizontal: 30),
+        height: 64,
+        margin: const EdgeInsets.only(bottom: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         decoration: BoxDecoration(
-          color: kCardBlue,
-          borderRadius: BorderRadius.circular(18),
+          color: const Color(0xFFDDE8FF),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF3B6FE8).withValues(alpha: 0.14),
+              blurRadius: 16,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -87,12 +97,25 @@ class MenuCard extends StatelessWidget {
             Text(
               title,
               style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A2B4A),
+                letterSpacing: 0.1,
               ),
             ),
-            const Icon(Icons.arrow_forward, size: 18, color: Colors.black),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A2B4A).withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: Color(0xFF1A2B4A),
+              ),
+            ),
           ],
         ),
       ),

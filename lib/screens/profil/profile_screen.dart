@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import './common_widgets.dart';
+import '../common_widgets.dart';
 
 const Color kAvatarGrey = Color.fromRGBO(110, 117, 134, 1);
 
@@ -21,31 +21,35 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       body: Column(
         children: [
           const HeaderBar(showLogout: true),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 41),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  SizedBox(height: 28),
+                children: [
+                  const SizedBox(height: 28),
                   Text(
                     'Profil Saya',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: isDark ? const Color(0xFF82B1FF) : const Color(0xFF0D1B40),
+                      letterSpacing: -0.3,
                     ),
                   ),
                   SizedBox(height: 24),
                   ProfileCard(),
-                  SizedBox(height: 15),
+                  SizedBox(height: 16),
                   RankingCard(),
-                  SizedBox(height: 24),
+                  SizedBox(height: 28),
                 ],
               ),
             ),
@@ -62,7 +66,7 @@ class ProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double avatarSize = 107;
+    const double avatarSize = 110;
 
     return Stack(
       alignment: Alignment.topCenter,
@@ -70,21 +74,37 @@ class ProfileCard extends StatelessWidget {
         Container(
           width: double.infinity,
           margin: const EdgeInsets.only(top: avatarSize / 2),
-          padding: const EdgeInsets.fromLTRB(12, avatarSize / 2 + 12, 12, 20),
+          padding: const EdgeInsets.fromLTRB(18, avatarSize / 2 + 16, 18, 24),
           decoration: BoxDecoration(
-            color: kCardBlue,
-            borderRadius: BorderRadius.circular(22),
+            color: const Color(0xFFDDE8FF),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF3B6FE8).withValues(alpha: 0.14),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
           child: Column(
             children: [
               const Text(
                 namaMahasiswa,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 24, height: 1.2, color: Colors.black),
+                style: TextStyle(
+                  fontSize: 22,
+                  height: 1.3,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0D1B40),
+                ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 20),
               InfoBlock(lines: dataIdentitas),
-              const Divider(color: Colors.black, thickness: 1, height: 24),
+              Divider(
+                color: Colors.black.withValues(alpha: 0.1),
+                thickness: 1,
+                height: 28,
+              ),
               InfoBlock(lines: dataAkademik),
             ],
           ),
@@ -95,6 +115,13 @@ class ProfileCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF3B6FE8).withValues(alpha: 0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: ClipOval(
             child: Stack(
@@ -120,15 +147,22 @@ class RankingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       decoration: BoxDecoration(
-        color: kCardBlue,
-        borderRadius: BorderRadius.circular(22),
+        color: const Color(0xFFDDE8FF),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF3B6FE8).withValues(alpha: 0.14),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: const Column(
         children: [
           RankItem(title: 'Ranking dalam satu kelas', value: 'Rangking 3'),
-          Divider(color: Colors.black, thickness: 1, height: 20),
+          Divider(color: Color(0x1A000000), thickness: 1, height: 24),
           RankItem(title: 'Rangking dalam satu jurusan', value: 'Rangking 10'),
         ],
       ),
@@ -147,16 +181,27 @@ class RankItem extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: Padding(
-        padding: const EdgeInsets.only(left: 13),
+        padding: const EdgeInsets.only(left: 6),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A2B4A),
+              ),
             ),
-            const SizedBox(height: 2),
-            Text(value, style: const TextStyle(fontSize: 14, color: Colors.black)),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF3A6BBF),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),
@@ -174,13 +219,20 @@ class InfoBlock extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: Padding(
-        padding: const EdgeInsets.only(left: 13),
+        padding: const EdgeInsets.only(left: 6),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: lines
               .map((line) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Text(line, style: const TextStyle(fontSize: 15, color: Colors.black)),
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Text(
+                      line,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF2A3B5E),
+                        height: 1.4,
+                      ),
+                    ),
                   ))
               .toList(),
         ),

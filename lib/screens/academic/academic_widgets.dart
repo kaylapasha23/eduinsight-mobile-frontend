@@ -21,26 +21,45 @@ class BackHeaderBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: kNavy,
-      padding: const EdgeInsets.fromLTRB(20, 44, 20, 18),
-      child: Row(
-        children: [
-          IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back, size: 26, color: Colors.white),
-          ),
-          const SizedBox(width: 24),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1A2547), Color(0xFF253672)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: kNavy.withValues(alpha: 0.35),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22, color: Colors.white),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -65,18 +84,30 @@ class YellowDropdown extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: height,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: kYellow,
+        color: const Color(0xFFFFFDE7),
         borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFD4A300).withValues(alpha: 0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFFFEE87), width: 1),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<ListItem>(
           value: selectedItem,
           isExpanded: true,
-          dropdownColor: kYellow,
-          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black),
-          style: const TextStyle(fontSize: 16, color: Colors.black),
+          dropdownColor: const Color(0xFFFFFDE7),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF8A7000)),
+          style: const TextStyle(
+            fontSize: 15,
+            color: Color(0xFF3A3000),
+            fontWeight: FontWeight.w500,
+          ),
           items: items.map((ListItem item) {
             return DropdownMenuItem<ListItem>(
               value: item,
@@ -108,7 +139,14 @@ class TitledCard extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.6),
+            blurRadius: 18,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -117,13 +155,18 @@ class TitledCard extends StatelessWidget {
             child: Text(
               title,
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.black,
+                color: Color(0xFF1A2B4A),
+                letterSpacing: 0.1,
               ),
             ),
           ),
-          const Divider(color: Colors.black, thickness: 1, height: 1),
+          Divider(
+            color: Colors.black.withValues(alpha: 0.12),
+            thickness: 1,
+            height: 1,
+          ),
           child,
         ],
       ),
