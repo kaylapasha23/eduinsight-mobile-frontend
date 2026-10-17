@@ -12,11 +12,14 @@ const Color kBookBlue = Color(0xFF1F4FE0);
 const Color kSun = Color(0xFFF5B08C);
 const Color kActive = Color(0xFFFFFBB5);
 const Color kLogout = Color(0xFFE5484D);
+const Color kNavPill = Color(0xFF4A5A86); // latar item aktif di bottom bar
 
+// ---------- Header TANPA warna (Beranda, Akademik, AI, Profil) ----------
 class HeaderBar extends StatelessWidget {
   final bool showLogout;
   final String title;
   final Widget? trailing;
+
   const HeaderBar({
     super.key,
     this.showLogout = false,
@@ -26,101 +29,78 @@ class HeaderBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A2547), Color(0xFF253672)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1E2B52).withValues(alpha: 0.35),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color textColor = isDark ? Colors.white : Colors.black;
+    final Color subColor = isDark ? Colors.white60 : Colors.black54;
+
+    return SafeArea(
+      bottom: false,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(28, 14, 24, 10),
+            child: Row(
+              children: [
+                Image.asset(
+                  'assets/images/logo.png',
+                  width: 56,
+                  height: 56,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Tagline Aplikasi',
+                      style: TextStyle(
+                        color: subColor,
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ],
                 ),
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  fit: BoxFit.contain,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  const Text(
-                    'Tagline Aplikasi',
-                    style: TextStyle(
-                      color: Colors.white60,
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              if (trailing != null)
-                trailing!
-              else if (showLogout)
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: IconButton(
+                const Spacer(),
+                if (trailing != null)
+                  trailing!
+                else if (showLogout)
+                  IconButton(
                     onPressed: () async {
-                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                      final authProvider =
+                          Provider.of<AuthProvider>(context, listen: false);
                       await authProvider.logout();
                       if (context.mounted) {
                         Navigator.pushNamedAndRemoveUntil(
                             context, '/login', (route) => false);
                       }
                     },
-                    icon: const Icon(Icons.logout, size: 24, color: kLogout),
+                    icon: const Icon(Icons.logout, size: 26, color: kLogout),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
-        ),
+          // garis di bawah header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Divider(color: textColor, thickness: 1.2, height: 1),
+          ),
+        ],
       ),
     );
   }
 }
 
+// ---------- Bottom bar melayang (pil navy) ----------
 class BottomBar extends StatelessWidget {
   final int currentIndex;
   const BottomBar({super.key, required this.currentIndex});
@@ -139,68 +119,64 @@ class BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A2547), Color(0xFF253672)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(22, 8, 22, 16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: kNavy,
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [
+            BoxShadow(
+              color: kNavy.withValues(alpha: 0.45),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1E2B52).withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.only(top: 8, bottom: 24),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _NavItem(
-            icon: Icons.home_rounded,
-            iconOutlined: Icons.home_outlined,
-            iconSize: 28,
-            isActive: currentIndex == 0,
-            onTap: () => _goTo(context, 0, const HomeScreen()),
-          ),
-          _NavItem(
-            icon: Icons.school_rounded,
-            iconOutlined: Icons.school_outlined,
-            iconSize: 31, // optical match for wide graduation cap
-            isActive: currentIndex == 1,
-            onTap: () => _goTo(context, 1, const AcademicScreen()),
-          ),
-          _AiNavItem(
-            isActive: currentIndex == 2,
-            onTap: () => _goTo(context, 2, const AiEvalutionScreen()),
-          ),
-          _NavItem(
-            icon: Icons.person_rounded,
-            iconOutlined: Icons.person_outline,
-            iconSize: 29,
-            isActive: currentIndex == 3,
-            onTap: () => _goTo(context, 3, const ProfileScreen()),
-          ),
-        ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _NavItem(
+              icon: Icons.home_outlined,
+              label: 'Beranda',
+              isActive: currentIndex == 0,
+              onTap: () => _goTo(context, 0, const HomeScreen()),
+            ),
+            _NavItem(
+              icon: Icons.school_outlined,
+              label: 'Akademik',
+              isActive: currentIndex == 1,
+              onTap: () => _goTo(context, 1, const AcademicScreen()),
+            ),
+            _AiNavItem(
+              isActive: currentIndex == 2,
+              onTap: () => _goTo(context, 2, const AiEvalutionScreen()),
+            ),
+            _NavItem(
+              icon: Icons.person_outline,
+              label: 'Profil',
+              isActive: currentIndex == 3,
+              onTap: () => _goTo(context, 3, const ProfileScreen()),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
+// Item aktif: ikon + label di dalam pil terang. Item tidak aktif: ikon saja.
 class _NavItem extends StatelessWidget {
   final IconData icon;
-  final IconData iconOutlined;
-  final double iconSize;
+  final String label;
   final bool isActive;
   final VoidCallback onTap;
 
   const _NavItem({
     required this.icon,
-    required this.iconOutlined,
-    required this.iconSize,
+    required this.label,
     required this.isActive,
     required this.onTap,
   });
@@ -213,35 +189,28 @@ class _NavItem extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        width: isActive ? 60 : 48,
-        height: 44,
-        alignment: Alignment.center,
+        padding: EdgeInsets.symmetric(horizontal: isActive ? 16 : 10, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive ? kActive.withValues(alpha: 0.22) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          border: isActive
-              ? Border.all(color: kActive.withValues(alpha: 0.45), width: 1.5)
-              : null,
+          color: isActive ? kNavPill : Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
         ),
-        child: AnimatedScale(
-          scale: isActive ? 1.15 : 1.0,
-          duration: const Duration(milliseconds: 200),
-          child: SizedBox(
-            width: 34,
-            height: 32,
-            child: Center(
-              child: Icon(
-                isActive ? icon : iconOutlined,
-                size: iconSize,
-                color: isActive ? kActive : Colors.white70,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 28, color: isActive ? kActive : Colors.white),
+            if (isActive) const SizedBox(width: 8),
+            if (isActive)
+              Text(
+                label,
+                style: const TextStyle(color: kActive, fontSize: 15),
               ),
-            ),
-          ),
+          ],
         ),
       ),
     );
   }
 }
+
 
 class _AiNavItem extends StatelessWidget {
   final bool isActive;
@@ -254,53 +223,42 @@ class _AiNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color color = isActive ? kActive : Colors.white;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        width: isActive ? 60 : 48,
-        height: 44,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isActive ? kActive.withValues(alpha: 0.22) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          border: isActive
-              ? Border.all(color: kActive.withValues(alpha: 0.45), width: 1.5)
-              : null,
+        padding: EdgeInsets.symmetric(
+          horizontal: isActive ? 12 : 10,
+          vertical: 10,
         ),
-        child: AnimatedScale(
-          scale: isActive ? 1.15 : 1.0,
-          duration: const Duration(milliseconds: 200),
-          child: SizedBox(
-            width: 34,
-            height: 32,
-            child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Ai',
-                    style: TextStyle(
-                      color: isActive ? kActive : Colors.white70,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      height: 1.0,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(width: 1),
-                  Icon(
-                    Icons.auto_awesome,
-                    size: 11,
-                    color: isActive ? kActive : Colors.white70,
-                  ),
-                ],
-              ),
+        decoration: BoxDecoration(
+          color: isActive ? kNavPill : Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.auto_awesome,
+              size: 24,
+              color: color,
             ),
-          ),
+            if (isActive) ...[
+              const SizedBox(width: 7),
+              const Text(
+                'AI Evaluation',
+                style: TextStyle(
+                  color: kActive,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

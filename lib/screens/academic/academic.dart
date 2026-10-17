@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import './../common_widgets.dart';
+import 'academic_widgets.dart'; // kYellow
 import 'ipk.dart';
 import 'kehadiran.dart';
 import 'nilai.dart';
@@ -7,16 +8,52 @@ import 'kelas/kelas_screen.dart';
 
 class MenuItem {
   final String title;
-  final Widget? page;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final Widget page;
 
-  const MenuItem({required this.title, this.page});
+  const MenuItem({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.page,
+  });
 }
 
-const List<MenuItem> menuItems = [
-  MenuItem(title: 'IPK', page: IpkScreen()),
-  MenuItem(title: 'Kehadiran', page: KehadiranScreen()),
-  MenuItem(title: 'Nilai', page: NilaiScreen()),
-  MenuItem(title: 'Kelas', page: KelasScreen()),
+const List<MenuItem> hasilStudi = [
+  MenuItem(
+    title: 'IPK',
+    subtitle: '4 Semester',
+    icon: Icons.show_chart,
+    color: kCardBlue,
+    page: IpkScreen(),
+  ),
+  MenuItem(
+    title: 'Nilai',
+    subtitle: '6 Mata Kuliah',
+    icon: Icons.assignment_outlined,
+    color: kYellow,
+    page: NilaiScreen(),
+  ),
+];
+
+const List<MenuItem> perkuliahan = [
+  MenuItem(
+    title: 'Kehadiran',
+    subtitle: '6 dari 6 Pertemuan hadir',
+    icon: Icons.calendar_today_outlined,
+    color: kCardBlue,
+    page: KehadiranScreen(),
+  ),
+  MenuItem(
+    title: 'Kelas',
+    subtitle: '2 Tugas Belum Terselesaikan',
+    icon: Icons.school_outlined,
+    color: kYellow,
+    page: KelasScreen(),
+  ),
 ];
 
 class AcademicScreen extends StatelessWidget {
@@ -25,7 +62,12 @@ class AcademicScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
+
+    final bgColor =
+        isDark ? const Color(0xFF23272F) : const Color(0xFFFDFDFD);
+
+    final sectionColor =
+        isDark ? Colors.white70 : const Color(0xFF444444);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -34,26 +76,49 @@ class AcademicScreen extends StatelessWidget {
           const HeaderBar(),
           Expanded(
             child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: menuItems
-                      .map(
-                        (item) => MenuCard(
-                          title: item.title,
-                          onTap: () {
-                            final page = item.page;
-                            if (page != null) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => page),
-                              );
-                            }
-                          },
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Text(
+                        'Hasil Studi',
+                        style: TextStyle(
+                          fontSize: 19,
+                          color: sectionColor,
                         ),
-                      )
-                      .toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Column(
+                      children: hasilStudi
+                          .map((item) => _buildCard(context, item))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Text(
+                        'Perkuliahan',
+                        style: TextStyle(
+                          fontSize: 19,
+                          color: sectionColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Column(
+                      children: perkuliahan
+                          .map((item) => _buildCard(context, item))
+                          .toList(),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -63,58 +128,100 @@ class AcademicScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildCard(BuildContext context, MenuItem item) {
+    return MenuCard(
+      title: item.title,
+      subtitle: item.subtitle,
+      icon: item.icon,
+      color: item.color,
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => item.page),
+        );
+      },
+    );
+  }
 }
 
 class MenuCard extends StatelessWidget {
   final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
   final VoidCallback onTap;
 
-  const MenuCard({super.key, required this.title, required this.onTap});
+  const MenuCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final shadowColor = color == kYellow
+        ? const Color(0xFFD6C45A)
+        : const Color(0xFF7896C5);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        height: 64,
-        margin: const EdgeInsets.only(bottom: 18),
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        height: 62,
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: const Color(0xFFDDE8FF),
-          borderRadius: BorderRadius.circular(20),
+          color: color,
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF3B6FE8).withValues(alpha: 0.14),
-              blurRadius: 16,
-              offset: const Offset(0, 5),
+              color: shadowColor.withValues(alpha: 0.45),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1A2B4A),
-                letterSpacing: 0.1,
+            Icon(
+              icon,
+              size: 25,
+              color: Colors.black,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.black,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A2B4A).withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: Color(0xFF1A2B4A),
-              ),
+            const Icon(
+              Icons.arrow_forward,
+              size: 18,
+              color: Colors.black,
             ),
           ],
         ),

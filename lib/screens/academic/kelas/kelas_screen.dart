@@ -1,375 +1,341 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../common_widgets.dart';
+import '../academic_widgets.dart';
 import 'gabung_kelas_screen.dart';
-import 'tugas_list_screen.dart';
-import 'detail_tugas_screen.dart';
 import 'kelas_provider.dart';
+import 'tugas_list_screen.dart';
 
+// ---------- Model tugas (dipakai tugas_list_screen & detail tugas) ----------
 class TaskItem {
   final String title;
   final String subtitle;
   final String status;
   final String className;
-  TaskItem(this.title, this.subtitle, this.status, this.className);
+
+  const TaskItem(this.title, this.subtitle, this.status, this.className);
 }
 
-final List<TaskItem> allSegeraTasks = [
-  TaskItem('Instalasi Node.js', 'T6D Web Framework', 'Hari ini, 23.59', 'Web Framework'),
-  TaskItem('Tugas 2: Sejarah Komputer', 'T6D IoT', 'Jumat, 11 Nov', 'IoT'),
-  TaskItem('Pengenalan JavaScript', 'T6D Pemrograman Dasar', 'Senin, 23.59', 'Pemrograman Dasar'),
+// Data contoh: ganti dengan data aslimu
+const List<TaskItem> allSegeraTasks = [
+  TaskItem('Tugas 1 - Quiziz', 'Kewirausahaan', 'Hari ini, 23.59', 'Kewirausahaan'),
+  TaskItem('Tugas 1 - Analisa Aplikasi', 'UI/UX Design', 'Hari ini, 23.59', 'UI/UX Design'),
+  TaskItem('Pertemuan Pertama', 'IoT', 'Rabu, 23.59', 'IoT'),
 ];
 
-final List<TaskItem> allSelesaiTasks = [
-  TaskItem('CBL 2: Low-Fidelity', 'T6D UI/UX', 'Diserahkan', 'UI/UX'),
-  TaskItem('Quizziz Matriks', 'T6D Statistika dan Data', 'Diserahkan', 'Statistika dan Data'),
-  TaskItem('AI Klasik dan Modern', 'T6D Kecerdasan Buatan', 'Diserahkan', 'Kecerdasan Buatan'),
-  TaskItem('Tipe Data dan Method', 'T6D Pemrograman Web', 'Diserahkan', 'Pemrograman Web'),
-  TaskItem('Pertemuan Pertama IoT', 'T6D IoT', 'Diserahkan', 'IoT'),
-  TaskItem('Pertemuan Pertama Pemweb', 'T6D Pemrograman Web', 'Diserahkan', 'Pemrograman Web'),
-  TaskItem('Pertemuan Pertama Sistem Informasi', 'T6D Sistem Informasi', 'Diserahkan', 'Sistem Informasi'),
+const List<TaskItem> allSelesaiTasks = [
+  TaskItem('Tugas Pengenalan AI', 'Kecerdasan Buatan', 'Diserahkan', 'Kecerdasan Buatan'),
+  TaskItem('Latihan SQL Dasar', 'Basis Data', 'Diserahkan', 'Basis Data'),
+  TaskItem('Tugas Array & Function', 'Pemrograman Web', 'Diserahkan', 'Pemrograman Web'),
+  TaskItem('Laporan Praktikum 1', 'IoT', 'Diserahkan', 'IoT'),
 ];
 
+// ---------- Model tampilan ----------
+class RingkasanTugas {
+  final String label;
+  final String type; // 'segera' / 'terlambat' / 'selesai' (dipakai TugasListScreen)
+
+  const RingkasanTugas({required this.label, required this.type});
+}
+
+class KelasItem {
+  final String nama;
+  final String dosen;
+  final String? tugas; // null = tidak ada tugas terdekat
+  final String? tenggat;
+
+  const KelasItem({
+    required this.nama,
+    required this.dosen,
+    this.tugas,
+    this.tenggat,
+  });
+}
+
+const List<RingkasanTugas> dataRingkasan = [
+  RingkasanTugas(label: 'Segera', type: 'segera'),
+  RingkasanTugas(label: 'Terlambat', type: 'terlambat'),
+  RingkasanTugas(label: 'Selesai', type: 'selesai'),
+];
+
+// Data contoh (IoT & Kecerdasan Buatan mengikuti desain)
+const List<KelasItem> dataKelas = [
+  KelasItem(
+    nama: 'Pemrograman Web',
+    dosen: 'Nama Dosen',
+    tugas: 'Pertemuan Pertama',
+    tenggat: 'Rabu, 23.59',
+  ),
+  KelasItem(
+    nama: 'IoT',
+    dosen: 'Teddy Indra Wijaya',
+    tugas: 'Pertemuan Pertama',
+    tenggat: 'Rabu, 23.59',
+  ),
+  KelasItem(nama: 'Kecerdasan Buatan', dosen: 'Rocky Gerung'),
+];
+
+// ---------- Halaman ----------
 class KelasScreen extends StatelessWidget {
   const KelasScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<KelasProvider>(
-      builder: (context, kelas, _) {
-        // Segera = initial 3 minus any user completed
-        final segeraTasks = allSegeraTasks
-            .where((t) => !kelas.isCompleted('${t.className}|${t.title}'))
-            .toList();
-        // Selesai = total completed tasks tracked in provider
-        final selesaiCount = kelas.selesaiCount;
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
-
-        return Scaffold(
-          backgroundColor: bgColor,
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(64),
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF1A2547), Color(0xFF253672)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x551E2B52),
-                    blurRadius: 16,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: AppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                      color: Colors.white, size: 20),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                title: const Text(
-                  'Kelas',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.push(context,
-                        MaterialPageRoute(
-                            builder: (context) => const GabungKelasScreen())),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: kActive.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'Gabung Kelas',
-                        style: TextStyle(
-                          color: kActive,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          body: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Ringkasan Tugas',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : const Color(0xFF1A2B4A),
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 20, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF9DB),
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFD4A300)
-                                  .withValues(alpha: 0.15),
-                              blurRadius: 16,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildSummaryCard(context, '${segeraTasks.length}',
-                                'Segera', 'segera'),
-                            _buildSummaryCard(
-                                context, '0', 'Terlambat', 'terlambat'),
-                            _buildSummaryCard(
-                                context, '$selesaiCount', 'Selesai', 'selesai'),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                      _buildClassCard(context, 'Keamanan Siber',
-                          'Gibran Rakabuming', 'Tidak Ada Tugas Terdekat', '', null),
-                      _buildClassCard(context, 'Pemrograman Web',
-                          'Ahmad Sahroni', 'Tidak Ada Tugas Terdekat', '', null),
-                      _buildClassCard(context, 'Sistem Informasi',
-                          'Bahlil Lahadalia', 'Tidak Ada Tugas Terdekat', '', null),
-                      _buildClassCard(
-                          context,
-                          'IoT',
-                          'Teddy Indra Wijaya',
-                          kelas.isCompleted('IoT|Tugas 2: Sejarah Komputer')
-                              ? 'Tidak Ada Tugas Terdekat'
-                              : 'Tugas 2: Sejarah Komputer',
-                          kelas.isCompleted('IoT|Tugas 2: Sejarah Komputer')
-                              ? ''
-                              : 'Jumat, 11 Nov',
-                          kelas.isCompleted('IoT|Tugas 2: Sejarah Komputer')
-                              ? null
-                              : allSegeraTasks
-                                  .firstWhere((t) => t.className == 'IoT')),
-                      _buildClassCard(context, 'Kecerdasan Buatan',
-                          'Rocky Gerung', 'Tidak Ada Tugas Terdekat', '', null),
-                      _buildClassCard(context, 'UI/UX', 'Ivan Gunawan',
-                          'Tidak Ada Tugas Terdekat', '', null),
-                      _buildClassCard(
-                          context,
-                          'Web Framework',
-                          'Windah Basudara',
-                          kelas.isCompleted('Web Framework|Instalasi Node.js')
-                              ? 'Tidak Ada Tugas Terdekat'
-                              : 'Instalasi Node.js',
-                          kelas.isCompleted('Web Framework|Instalasi Node.js')
-                              ? ''
-                              : 'Hari ini, 23.59',
-                          kelas.isCompleted('Web Framework|Instalasi Node.js')
-                              ? null
-                              : allSegeraTasks.firstWhere(
-                                  (t) => t.className == 'Web Framework')),
-                      _buildClassCard(context, 'Statistika dan Data',
-                          'Nadiem Makarim', 'Tidak Ada Tugas Terdekat', '', null),
-                      _buildClassCard(
-                          context,
-                          'Pemrograman Dasar',
-                          'Deddy Corbuzier',
-                          kelas.isCompleted(
-                                  'Pemrograman Dasar|Pengenalan JavaScript')
-                              ? 'Tidak Ada Tugas Terdekat'
-                              : 'Pengenalan JavaScript',
-                          kelas.isCompleted(
-                                  'Pemrograman Dasar|Pengenalan JavaScript')
-                              ? ''
-                              : 'Senin, 23.59',
-                          kelas.isCompleted(
-                                  'Pemrograman Dasar|Pengenalan JavaScript')
-                              ? null
-                              : allSegeraTasks.firstWhere(
-                                  (t) => t.className == 'Pemrograman Dasar')),
-                    ],
-                  ),
-                ),
-              ),
-              const BottomBar(currentIndex: 1),
-            ],
-          ),
-        );
-      },
+  // "Gabung Kelas" tampil sebagai notifikasi (dialog) di atas halaman
+  void _bukaGabungKelas(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const GabungKelasScreen(),
     );
   }
 
-  Widget _buildSummaryCard(
-      BuildContext context, String count, String label, String type) {
-    return GestureDetector(
-      onTap: () => Navigator.push(context,
-          MaterialPageRoute(builder: (context) => TugasListScreen(type: type))),
-      child: Container(
-        width: 78,
-        height: 78,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.8),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
+  // Jumlah tugas segera = tugas segera yang belum diserahkan
+  int _hitungSegera(KelasProvider kelas) {
+    int jumlah = 0;
+    for (TaskItem t in allSegeraTasks) {
+      if (!kelas.isCompleted('${t.className}|${t.title}')) {
+        jumlah = jumlah + 1;
+      }
+    }
+    return jumlah;
+  }
+
+  int _hitungJumlah(String type, KelasProvider kelas) {
+    int segera = _hitungSegera(kelas);
+    if (type == 'segera') return segera;
+    if (type == 'selesai') {
+      return allSelesaiTasks.length + (allSegeraTasks.length - segera);
+    }
+    return 0; // terlambat
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFFDFDFD);
+    final double lebar = MediaQuery.of(context).size.width;
+    final double pad = lebar < 360 ? 14 : 20;
+
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: Column(
+        children: [
+          BackHeaderBar(
+            title: 'Kelas',
+            trailing: TextButton(
+              onPressed: () => _bukaGabungKelas(context),
+              child: const Text(
+                'Gabung Kelas',
+                style: TextStyle(
+                  color: kActive,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
-          ],
+          ),
+          Expanded(
+            child: Consumer<KelasProvider>(
+              builder: (context, kelas, _) {
+                return SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(pad, 18, pad, 12),
+                  // batas lebar supaya tetap rapi di tablet
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 600),
+                      child: Column(
+                        children: [
+                          _buildRingkasan(context, kelas),
+                          const SizedBox(height: 16),
+                          Column(
+                            children: dataKelas
+                                .map((k) => _KelasCard(kelas: k))
+                                .toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const BottomBar(currentIndex: 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRingkasan(BuildContext context, KelasProvider kelas) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      decoration: BoxDecoration(
+        color: kYellow,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Ringkasan Tugas',
+            style: TextStyle(fontSize: 17, color: Color(0xFF5E5D45)),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: dataRingkasan.map((r) {
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _CountTile(
+                    label: r.label,
+                    jumlah: _hitungJumlah(r.type, kelas),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TugasListScreen(type: r.type),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CountTile extends StatelessWidget {
+  final String label;
+  final int jumlah;
+  final VoidCallback onTap;
+
+  const _CountTile({
+    required this.label,
+    required this.jumlah,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFFFF0),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              count,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1A2B4A),
-              ),
+              '$jumlah',
+              style: const TextStyle(fontSize: 18, color: Color(0xFF5E5D45)),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(
+              width: 48,
+              child: Divider(color: Color(0xFF8C8A7A), thickness: 1, height: 8),
+            ),
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFF5C6B8A),
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 12, color: Color(0xFF5E5D45)),
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildClassCard(BuildContext context, String title, String subtitle,
-      String taskInfo, String timeInfo, TaskItem? task) {
-    return GestureDetector(
-      onTap: task != null
-          ? () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => DetailTugasScreen(
-                    taskTitle: task.title,
-                    className: task.className,
+// ---------- Kartu kelas: nama + dosen, lalu strip biru tugas terdekat ----------
+class _KelasCard extends StatelessWidget {
+  final KelasItem kelas;
+
+  const _KelasCard({required this.kelas});
+
+  @override
+  Widget build(BuildContext context) {
+    final String? tugas = kelas.tugas;
+    final String? tenggat = kelas.tenggat;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: const Color(0xFFFBFCFF),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  kelas.nama,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF4A4A4A),
                   ),
                 ),
-              )
-          : null,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A2B4A),
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF5C6B8A),
-                      ),
-                    ),
-                  ]),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              decoration: const BoxDecoration(
-                color: Color(0xFFDDE8FF),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
+                Text(
+                  kelas.dosen,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF8A8A8A)),
                 ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    taskInfo,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontStyle: taskInfo.startsWith('Tidak')
-                          ? FontStyle.italic
-                          : FontStyle.normal,
-                      color: taskInfo.startsWith('Tidak')
-                          ? const Color(0xFF7A8FAB)
-                          : const Color(0xFF1A2B4A),
-                      fontWeight: taskInfo.startsWith('Tidak')
-                          ? FontWeight.normal
-                          : FontWeight.w600,
-                    ),
-                  ),
-                  if (timeInfo.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        timeInfo,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF1A2B4A),
-                          fontWeight: FontWeight.w600,
+              ],
+            ),
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            color: const Color(0xFFDCE6FF),
+            child: (tugas != null && tenggat != null)
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          tugas,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF8A8A8A)),
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      Text(
+                        tenggat,
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF8A8A8A)),
+                      ),
+                    ],
+                  )
+                : const Center(
+                    child: Text(
+                      'Tidak Ada Tugas Terdekat',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                        color: Color(0xFF8A8A8A),
+                      ),
                     ),
-                ],
-              ),
-            ),
-          ],
-        ),
+                  ),
+          ),
+        ],
       ),
     );
   }
