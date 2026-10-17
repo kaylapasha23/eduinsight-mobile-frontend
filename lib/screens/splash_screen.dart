@@ -70,7 +70,7 @@ class _SplashScreenState extends State<SplashScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121418) : const Color(0xFFF0F4FF),
+      backgroundColor: isDark ? const Color(0xFF121418) : const Color(0xFFFDFDFD),
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,

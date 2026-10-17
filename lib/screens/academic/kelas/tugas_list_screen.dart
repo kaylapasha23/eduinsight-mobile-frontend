@@ -59,7 +59,7 @@ class _TugasListScreenState extends State<TugasListScreen> {
           : activeTasks.where((t) => t.className == _selectedClass).toList();
 
       final isDark = Theme.of(context).brightness == Brightness.dark;
-      final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
+      final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFFDFDFD);
 
       return Scaffold(
         backgroundColor: bgColor,

@@ -74,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final labelColor = isDark ? Colors.grey[400] : const Color(0xFF3A5A9B);
     final titleColor = isDark ? const Color(0xFF82B1FF) : const Color(0xFF0D1B40);
-    final bgColor = isDark ? const Color(0xFF121418) : const Color(0xFFF0F4FF);
+    final bgColor = isDark ? const Color(0xFF121418) : const Color(0xFFFDFDFD);
 
     return Scaffold(
       backgroundColor: bgColor,

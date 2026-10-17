@@ -22,7 +22,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
+    final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFFDFDFD);
 
     return Scaffold(
       backgroundColor: bgColor,

@@ -15,27 +15,29 @@ class AiMessage {
 
 class AiDateGroup {
   final String dateText;
-  final DateTime dateTime;
-  final String courseName;
   final String lecturerName;
   final List<AiMessage> messages;
   final String? lecturerNote;
 
   const AiDateGroup({
     required this.dateText,
-    required this.dateTime,
-    required this.courseName,
     required this.lecturerName,
     required this.messages,
     this.lecturerNote,
   });
+
+  // Helper untuk mendapatkan DateTime dari teks tanggal
+  DateTime get dateTime {
+    if (dateText.contains('24 Januari 2026')) return DateTime(2026, 1, 24);
+    if (dateText.contains('23 Januari 2026')) return DateTime(2026, 1, 23);
+    if (dateText.contains('22 Januari 2026')) return DateTime(2026, 1, 22);
+    return DateTime(2026, 1, 24);
+  }
 }
 
 final List<AiDateGroup> dataEvaluasi = [
   AiDateGroup(
     dateText: 'Senin, 24 Januari 2026',
-    dateTime: DateTime(2026, 1, 24),
-    courseName: 'Pemrograman Web (Kelas A)',
     lecturerName: 'Dr. Ahmad Sahroni, M.Kom.',
     messages: const [
       AiMessage(
@@ -54,8 +56,6 @@ final List<AiDateGroup> dataEvaluasi = [
   ),
   AiDateGroup(
     dateText: 'Minggu, 23 Januari 2026',
-    dateTime: DateTime(2026, 1, 23),
-    courseName: 'Kecerdasan Buatan (Kelas C)',
     lecturerName: 'Ir. Tri Astuti, M.T.',
     messages: const [
       AiMessage(
@@ -77,8 +77,6 @@ final List<AiDateGroup> dataEvaluasi = [
   ),
   AiDateGroup(
     dateText: 'Sabtu, 22 Januari 2026',
-    dateTime: DateTime(2026, 1, 22),
-    courseName: 'Basis Data Lanjut (Kelas B)',
     lecturerName: 'Prof. Bambang Hariyanto, Ph.D.',
     messages: const [
       AiMessage(
@@ -131,7 +129,7 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
+    final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFFDFDFD);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -157,7 +155,7 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
     );
   }
 
-  // Filter tanggal (date picker, format MM/DD/YY)
+  // Filter tanggal dengan teks yang lebih singkat
   Widget _buildDateFilter() {
     return GestureDetector(
       onTap: _pickDate,
@@ -195,19 +193,11 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Filter Kalender (MM/DD/YY)',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF8A7000),
-                    ),
-                  ),
                   const SizedBox(height: 2),
                   Text(
                     _selectedDate != null
                         ? _formatDate(_selectedDate!)
-                        : 'Semua Tanggal (Ketuk untuk memilih)',
+                        : 'Pilih Tanggal',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -256,27 +246,27 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
   List<Widget> _buildGroups() {
     final List<Widget> hasil = [];
 
-    for (final AiDateGroup g in dataEvaluasi) {
-      final bool cocok = _selectedDate == null ||
-          (g.dateTime.year == _selectedDate!.year &&
-              g.dateTime.month == _selectedDate!.month &&
-              g.dateTime.day == _selectedDate!.day);
+    final filteredData = dataEvaluasi.where((g) {
+      if (_selectedDate == null) return true;
+      return g.dateTime.year == _selectedDate!.year &&
+          g.dateTime.month == _selectedDate!.month &&
+          g.dateTime.day == _selectedDate!.day;
+    }).toList();
 
-      if (cocok) {
-        if (hasil.isNotEmpty) {
-          hasil.add(
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Divider(
-                color: Colors.black.withValues(alpha: 0.1),
-                thickness: 1,
-                height: 1,
-              ),
+    for (var g in filteredData) {
+      if (hasil.isNotEmpty) {
+        hasil.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Divider(
+              color: Colors.black.withValues(alpha: 0.1),
+              thickness: 1,
+              height: 1,
             ),
-          );
-        }
-        hasil.add(_buildDateGroup(g));
+          ),
+        );
       }
+      hasil.add(_buildDateGroup(g));
     }
 
     if (hasil.isEmpty) {
@@ -334,47 +324,27 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Bagian tanggal di sebelah kanan telah dihapus
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF3A6BBF),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  group.dateText,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? const Color(0xFF82B1FF)
-                        : const Color(0xFF1A2B4A),
-                    letterSpacing: 0.1,
-                  ),
-                ),
-              ],
-            ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFDDE8FF)),
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: Color(0xFF3A6BBF),
+                shape: BoxShape.circle,
               ),
-              child: Text(
-                _formatDate(group.dateTime),
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF3A6BBF),
-                ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              group.dateText,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF82B1FF)
+                    : const Color(0xFF1A2B4A),
+                letterSpacing: 0.1,
               ),
             ),
           ],
@@ -397,67 +367,22 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header AI + nama mata kuliah
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              const Row(
                 children: [
-                  const Row(
-                    children: [
-                      Text(
-                        'AI Evaluation',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A2B4A),
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                      SizedBox(width: 6),
-                      Icon(
-                        Icons.auto_awesome,
-                        size: 16,
-                        color: Color(0xFF1E2B52),
-                      ),
-                    ],
+                  Text(
+                    'AI Evaluation',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A2B4A),
+                      letterSpacing: 0.2,
+                    ),
                   ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFF3A6BBF).withValues(alpha: 0.25),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              const Color(0xFF1E2B52).withValues(alpha: 0.05),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.menu_book_rounded,
-                          size: 13,
-                          color: Color(0xFF1E2B52),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          group.courseName,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E2B52),
-                          ),
-                        ),
-                      ],
-                    ),
+                  SizedBox(width: 6),
+                  Icon(
+                    Icons.auto_awesome,
+                    size: 16,
+                    color: Color(0xFF1E2B52),
                   ),
                 ],
               ),
