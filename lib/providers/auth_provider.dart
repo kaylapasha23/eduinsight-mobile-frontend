@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'token_store.dart';
 
 class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
@@ -54,6 +55,8 @@ class AuthProvider extends ChangeNotifier {
       _isLoggedIn = true;
       _user = result['data']['user'];
       _token = result['data']['token'];
+      await saveToken(result['data']['token']);
+      debugPrint('token tersimpan: ${await readToken()}');
       _errorMessage = null;
       notifyListeners();
       return true;
@@ -96,6 +99,7 @@ class AuthProvider extends ChangeNotifier {
       _isLoggedIn = true;
       _user = result['data']['user'];
       _token = result['data']['token'];
+      await saveToken(result['data']['token']);
       _errorMessage = null;
       notifyListeners();
       return true;
@@ -112,6 +116,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     await AuthService.logout();
+    await clearToken(); 
 
     _isLoggedIn = false;
     _user = null;
