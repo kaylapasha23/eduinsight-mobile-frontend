@@ -1,13 +1,21 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-const storage = FlutterSecureStorage();
+const _tokenKey = 'access_token';
 
-// Simpan token setelah login berhasil
-Future<void> saveToken(String token) =>
-    storage.write(key: 'access_token', value: token);
+// Simpan token — pakai SharedPreferences agar persist setelah hard refresh di Flutter Web
+Future<void> saveToken(String token) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(_tokenKey, token);
+}
 
-// Baca token saat dibutuhkan
-Future<String?> readToken() => storage.read(key: 'access_token');
+// Baca token
+Future<String?> readToken() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString(_tokenKey);
+}
 
-// Hapus semua saat logout
-Future<void> clearToken() => storage.deleteAll();
+// Hapus token saat logout
+Future<void> clearToken() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove(_tokenKey);
+}

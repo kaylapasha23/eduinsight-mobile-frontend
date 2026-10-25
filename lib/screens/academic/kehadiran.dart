@@ -83,7 +83,7 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
     int jumlah = 0;
     for (Pertemuan p in mk.riwayat) {
       if (p.status == status) {
-        jumlah = jumlah + 1;
+        jumlah++;
       }
     }
     return jumlah;
@@ -92,7 +92,10 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFFDFDFD);
+    final bgColor = isDark ? const Color(0xFF1E222A) : const Color(0xFFF7F9FC);
+    final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final cardBg = isDark ? const Color(0xFF282D37) : Colors.white;
+
     MataKuliahHadir mk = dataKehadiran[_selected.value];
 
     return Scaffold(
@@ -102,11 +105,10 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
           const BackHeaderBar(title: 'Kehadiran'),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 28),
                   YellowDropdown(
                     items: pilihanMatkul,
                     selectedItem: _selected,
@@ -118,37 +120,39 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
                       }
                     },
                   ),
-                  const SizedBox(height: 28),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          mk.nama,
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : const Color(0xFF0D1B40),
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          mk.jadwal,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isDark ? Colors.white60 : const Color(0xFF5C6B8A),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        _buildRingkasan(mk),
-                        const SizedBox(height: 18),
-                        _buildRiwayat(mk),
-                        const SizedBox(height: 28),
-                      ],
+                  const SizedBox(height: 20),
+                  Text(
+                    mk.nama,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: titleColor,
+                      letterSpacing: -0.3,
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.schedule_rounded,
+                        size: 13,
+                        color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        mk.jadwal,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  _buildRingkasan(mk, isDark, cardBg),
+                  const SizedBox(height: 24),
+                  _buildRiwayat(mk, isDark, cardBg, titleColor),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -159,99 +163,169 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
     );
   }
 
-  Widget _buildRingkasan(MataKuliahHadir mk) {
+  Widget _buildRingkasan(MataKuliahHadir mk, bool isDark, Color cardBg) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFFDDE8FF),
+        color: cardBg,
         borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3B6FE8).withValues(alpha: 0.14),
-            blurRadius: 18,
-            offset: const Offset(0, 5),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         children: [
-          Text(
-            '${mk.riwayat.length} Pertemuan',
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A2B4A),
-            ),
-          ),
-          const SizedBox(height: 18),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: daftarStatus
-                .map((s) => _CountTile(label: s, jumlah: _hitung(mk, s)))
-                .toList(),
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Ringkasan Presensi',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${mk.riwayat.length} Pertemuan',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2563EB),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: daftarStatus.map((s) {
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _CountTile(
+                    label: s,
+                    jumlah: _hitung(mk, s),
+                    isDark: isDark,
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRiwayat(MataKuliahHadir mk) {
-    return TitledCard(
-      title: 'Riwayat Pertemuan',
-      color: const Color(0xFFDDE8FF),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          children: mk.riwayat.map((p) => _RiwayatTile(pertemuan: p)).toList(),
+  Widget _buildRiwayat(MataKuliahHadir mk, bool isDark, Color cardBg, Color titleColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Riwayat Pertemuan',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: titleColor,
+                letterSpacing: -0.2,
+              ),
+            ),
+            Text(
+              'Selesai',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
+              ),
+            ),
+          ],
         ),
-      ),
+        const SizedBox(height: 12),
+        Column(
+          children: mk.riwayat
+              .map((p) => _RiwayatTile(pertemuan: p, isDark: isDark, cardBg: cardBg))
+              .toList(),
+        ),
+      ],
     );
   }
 }
 
+// Tile Ringkasan (Hadir, Izin, Sakit, Alpa) dengan warna sinkron persis keterangan status bawah
 class _CountTile extends StatelessWidget {
   final String label;
   final int jumlah;
+  final bool isDark;
 
-  const _CountTile({required this.label, required this.jumlah});
+  const _CountTile({
+    required this.label,
+    required this.jumlah,
+    required this.isDark,
+  });
+
+  Color _getStatusThemeColor(String status) {
+    switch (status) {
+      case 'Hadir':
+        return const Color(0xFF10B981); // Hijau
+      case 'Izin':
+        return const Color(0xFFF59E0B); // Amber / Kuning
+      case 'Sakit':
+        return const Color(0xFF0284C7); // Cyan / Biru terang
+      case 'Alpa':
+        return const Color(0xFFEF4444); // Merah
+      default:
+        return const Color(0xFF64748B);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final Color themeColor = _getStatusThemeColor(label);
+
     return Container(
-      width: 60,
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.7),
+        color: themeColor.withValues(alpha: isDark ? 0.16 : 0.08),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(
+          color: themeColor.withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         children: [
           Text(
             '$jumlah',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A2B4A),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              color: themeColor,
             ),
           ),
-          Divider(
-            color: Colors.black.withValues(alpha: 0.12),
-            thickness: 1,
-            height: 10,
-            indent: 8,
-            endIndent: 8,
-          ),
+          const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF3A5A9B)),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white70 : const Color(0xFF334155),
+            ),
           ),
         ],
       ),
@@ -261,36 +335,47 @@ class _CountTile extends StatelessWidget {
 
 class _RiwayatTile extends StatelessWidget {
   final Pertemuan pertemuan;
+  final bool isDark;
+  final Color cardBg;
 
-  const _RiwayatTile({required this.pertemuan});
+  const _RiwayatTile({
+    required this.pertemuan,
+    required this.isDark,
+    required this.cardBg,
+  });
 
   Color _statusColor(String status) {
     switch (status) {
       case 'Hadir':
-        return const Color(0xFF34C759);
+        return const Color(0xFF10B981); // Hijau
       case 'Izin':
-        return const Color(0xFFFF9F0A);
+        return const Color(0xFFF59E0B); // Amber / Kuning
       case 'Sakit':
-        return const Color(0xFF5AC8FA);
+        return const Color(0xFF0284C7); // Cyan / Biru
       case 'Alpa':
-        return const Color(0xFFFF3B30);
+        return const Color(0xFFEF4444); // Merah
       default:
-        return Colors.grey;
+        return const Color(0xFF64748B);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final statusColor = _statusColor(pertemuan.status);
+
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F7FF),
+        color: cardBg,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -299,55 +384,60 @@ class _RiwayatTile extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              color: const Color(0xFF1A2B4A).withValues(alpha: 0.08),
+              color: isDark ? const Color(0xFF1E2532) : const Color(0xFFF1F5F9),
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 '${pertemuan.nomor}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A2B4A),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white70 : const Color(0xFF334155),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   pertemuan.topik,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A2B4A),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
                   ),
                 ),
+                const SizedBox(height: 3),
                 Text(
                   pertemuan.tanggal,
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF5C6B8A)),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                  ),
                 ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
-              color: _statusColor(pertemuan.status).withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(20),
+              color: statusColor.withValues(alpha: isDark ? 0.2 : 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: statusColor.withValues(alpha: 0.3)),
             ),
             child: Text(
               pertemuan.status,
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: _statusColor(pertemuan.status),
+                fontWeight: FontWeight.w700,
+                color: statusColor,
               ),
             ),
           ),

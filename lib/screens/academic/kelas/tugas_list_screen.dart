@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../common_widgets.dart';
 import 'kelas_screen.dart';
 import 'detail_tugas_screen.dart';
 import 'kelas_provider.dart';
@@ -14,28 +13,40 @@ class TugasListScreen extends StatefulWidget {
 }
 
 class _TugasListScreenState extends State<TugasListScreen> {
-  String _selectedClass = 'Semua Kelas';
+  String _selectedClass = 'Semua Mata Kuliah';
 
   String get title {
     if (widget.type == 'segera') return 'Segera Dikumpulkan';
     if (widget.type == 'terlambat') return 'Tugas Terlambat';
-    return 'Tugas Terselesaikan';
+    return 'Tugas Selesai Diserahkan';
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<KelasProvider>(builder: (context, kelas, _) {
-      // Build effective task lists from provider state
-      final segeraTasks = allSegeraTasks
-          .where((t) => !kelas.isCompleted('${t.className}|${t.title}'))
-          .toList();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF1E222A) : const Color(0xFFF7F9FC);
+    final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final cardBg = isDark ? const Color(0xFF282D37) : Colors.white;
 
-      // Selesai = original selesai + user-completed segera
-      final userCompletedSegera = allSegeraTasks
+    return Consumer<KelasProvider>(builder: (context, kelas, _) {
+      // 1. Tugas Selesai (semua tugas yang ditandai complete di provider)
+      final allAvailableTasks = [...allSegeraTasks, ...allSelesaiTasks];
+
+      final selesaiTasks = allAvailableTasks
           .where((t) => kelas.isCompleted('${t.className}|${t.title}'))
           .map((t) => TaskItem(t.title, t.subtitle, 'Diserahkan', t.className))
           .toList();
-      final selesaiTasks = [...allSelesaiTasks, ...userCompletedSegera];
+
+      // 2. Tugas Terlambat (tugas yang diunsub dan lewat deadline)
+      final terlambatTasks = allAvailableTasks
+          .where((t) => !kelas.isCompleted('${t.className}|${t.title}') && kelas.isLate('${t.className}|${t.title}'))
+          .map((t) => TaskItem(t.title, t.subtitle, 'Terlambat', t.className))
+          .toList();
+
+      // 3. Tugas Segera (tugas yang belum complete dan belum terlambat)
+      final segeraTasks = allAvailableTasks
+          .where((t) => !kelas.isCompleted('${t.className}|${t.title}') && !kelas.isLate('${t.className}|${t.title}'))
+          .toList();
 
       List<TaskItem> activeTasks;
       if (widget.type == 'segera') {
@@ -43,58 +54,49 @@ class _TugasListScreenState extends State<TugasListScreen> {
       } else if (widget.type == 'selesai') {
         activeTasks = selesaiTasks;
       } else {
-        activeTasks = []; // terlambat
+        activeTasks = terlambatTasks;
       }
 
-      final classOptions = <String>{'Semua Kelas'};
+      final classOptions = <String>{'Semua Mata Kuliah'};
       for (var t in activeTasks) {
         classOptions.add(t.className);
       }
 
-      // Reset if filter no longer valid
-      if (!classOptions.contains(_selectedClass)) _selectedClass = 'Semua Kelas';
+      if (!classOptions.contains(_selectedClass)) _selectedClass = 'Semua Mata Kuliah';
 
-      final filtered = _selectedClass == 'Semua Kelas'
+      final filtered = _selectedClass == 'Semua Mata Kuliah'
           ? activeTasks
           : activeTasks.where((t) => t.className == _selectedClass).toList();
-
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFFDFDFD);
 
       return Scaffold(
         backgroundColor: bgColor,
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(64),
           child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF1A2547), Color(0xFF253672)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0x551E2B52),
-                  blurRadius: 16,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white, size: 20),
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: const Text(
-                'Kelas',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.2,
+            color: const Color(0xFF1E2B52),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Row(
+                  children: [
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -104,47 +106,41 @@ class _TugasListScreenState extends State<TugasListScreen> {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : const Color(0xFF1A2B4A),
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Dropdown filter
+                    // Modern Dropdown Filter Mata Kuliah
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF9DB),
-                        borderRadius: BorderRadius.circular(20),
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFD4A300).withValues(alpha: 0.14),
-                            blurRadius: 14,
-                            offset: const Offset(0, 4),
+                            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
                           ),
                         ],
-                        border: Border.all(color: const Color(0xFFFFEE87), width: 1),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           isExpanded: true,
                           value: _selectedClass,
-                          style: const TextStyle(
+                          dropdownColor: cardBg,
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Color(0xFF3A3000),
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
                             fontWeight: FontWeight.w600,
                           ),
-                          icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                              color: Color(0xFF8A7000)),
-                          dropdownColor: const Color(0xFFFFFDE7),
+                          icon: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                          ),
                           items: classOptions.map((v) {
                             return DropdownMenuItem(
                               value: v,
@@ -157,32 +153,67 @@ class _TugasListScreenState extends State<TugasListScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    _buildContent(context, filtered),
+                    const SizedBox(height: 20),
+
+                    // Section Title
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Daftar Tugas',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: titleColor,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${filtered.length} Tugas',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF2563EB),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    _buildContent(context, filtered, isDark, cardBg),
                   ],
                 ),
               ),
             ),
-            const BottomBar(currentIndex: 1),
           ],
         ),
       );
     });
   }
 
-  Widget _buildContent(BuildContext context, List<TaskItem> tasks) {
-    if (widget.type == 'terlambat' || tasks.isEmpty) {
+  Widget _buildContent(BuildContext context, List<TaskItem> tasks, bool isDark, Color cardBg) {
+    if (tasks.isEmpty) {
+      final isTerlambat = widget.type == 'terlambat';
       return Container(
-        height: 220,
+        padding: const EdgeInsets.all(32),
         width: double.infinity,
         decoration: BoxDecoration(
-          color: const Color(0xFFDDE8FF),
+          color: cardBg,
           borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF3B6FE8).withValues(alpha: 0.12),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -190,26 +221,27 @@ class _TugasListScreenState extends State<TugasListScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 60,
-              height: 60,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.7),
+                color: (isTerlambat ? const Color(0xFF10B981) : const Color(0xFF2563EB)).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.check_circle_outline_rounded,
-                color: Color(0xFF34C759),
-                size: 32,
+              child: Icon(
+                isTerlambat ? Icons.check_circle_outline_rounded : Icons.inbox_outlined,
+                color: isTerlambat ? const Color(0xFF10B981) : const Color(0xFF2563EB),
+                size: 28,
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Tidak Ada Tugas Yang Terlambat Diserahkan',
+            const SizedBox(height: 14),
+            Text(
+              isTerlambat ? 'Bagus! Tidak ada tugas yang terlambat' : 'Tidak ada tugas dalam kategori ini',
               style: TextStyle(
-                color: Color(0xFF1A2B4A),
+                color: isDark ? Colors.white : const Color(0xFF1E293B),
                 fontWeight: FontWeight.w600,
-                fontSize: 13,
+                fontSize: 14,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -217,96 +249,115 @@ class _TugasListScreenState extends State<TugasListScreen> {
     }
 
     return Column(
-      children: tasks.map((t) => _buildTaskCard(context, t)).toList(),
+      children: tasks.map((t) => _buildTaskCard(context, t, isDark, cardBg)).toList(),
     );
   }
 
-  Widget _buildTaskCard(BuildContext context, TaskItem task) {
+  Widget _buildTaskCard(BuildContext context, TaskItem task, bool isDark, Color cardBg) {
     final bool isDone = task.status == 'Diserahkan';
+    final bool isLate = task.status == 'Terlambat';
 
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DetailTugasScreen(
-            taskTitle: task.title,
-            className: task.className,
+    final Color badgeBg = isDone
+        ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.2 : 0.12)
+        : (isLate
+            ? const Color(0xFFEF4444).withValues(alpha: isDark ? 0.2 : 0.12)
+            : const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.2 : 0.12));
+
+    final Color badgeText = isDone
+        ? const Color(0xFF10B981)
+        : (isLate ? const Color(0xFFEF4444) : const Color(0xFFD97706));
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ),
+        ],
       ),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: const Color(0xFFDDE8FF),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF3B6FE8).withValues(alpha: 0.12),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.assignment_outlined,
-                size: 24,
-                color: Color(0xFF1A2547),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DetailTugasScreen(
+                taskTitle: task.title,
+                className: task.className,
               ),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    task.title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A2B4A),
-                    ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E2532) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    task.subtitle,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF5C6B8A),
-                    ),
+                  child: Icon(
+                    isDone
+                        ? Icons.task_alt_rounded
+                        : (isLate ? Icons.warning_amber_rounded : Icons.assignment_outlined),
+                    size: 22,
+                    color: badgeText,
                   ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: isDone
-                    ? const Color(0xFF34C759).withValues(alpha: 0.15)
-                    : Colors.white.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                task.status,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: isDone
-                      ? const Color(0xFF248A3D)
-                      : const Color(0xFF1A2B4A),
                 ),
-              ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        task.subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: badgeBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: badgeText.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    task.status,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: badgeText,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

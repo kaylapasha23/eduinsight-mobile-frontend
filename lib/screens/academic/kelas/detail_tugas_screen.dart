@@ -36,136 +36,77 @@ class _TaskDetail {
 
 const Map<String, _TaskDetail> _taskDetails = {
   // ── Segera ───────────────────────────────────────────────────────────────────
-  'Web Framework|Instalasi Node.js': _TaskDetail(
-    classLabel: 'T6D Web Framework',
-    taskName: 'Instalasi Node.js',
+  'Kewirausahaan|Tugas 1 - Quiziz': _TaskDetail(
+    classLabel: 'Kewirausahaan',
+    taskName: 'Tugas 1 - Quiziz',
     deadline: 'Hari ini, 23.59',
     description:
-        'Lakukan instalasi Node.js versi LTS terbaru pada perangkat masing-masing.\n\n'
-        '• Unduh installer dari https://nodejs.org\n'
-        '• Pilih versi LTS (Long Term Support)\n'
-        '• Setelah instalasi selesai, buka terminal / command prompt dan jalankan perintah:\n'
-        '   node --version\n'
-        '   npm --version\n\n'
-        'Screenshot hasil output versi tersebut dan unggah sebagai bukti instalasi berhasil.',
+        'Kerjakan kuis Kewirausahaan melalui Quizizz materi BMC (Business Model Canvas).\n\n'
+        '• Kerjakan tepat waktu sebelum tenggat\n'
+        '• Screenshot nilai akhir kuis dan lampirkan sebagai bukti pengerjaan tugas.',
     lecturerDocs: [
-      'Panduan_Instalasi_NodeJS.pdf',
-      'Modul_Praktikum_01.pdf',
+      'Panduan_Kuis_Kewirausahaan.pdf',
     ],
   ),
-  'IoT|Tugas 2: Sejarah Komputer': _TaskDetail(
-    classLabel: 'T6D IoT',
-    taskName: 'Tugas 2: Sejarah Komputer',
-    deadline: 'Jumat, 11 Nov',
+  'UI/UX Design|Tugas 1 - Analisa Aplikasi': _TaskDetail(
+    classLabel: 'UI/UX Design',
+    taskName: 'Tugas 1 - Analisa Aplikasi',
+    deadline: 'Hari ini, 23.59',
     description:
-        'Buat rangkuman singkat (min. 300 kata) tentang perkembangan komputer dari generasi pertama hingga saat ini, '
-        'dikaitkan dengan relevansi teknologi IoT masa kini.\n\n'
-        '• Format pengumpulan: PDF\n'
-        '• Nama file: NIM_NamaLengkap_TugasSejarahKomputer.pdf\n'
-        '• Sertakan minimal 2 referensi jurnal atau buku ilmiah',
+        'Lakukan analisa heuristik pada aplikasi mobile EduTech pilihanmu.\n\n'
+        '• Identifikasi 5 masalah usability beserta rekomendasi perbaikannya\n'
+        '• Kumpulkan dalam format PDF rangkuman laporan.',
+    lecturerDocs: [
+      'Template_Analisa_Heuristik.pdf',
+    ],
   ),
-  'Pemrograman Dasar|Pengenalan JavaScript': _TaskDetail(
-    classLabel: 'T6D Pemrograman Dasar',
-    taskName: 'Pengenalan JavaScript',
-    deadline: 'Senin, 23.59',
+  'Internet of Things (IoT)|Pertemuan Pertama': _TaskDetail(
+    classLabel: 'Internet of Things (IoT)',
+    taskName: 'Pertemuan Pertama',
+    deadline: 'Rabu, 23.59',
     description:
-        'Buat program JavaScript sederhana menggunakan konsep berikut:\n\n'
-        '• Variabel (var, let, const)\n'
-        '• Tipe data dasar (string, number, boolean)\n'
-        '• Percabangan if-else\n'
-        '• Perulangan for/while\n\n'
-        'Kumpulkan dalam format:\n'
-        '• File .js yang bisa dijalankan di browser / Node.js\n'
-        '• Screenshot hasil output program',
+        'Buat rangkuman singkat mengenai komponen mikrokontroler ESP32 dan protokol MQTT.\n\n'
+        '• Format: PDF (maksimal 2 halaman)\n'
+        '• Unggah dokumen hasil resume pada bagian Tugas Saya di bawah.',
   ),
 
   // ── Selesai ──────────────────────────────────────────────────────────────────
-  'UI/UX|CBL 2: Low-Fidelity': _TaskDetail(
-    classLabel: 'T6D UI/UX',
-    taskName: 'CBL 2: Low-Fidelity Design',
-    deadline: 'Kamis, 23.59',
+  'Kecerdasan Buatan|Tugas Pengenalan AI': _TaskDetail(
+    classLabel: 'Kecerdasan Buatan',
+    taskName: 'Tugas Pengenalan AI',
+    deadline: 'Minggu Lalu, 23.59',
     description:
-        'Rancang wireframe low-fidelity berbasis mobile app untuk aplikasi LMS EduInsight. '
-        'Pastikan tata letak komponen dan alur navigasinya terdefinisi dengan jelas.\n\n'
-        'Ketentuan pengumpulan:\n'
-        '• Format: Link Figma / PDF\n'
-        '• Akses link wajib diset Anyone with link',
+        'Rangkuman pengantar AI, perbedaan antara machine learning dan deep learning, serta implementasi agen cerdas.\n\n'
+        'Status: Sudah diserahkan tepat waktu.',
     lecturerDocs: [
-      'Design_System_Brief.pdf',
-      'Template_Wireframe_Mobile.fig',
+      'Modul_Pengenalan_AI.pdf',
     ],
   ),
-  'Statistika dan Data|Quizziz Matriks': _TaskDetail(
-    classLabel: 'T6D Statistika dan Data',
-    taskName: 'Quizziz Matriks',
-    deadline: 'Jumat, 23.59',
+  'Basis Data|Latihan SQL Dasar': _TaskDetail(
+    classLabel: 'Basis Data Terdistribusi',
+    taskName: 'Latihan SQL Dasar',
+    deadline: 'Minggu Lalu, 23.59',
     description:
-        'Kerjakan kuis Matriks melalui tautan berikut:\n'
-        'https://quizizz.com/join?gc=MATRIKS2024\n\n'
-        'Setelah selesai mengerjakan, screenshot hasil skor yang kamu dapatkan '
-        'dan unggah pada kolom Tugas Saya di bawah sebagai bukti pengerjaan.\n\n'
-        'Catatan: Kuis hanya bisa dikerjakan satu kali. Pastikan koneksi internet stabil sebelum memulai.',
+        'Latihan query DDL & DML, join relasi tabel, dan agregasi data pada MySQL / PostgreSQL.\n\n'
+        'Status: Sudah diserahkan tepat waktu.',
   ),
-  'Kecerdasan Buatan|AI Klasik dan Modern': _TaskDetail(
-    classLabel: 'T6D Kecerdasan Buatan',
-    taskName: 'AI Klasik dan Modern',
-    deadline: 'Rabu, 23.59',
+  'Pemrograman Web|Tugas Array & Function': _TaskDetail(
+    classLabel: 'Pemrograman Web',
+    taskName: 'Tugas Array & Function',
+    deadline: '2 Minggu Lalu, 23.59',
     description:
-        'Buat makalah perbandingan antara pendekatan AI Klasik (rule-based, expert system) '
-        'dan AI Modern (machine learning, deep learning).\n\n'
-        '• Minimal 5 halaman A4, font Times New Roman 12pt, spasi 1.5\n'
-        '• Sertakan contoh implementasi nyata untuk masing-masing pendekatan\n'
-        '• Format pengumpulan: PDF\n'
-        '• Nama file: NIM_AIKlasikModern.pdf',
+        'Implementasi logika manipulasi array dan closure function pada JavaScript ES6+.\n\n'
+        'Status: Sudah diserahkan tepat waktu.',
   ),
-  'Pemrograman Web|Tipe Data dan Method': _TaskDetail(
-    classLabel: 'T6D Pemrograman Web',
-    taskName: 'Tipe Data dan Method',
-    deadline: 'Rabu, 23.59',
+  'Internet of Things (IoT)|Laporan Praktikum 1': _TaskDetail(
+    classLabel: 'Internet of Things (IoT)',
+    taskName: 'Laporan Praktikum 1',
+    deadline: '2 Minggu Lalu, 23.59',
     description:
-        'Implementasikan berbagai tipe data dan method bawaan JavaScript:\n\n'
-        '• String methods: toUpperCase, split, includes, replace\n'
-        '• Number methods: toFixed, parseInt, parseFloat\n'
-        '• Array methods: map, filter, reduce, forEach\n\n'
-        'Buat minimal 2 contoh penggunaan per method, unggah dalam file .js '
-        'beserta screenshot output di browser/console.',
-  ),
-  'IoT|Pertemuan Pertama IoT': _TaskDetail(
-    classLabel: 'T6D IoT',
-    taskName: 'Pertemuan Pertama IoT',
-    deadline: 'Rabu, 23.59',
-    description:
-        'Setelah mengikuti pertemuan pertama IoT, buat catatan singkat yang mencakup:\n\n'
-        '• Definisi IoT dan ekosistemnya\n'
-        '• Minimal 3 contoh perangkat IoT dalam kehidupan sehari-hari\n'
-        '• Tantangan keamanan pada sistem IoT\n\n'
-        'Unggah dalam format PDF.',
-  ),
-  'Pemrograman Web|Pertemuan Pertama Pemweb': _TaskDetail(
-    classLabel: 'T6D Pemrograman Web',
-    taskName: 'Pertemuan Pertama Pemweb',
-    deadline: 'Rabu, 23.59',
-    description:
-        'Buat ringkasan materi pertemuan pertama Pemrograman Web yang mencakup:\n\n'
-        '• Struktur dasar HTML (DOCTYPE, head, body)\n'
-        '• Tag-tag umum HTML5\n'
-        '• Perbedaan HTML, CSS, dan JavaScript\n\n'
-        'Format: PDF, dikumpulkan maksimal H+1 setelah pertemuan.',
-  ),
-  'Sistem Informasi|Pertemuan Pertama Sistem Informasi': _TaskDetail(
-    classLabel: 'T6D Sistem Informasi',
-    taskName: 'Pertemuan Pertama Sistem Informasi',
-    deadline: 'Rabu, 23.59',
-    description:
-        'Rangkum materi pengantar Sistem Informasi yang mencakup:\n\n'
-        '• Definisi dan komponen Sistem Informasi\n'
-        '• Jenis-jenis Sistem Informasi (TPS, MIS, DSS, EIS)\n'
-        '• Peran Sistem Informasi dalam organisasi modern\n\n'
-        'Unggah dalam format PDF, maks 2 halaman.',
+        'Laporan hasil pembacaan sensor DHT22 ke serial monitor dan simulasi Wokwi.\n\n'
+        'Status: Sudah diserahkan tepat waktu.',
   ),
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 class DetailTugasScreen extends StatefulWidget {
   final String taskTitle;
@@ -191,52 +132,49 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
     final detail = _taskDetails[key];
     final classLabel = detail?.classLabel ?? widget.className;
     final taskName = detail?.taskName ?? widget.taskTitle;
-    final description = detail?.description ?? 'Detail tugas belum tersedia.';
-    final deadline = detail?.deadline ?? '-';
+    final description = detail?.description ?? 'Tugas perkuliahan semester berjalan. Silakan pelajari instruksi dan kumpulkan dokumen pekerjaan Anda.';
+    final deadline = detail?.deadline ?? 'Rabu, 23.59';
     final lecturerDocs = detail?.lecturerDocs ?? const <String>[];
 
     return Consumer<KelasProvider>(builder: (context, kelas, _) {
       final isCompleted = kelas.isCompleted(key);
+      final isLate = kelas.isLate(key);
       final hasDoc = kelas.hasDoc(key);
       final fileName = kelas.mockFileName(key);
 
       final isDark = Theme.of(context).brightness == Brightness.dark;
-      final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFF0F4FF);
+      final bgColor = isDark ? const Color(0xFF1E222A) : const Color(0xFFF7F9FC);
+      final cardBg = isDark ? const Color(0xFF282D37) : Colors.white;
 
       return Scaffold(
         backgroundColor: bgColor,
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(64),
           child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF1A2547), Color(0xFF253672)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0x551E2B52),
-                  blurRadius: 16,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white, size: 20),
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: const Text(
-                'Detail Tugas',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.2,
+            color: const Color(0xFF1E2B52),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Row(
+                  children: [
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 16),
+                    const Text(
+                      'Detail Tugas',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -295,20 +233,23 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                 ScrollConfiguration(
                   behavior: const _NoScrollbarBehavior(),
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(18, 20, 18, 260),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 260),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Header info card
                         Container(
-                          padding: const EdgeInsets.all(22),
+                          padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFF9DB),
-                            borderRadius: BorderRadius.circular(22),
+                            color: cardBg,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                            ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFD4A300).withValues(alpha: 0.14),
-                                blurRadius: 16,
+                                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                                blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
                             ],
@@ -316,21 +257,32 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                classLabel,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF7A6500),
-                                ),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      classLabel,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF2563EB),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 10),
                               Text(
                                 taskName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1A2B4A),
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                                   letterSpacing: -0.2,
                                 ),
                               ),
@@ -340,14 +292,17 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                         const SizedBox(height: 16),
                         // Body task card
                         Container(
-                          padding: const EdgeInsets.all(22),
+                          padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFDDE8FF),
-                            borderRadius: BorderRadius.circular(22),
+                            color: cardBg,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                            ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF3B6FE8).withValues(alpha: 0.12),
-                                blurRadius: 16,
+                                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                                blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
                             ],
@@ -358,21 +313,21 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.7),
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(Icons.access_time_rounded,
-                                        size: 14, color: Color(0xFF1A2B4A)),
+                                        size: 14, color: Color(0xFFDC2626)),
                                     const SizedBox(width: 6),
                                     Text(
                                       'Tenggat: $deadline',
                                       style: const TextStyle(
                                         fontSize: 12,
-                                        color: Color(0xFF1A2B4A),
-                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFFDC2626),
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
                                   ],
@@ -381,32 +336,31 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                               const SizedBox(height: 16),
                               Text(
                                 description,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   height: 1.6,
-                                  color: Color(0xFF1A2B4A),
+                                  color: isDark ? Colors.white70 : const Color(0xFF334155),
                                 ),
                               ),
-                              // Lampiran dari Dosen jika ada
                               if (lecturerDocs.isNotEmpty) ...[
                                 const SizedBox(height: 20),
                                 Divider(
-                                  color: const Color(0xFF1E2B52).withValues(alpha: 0.12),
+                                  color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
                                   thickness: 1,
                                   height: 1,
                                 ),
                                 const SizedBox(height: 16),
                                 Row(
-                                  children: const [
+                                  children: [
                                     Icon(Icons.attachment_rounded,
-                                        size: 16, color: Color(0xFF1A2B4A)),
-                                    SizedBox(width: 6),
+                                        size: 16, color: isDark ? Colors.white70 : const Color(0xFF1E293B)),
+                                    const SizedBox(width: 6),
                                     Text(
                                       'Lampiran dari Pengajar',
                                       style: TextStyle(
                                         fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF1A2B4A),
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                                       ),
                                     ),
                                   ],
@@ -416,30 +370,30 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                   (doc) => Container(
                                     margin: const EdgeInsets.only(bottom: 8),
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 10),
+                                        horizontal: 14, vertical: 12),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.8),
-                                      borderRadius: BorderRadius.circular(12),
+                                      color: isDark ? const Color(0xFF1E2532) : const Color(0xFFF8FAFC),
+                                      borderRadius: BorderRadius.circular(14),
                                       border: Border.all(
-                                          color: Colors.black.withValues(alpha: 0.06)),
+                                          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
                                     ),
                                     child: Row(
                                       children: [
                                         const Icon(Icons.file_present_rounded,
-                                            size: 20, color: Color(0xFF3A6BBF)),
+                                            size: 20, color: Color(0xFF2563EB)),
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: Text(
                                             doc,
-                                            style: const TextStyle(
-                                              fontSize: 12,
+                                            style: TextStyle(
+                                              fontSize: 13,
                                               fontWeight: FontWeight.w600,
-                                              color: Color(0xFF1A2B4A),
+                                              color: isDark ? Colors.white : const Color(0xFF1E293B),
                                             ),
                                           ),
                                         ),
                                         const Icon(Icons.download_rounded,
-                                            size: 18, color: Color(0xFF5C6B8A)),
+                                            size: 18, color: Color(0xFF64748B)),
                                       ],
                                     ),
                                   ),
@@ -454,7 +408,6 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                 ),
 
                 // ── Interactive Bottom Sheet: "Tugas Saya" ─────────────────────
-                // Can be dragged with mouse or touch, or tapped to expand to full screen!
                 Positioned(
                   left: 0,
                   right: 0,
@@ -464,14 +417,14 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                     duration: _isDragging ? Duration.zero : const Duration(milliseconds: 260),
                     curve: Curves.easeOutCubic,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark ? const Color(0xFF282D37) : Colors.white,
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(28),
                         topRight: Radius.circular(28),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF1E2B52).withValues(alpha: 0.24),
+                          color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.15),
                           blurRadius: 30,
                           offset: const Offset(0, -6),
                         ),
@@ -491,14 +444,13 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                             color: Colors.transparent,
                             child: Column(
                               children: [
-                                // Visual drag handle
                                 Center(
                                   child: Container(
                                     margin: const EdgeInsets.symmetric(vertical: 12),
-                                    width: 52,
-                                    height: 6,
+                                    width: 48,
+                                    height: 5,
                                     decoration: BoxDecoration(
-                                      color: Colors.black26,
+                                      color: isDark ? Colors.white24 : Colors.black26,
                                       borderRadius: BorderRadius.circular(3),
                                     ),
                                   ),
@@ -510,12 +462,12 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                     children: [
                                       Row(
                                         children: [
-                                          const Text(
+                                          Text(
                                             'Tugas Saya',
                                             style: TextStyle(
                                               fontSize: 17,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF1A2B4A),
+                                              fontWeight: FontWeight.w800,
+                                              color: isDark ? Colors.white : const Color(0xFF0F172A),
                                             ),
                                           ),
                                           const SizedBox(width: 8),
@@ -523,27 +475,29 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                             isExpanded
                                                 ? Icons.keyboard_arrow_down_rounded
                                                 : Icons.keyboard_arrow_up_rounded,
-                                            color: const Color(0xFF5C6B8A),
+                                            color: isDark ? Colors.white60 : const Color(0xFF64748B),
                                             size: 22,
                                           ),
                                         ],
                                       ),
                                       Container(
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: 14, vertical: 5),
+                                            horizontal: 12, vertical: 4),
                                         decoration: BoxDecoration(
                                           color: isCompleted
-                                              ? const Color(0xFF34C759).withValues(alpha: 0.14)
-                                              : const Color(0xFFFF9F0A).withValues(alpha: 0.14),
+                                              ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.2 : 0.12)
+                                              : (isLate
+                                                  ? const Color(0xFFEF4444).withValues(alpha: isDark ? 0.2 : 0.12)
+                                                  : const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.2 : 0.12)),
                                           borderRadius: BorderRadius.circular(20),
                                         ),
                                         child: Text(
-                                          isCompleted ? 'Diserahkan' : 'Belum Diserahkan',
+                                          isCompleted ? 'Diserahkan' : (isLate ? 'Terlambat' : 'Belum Diserahkan'),
                                           style: TextStyle(
-                                            fontSize: 12,
+                                            fontSize: 11,
                                             color: isCompleted
-                                                ? const Color(0xFF248A3D)
-                                                : const Color(0xFFC97A00),
+                                                ? const Color(0xFF10B981)
+                                                : (isLate ? const Color(0xFFEF4444) : const Color(0xFFD97706)),
                                             fontWeight: FontWeight.w700,
                                           ),
                                         ),
@@ -557,108 +511,94 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                           ),
                         ),
 
-                        // Inner content
+                        // Inner scrollable content - Tanpa scrollbar tapi bisa discroll halus
                         Expanded(
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onVerticalDragStart: !isExpanded ? onDragStart : null,
-                            onVerticalDragUpdate: !isExpanded ? onDragUpdate : null,
-                            onVerticalDragEnd: !isExpanded ? onDragEnd : null,
-                            child: ScrollConfiguration(
-                              behavior: const _NoScrollbarBehavior(),
-                              child: SingleChildScrollView(
-                                physics: const BouncingScrollPhysics(),
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    if (isCompleted) ...[
-                                      if (hasDoc)
-                                        _docChip(fileName)
-                                      else
-                                        Container(
-                                          padding: const EdgeInsets.all(14),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFF4F7FF),
-                                            borderRadius: BorderRadius.circular(14),
-                                            border: Border.all(color: const Color(0xFFDDE8FF)),
+                          child: ScrollConfiguration(
+                            behavior: const _NoScrollbarBehavior(),
+                            child: SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  if (isCompleted) ...[
+                                    // Tugas Selesai: Default sudah ada dokumen yang diunggah
+                                    _docChip(fileName, isDark),
+                                    const SizedBox(height: 18),
+                                    // Tombol Unsubmit (Batalkan Pengiriman)
+                                    _fullWidthButton(
+                                      'Batalkan Pengiriman',
+                                      color: const Color(0xFFEF4444),
+                                      textColor: Colors.white,
+                                      onTap: () {
+                                        kelas.cancelSubmission(key);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              kelas.isLate(key)
+                                                  ? 'Pengiriman dibatalkan. Tugas ditandai Terlambat karena telah melewati deadline.'
+                                                  : 'Pengiriman dibatalkan. Tugas kembali ke kategori Segera.',
+                                            ),
+                                            backgroundColor: kelas.isLate(key)
+                                                ? const Color(0xFFEF4444)
+                                                : const Color(0xFFF59E0B),
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                           ),
-                                          child: const Row(
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(height: 36),
+                                  ] else ...[
+                                    if (!hasDoc)
+                                      Container(
+                                        height: 96,
+                                        decoration: BoxDecoration(
+                                          color: isDark ? const Color(0xFF1E2532) : const Color(0xFFF8FAFC),
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(
+                                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              Icon(Icons.check_circle_outline_rounded,
-                                                  color: Color(0xFF34C759), size: 22),
-                                              SizedBox(width: 10),
-                                              Expanded(
-                                                child: Text(
-                                                  'Ditandai selesai (tanpa dokumen lampiran)',
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: Color(0xFF1A2B4A),
-                                                  ),
+                                              Icon(Icons.cloud_upload_outlined,
+                                                  color: const Color(0xFF2563EB), size: 30),
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                'Belum ada dokumen yang diunggah',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: isDark ? Colors.white60 : const Color(0xFF64748B),
                                                 ),
                                               ),
                                             ],
                                           ),
                                         ),
-                                      const SizedBox(height: 16),
-                                      // Button Batalkan Pengiriman: SELALU TAMPIL DENGAN WARNA MERAH SOLID KONSISTEN
-                                      _fullWidthButton(
-                                        'Batalkan Pengiriman',
-                                        color: const Color(0xFFE5484D),
-                                        textColor: Colors.white,
-                                        onTap: () => kelas.cancelSubmission(key),
-                                      ),
-                                      const SizedBox(height: 28),
-                                    ] else ...[
-                                      if (!hasDoc)
-                                        Container(
-                                          height: 96,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFF4F7FF),
-                                            borderRadius: BorderRadius.circular(16),
-                                            border: Border.all(
-                                                color: const Color(0xFFDDE8FF), width: 1.5),
-                                          ),
-                                          child: const Center(
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Icon(Icons.cloud_upload_outlined,
-                                                    color: Color(0xFF3A6BBF), size: 30),
-                                                SizedBox(height: 6),
-                                                Text(
-                                                  'Belum ada dokumen yang diunggah',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: Color(0xFF5C6B8A),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        )
-                                      else
-                                        _docChip(fileName),
-                                      const SizedBox(height: 14),
-                                      _fullWidthButton(
-                                        '+ Unggah Dokumen Di Sini',
-                                        color: const Color(0xFFF0F4FF),
-                                        textColor: const Color(0xFF1E2B52),
-                                        borderColor: const Color(0xFFDDE8FF),
-                                        onTap: () => kelas.uploadDoc(key),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      _fullWidthButton(
-                                        'Tandai Selesai',
-                                        color: const Color(0xFF1A2547),
-                                        textColor: Colors.white,
-                                        onTap: () => kelas.markComplete(key),
-                                      ),
-                                      const SizedBox(height: 28),
-                                    ],
+                                      )
+                                    else
+                                      _docChip(fileName, isDark),
+                                    const SizedBox(height: 14),
+                                    _fullWidthButton(
+                                      '+ Unggah Dokumen Di Sini',
+                                      color: isDark ? const Color(0xFF1E2532) : const Color(0xFFEFF6FF),
+                                      textColor: const Color(0xFF2563EB),
+                                      borderColor: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                                      onTap: () => kelas.uploadDoc(key),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    _fullWidthButton(
+                                      'Tandai Selesai',
+                                      color: const Color(0xFF2563EB),
+                                      textColor: Colors.white,
+                                      onTap: () => kelas.markComplete(key),
+                                    ),
+                                    const SizedBox(height: 36),
                                   ],
-                                ),
+                                ],
                               ),
                             ),
                           ),
@@ -675,28 +615,46 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
     });
   }
 
-  Widget _docChip(String fileName) {
+  Widget _docChip(String fileName, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F4FF),
+        color: isDark ? const Color(0xFF1E2532) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDDE8FF), width: 1.2),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          width: 1.2,
+        ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.description_outlined, color: Color(0xFF3A6BBF), size: 24),
+          const Icon(Icons.description_rounded, color: Color(0xFF2563EB), size: 24),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              fileName,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1A2B4A),
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fileName,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Lampiran Tugas Mahasiswa',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                  ),
+                ),
+              ],
             ),
           ),
+          const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 18),
         ],
       ),
     );
@@ -713,15 +671,15 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 15),
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: borderColor != null ? Border.all(color: borderColor) : null,
           boxShadow: [
             BoxShadow(
-              color: color == const Color(0xFFE5484D)
-                  ? const Color(0xFFE5484D).withValues(alpha: 0.3)
+              color: color == const Color(0xFFEF4444)
+                  ? const Color(0xFFEF4444).withValues(alpha: 0.28)
                   : Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 3),
@@ -733,7 +691,7 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
             text,
             style: TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
               color: textColor,
             ),
           ),

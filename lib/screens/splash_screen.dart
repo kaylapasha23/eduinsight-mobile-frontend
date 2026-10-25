@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -50,11 +51,14 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 2000));
     if (!mounted) return;
 
-    final loggedIn = await AuthService.isLoggedIn();
+    // Pastikan user data di Provider terisi jika ada session tersimpan
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.init();
+
     if (mounted) {
       Navigator.pushReplacementNamed(
         context,
-        loggedIn ? '/home' : '/login',
+        authProvider.isLoggedIn ? '/home' : '/login',
       );
     }
   }

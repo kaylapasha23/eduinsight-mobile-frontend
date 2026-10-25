@@ -57,44 +57,25 @@ class AuthService {
   }
 
   // ─────────────────────────────────────────
-  // REGISTER
+  // RESET / LUPA PASSWORD
   // ─────────────────────────────────────────
-  static Future<Map<String, dynamic>> register({
-    required String name,
+  static Future<Map<String, dynamic>> resetPassword({
     required String email,
-    required String password,
-    String role = 'mahasiswa',
-    String? nim,
-    String? fakultas,
-    String? prodi,
-    String? angkatan,
+    required String newPassword,
+    required String confirmPassword,
   }) async {
     try {
-      final body = {
-        'name': name.trim(),
-        'email': email.trim(),
-        'password': password,
-        'role': role,
-      };
-
-      if (nim != null && nim.isNotEmpty) body['nim'] = nim;
-      if (fakultas != null && fakultas.isNotEmpty) body['fakultas'] = fakultas;
-      if (prodi != null && prodi.isNotEmpty) body['prodi'] = prodi;
-      if (angkatan != null && angkatan.isNotEmpty) body['angkatan'] = angkatan;
-
       final response = await http.post(
-        Uri.parse('$baseUrl/register'),
+        Uri.parse('$baseUrl/reset-password'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
+        body: jsonEncode({
+          'email': email.trim(),
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
+        }),
       );
 
       final data = jsonDecode(response.body);
-
-      if (response.statusCode == 201 && data['success'] == true) {
-        await _saveToken(data['data']['token']);
-        await _saveUser(data['data']['user']);
-      }
-
       return data;
     } catch (e) {
       return {

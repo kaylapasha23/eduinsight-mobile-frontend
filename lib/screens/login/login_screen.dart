@@ -208,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 36),
                 Consumer<AuthProvider>(
                   builder: (context, auth, _) {
                     return Container(
@@ -260,29 +260,29 @@ class _LoginScreenState extends State<LoginScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 20),
-                // Link ke Register
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Belum punya akun? ',
-                      style: TextStyle(fontSize: 13, color: labelColor),
+                const SizedBox(height: 18),
+                // Tombol Lupa Password tepat di bawah tombol Masuk
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/forgot-password');
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    GestureDetector(
-                      onTap: () => Navigator.pushNamed(context, '/register'),
-                      child: const Text(
-                        'Daftar di sini',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF3A6BBF),
-                        ),
+                    child: Text(
+                      'Lupa Password?',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? const Color(0xFF82B1FF) : const Color(0xFF3A6BBF),
+                        letterSpacing: 0.2,
                       ),
                     ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 32),
               ],
             ),
           ),

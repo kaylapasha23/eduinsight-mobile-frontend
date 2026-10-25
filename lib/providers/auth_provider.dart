@@ -15,9 +15,13 @@ class AuthProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   Map<String, dynamic>? get user => _user;
   String? get token => _token;
-  String get userName => _user?['name'] ?? 'Pengguna';
-  String get userEmail => _user?['email'] ?? '';
-  String get userRole => _user?['role'] ?? '';
+  String get userName => _user?['name'] as String? ?? 'Pengguna';
+  String get userEmail => _user?['email'] as String? ?? '';
+  String get userRole => _user?['role'] as String? ?? '';
+  String get userNim => _user?['nim'] as String? ?? '-';
+  String get userProdi => _user?['prodi'] as String? ?? 'Teknik Informatika';
+  String get userFakultas => _user?['fakultas'] as String? ?? 'Ilmu Komputer';
+  String get userAngkatan => _user?['angkatan'] as String? ?? '-';
 
   /// Inisialisasi — cek apakah sudah ada token tersimpan
   Future<void> init() async {
@@ -67,44 +71,30 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Register
-  Future<bool> register({
-    required String name,
+  /// Reset Password
+  Future<bool> resetPassword({
     required String email,
-    required String password,
-    String role = 'mahasiswa',
-    String? nim,
-    String? fakultas,
-    String? prodi,
-    String? angkatan,
+    required String newPassword,
+    required String confirmPassword,
   }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
-    final result = await AuthService.register(
-      name: name,
+    final result = await AuthService.resetPassword(
       email: email,
-      password: password,
-      role: role,
-      nim: nim,
-      fakultas: fakultas,
-      prodi: prodi,
-      angkatan: angkatan,
+      newPassword: newPassword,
+      confirmPassword: confirmPassword,
     );
 
     _isLoading = false;
 
     if (result['success'] == true) {
-      _isLoggedIn = true;
-      _user = result['data']['user'];
-      _token = result['data']['token'];
-      await saveToken(result['data']['token']);
       _errorMessage = null;
       notifyListeners();
       return true;
     } else {
-      _errorMessage = result['message'] ?? 'Registrasi gagal.';
+      _errorMessage = result['message'] ?? 'Gagal menyetel ulang password.';
       notifyListeners();
       return false;
     }
@@ -116,7 +106,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     await AuthService.logout();
-    await clearToken(); 
+    await clearToken();
 
     _isLoggedIn = false;
     _user = null;

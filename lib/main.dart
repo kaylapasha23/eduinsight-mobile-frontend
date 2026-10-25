@@ -4,7 +4,7 @@ import 'theme_provider.dart';
 import 'providers/auth_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login/login_screen.dart';
-import 'screens/login/register_screen.dart';
+import 'screens/login/forgot_password_screen.dart';
 import 'screens/beranda/home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/academic/academic.dart';
@@ -51,7 +51,7 @@ class MyApp extends StatelessWidget {
           routes: {
             '/': (context) => const SplashScreen(),
             '/login': (context) => const LoginScreen(),
-            '/register': (context) => const RegisterScreen(),
+            '/forgot-password': (context) => const ForgotPasswordScreen(),
             '/home': (context) => const HomeScreen(),
             '/academic': (context) => const AcademicScreen(),
             '/profile':(context) => const ProfileScreen(), 

@@ -92,7 +92,11 @@ class HeaderBar extends StatelessWidget {
           // garis di bawah header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Divider(color: textColor, thickness: 1.2, height: 1),
+            child: Divider(
+              color: isDark ? Colors.white12 : textColor,
+              thickness: 1.2,
+              height: 1,
+            ),
           ),
         ],
       ),
@@ -100,7 +104,7 @@ class HeaderBar extends StatelessWidget {
   }
 }
 
-// ---------- Bottom bar melayang (pil navy) ----------
+// ---------- Bottom bar melayang (Kontras Tinggi untuk Light & Dark Mode) ----------
 class BottomBar extends StatelessWidget {
   final int currentIndex;
   const BottomBar({super.key, required this.currentIndex});
@@ -119,18 +123,28 @@ class BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Warna navbar di dark mode dibuat sangat kontras: Deep Slate dengan border biru menyala
+    final Color barBg = isDark ? const Color(0xFF131720) : kNavy;
+    final Color barBorder = isDark ? const Color(0xFF3B82F6).withValues(alpha: 0.35) : Colors.transparent;
+    final Color shadowColor = isDark
+        ? const Color(0xFF1E3A8A).withValues(alpha: 0.35)
+        : kNavy.withValues(alpha: 0.45);
+
     return SafeArea(
       top: false,
       child: Container(
         margin: const EdgeInsets.fromLTRB(22, 8, 22, 16),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: kNavy,
+          color: barBg,
           borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: barBorder, width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: kNavy.withValues(alpha: 0.45),
-              blurRadius: 18,
+              color: shadowColor,
+              blurRadius: 20,
               offset: const Offset(0, 8),
             ),
           ],
@@ -142,22 +156,26 @@ class BottomBar extends StatelessWidget {
               icon: Icons.home_outlined,
               label: 'Beranda',
               isActive: currentIndex == 0,
+              isDark: isDark,
               onTap: () => _goTo(context, 0, const HomeScreen()),
             ),
             _NavItem(
               icon: Icons.school_outlined,
               label: 'Akademik',
               isActive: currentIndex == 1,
+              isDark: isDark,
               onTap: () => _goTo(context, 1, const AcademicScreen()),
             ),
             _AiNavItem(
               isActive: currentIndex == 2,
+              isDark: isDark,
               onTap: () => _goTo(context, 2, const AiEvalutionScreen()),
             ),
             _NavItem(
               icon: Icons.person_outline,
               label: 'Profil',
               isActive: currentIndex == 3,
+              isDark: isDark,
               onTap: () => _goTo(context, 3, const ProfileScreen()),
             ),
           ],
@@ -167,22 +185,32 @@ class BottomBar extends StatelessWidget {
   }
 }
 
-// Item aktif: ikon + label di dalam pil terang. Item tidak aktif: ikon saja.
+// Item aktif: ikon + label di dalam pil terang bergradasi/kontras
 class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isActive;
+  final bool isDark;
   final VoidCallback onTap;
 
   const _NavItem({
     required this.icon,
     required this.label,
     required this.isActive,
+    required this.isDark,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Pill aktif: di dark mode memakai gradient biru kontras & teks putih/kuning terang
+    final Color pillColor = isDark
+        ? (isActive ? const Color(0xFF2563EB) : Colors.transparent)
+        : (isActive ? kNavPill : Colors.transparent);
+    final Color itemColor = isActive
+        ? (isDark ? Colors.white : kActive)
+        : (isDark ? const Color(0xFF94A3B8) : Colors.white70);
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -191,18 +219,31 @@ class _NavItem extends StatelessWidget {
         curve: Curves.easeOutCubic,
         padding: EdgeInsets.symmetric(horizontal: isActive ? 16 : 10, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive ? kNavPill : Colors.transparent,
+          color: pillColor,
           borderRadius: BorderRadius.circular(22),
+          boxShadow: (isActive && isDark)
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.4),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 28, color: isActive ? kActive : Colors.white),
+            Icon(icon, size: 26, color: itemColor),
             if (isActive) const SizedBox(width: 8),
             if (isActive)
               Text(
                 label,
-                style: const TextStyle(color: kActive, fontSize: 15),
+                style: TextStyle(
+                  color: itemColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
           ],
         ),
@@ -211,19 +252,25 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-
 class _AiNavItem extends StatelessWidget {
   final bool isActive;
+  final bool isDark;
   final VoidCallback onTap;
 
   const _AiNavItem({
     required this.isActive,
+    required this.isDark,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color color = isActive ? kActive : Colors.white;
+    final Color pillColor = isDark
+        ? (isActive ? const Color(0xFF2563EB) : Colors.transparent)
+        : (isActive ? kNavPill : Colors.transparent);
+    final Color itemColor = isActive
+        ? (isDark ? Colors.white : kActive)
+        : (isDark ? const Color(0xFF94A3B8) : Colors.white70);
 
     return GestureDetector(
       onTap: onTap,
@@ -232,12 +279,21 @@ class _AiNavItem extends StatelessWidget {
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
         padding: EdgeInsets.symmetric(
-          horizontal: isActive ? 12 : 10,
+          horizontal: isActive ? 14 : 10,
           vertical: 10,
         ),
         decoration: BoxDecoration(
-          color: isActive ? kNavPill : Colors.transparent,
+          color: pillColor,
           borderRadius: BorderRadius.circular(22),
+          boxShadow: (isActive && isDark)
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.4),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -245,16 +301,16 @@ class _AiNavItem extends StatelessWidget {
             Icon(
               Icons.auto_awesome,
               size: 24,
-              color: color,
+              color: itemColor,
             ),
             if (isActive) ...[
               const SizedBox(width: 7),
-              const Text(
+              Text(
                 'AI Evaluation',
                 style: TextStyle(
-                  color: kActive,
+                  color: itemColor,
                   fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],

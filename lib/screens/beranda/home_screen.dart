@@ -2,58 +2,90 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../common_widgets.dart';
-
-const Color _taskYellow = Color(0xFFFFFFBB);
+import '../academic/kelas/detail_tugas_screen.dart';
 
 // ---------- Model data ----------
-class TaskItem {
+class ClassScheduleItem {
   final String title;
-  final String subtitle;
   final String time;
-  final bool isTask;
+  final String room;
+  final String countdown;
+  final String lecturer;
 
-  const TaskItem({
+  const ClassScheduleItem({
     required this.title,
-    required this.subtitle,
     required this.time,
-    required this.isTask,
+    required this.room,
+    required this.countdown,
+    this.lecturer = 'Dosen Pengampu',
   });
 }
 
-const List<TaskItem> daftarTugas = [
-  TaskItem(
+class UpcomingTaskItem {
+  final String title;
+  final String course;
+  final String deadline;
+  final String tag;
+  final String taskKey; // "className|taskTitle" untuk navigasi ke detail
+
+  const UpcomingTaskItem({
+    required this.title,
+    required this.course,
+    required this.deadline,
+    this.tag = 'Segera',
+    this.taskKey = '',
+  });
+}
+
+const List<ClassScheduleItem> daftarKelasTerdekat = [
+  ClassScheduleItem(
     title: 'Kecerdasan Buatan',
-    subtitle: '14.00 - 15.20      Lantai 7, Ruangan 701',
-    time: 'Dalam 1 Jam',
-    isTask: false,
+    time: '14.00 - 15.20 WIB',
+    room: 'Lantai 7, Ruangan 701',
+    countdown: 'Dalam 1 Jam',
+    lecturer: 'Dr. Ahmad Sahroni, M.Kom.',
   ),
-  TaskItem(
-    title: 'Tugas 1 - Quiziz',
-    subtitle: 'Kewirausahaan',
-    time: 'Hari ini, 23.59',
-    isTask: true,
-  ),
-  TaskItem(
-    title: 'Tugas 1 - Analisa Aplikasi',
-    subtitle: 'UI/UX Design',
-    time: 'Hari ini, 23.59',
-    isTask: true,
+  ClassScheduleItem(
+    title: 'Pemrograman Web',
+    time: '08.00 - 10.00 WIB (Besok)',
+    room: 'Lantai 5, Ruang 502',
+    countdown: 'Besok Pagi',
+    lecturer: 'Ir. Tri Astuti, M.T.',
   ),
 ];
 
-// Titik grafik contoh
-const List<FlSpot> titikNilai = [
-  FlSpot(0, 0.0),
-  FlSpot(1, 0.29),
-  FlSpot(2, 0.88),
-  FlSpot(3, 0.6),
-  FlSpot(4, 0.9),
-  FlSpot(5, 0.55),
-  FlSpot(6, 0.13),
-  FlSpot(7, 1.0),
-  FlSpot(8, 0.25),
-  FlSpot(9, 0.11),
+const List<UpcomingTaskItem> daftarTugasMendatang = [
+  UpcomingTaskItem(
+    title: 'Tugas 1 - Quiziz',
+    course: 'Kewirausahaan',
+    deadline: 'Hari ini, 23.59',
+    tag: 'Tenggat Dekat',
+    taskKey: 'Kewirausahaan|Tugas 1 - Quiziz',
+  ),
+  UpcomingTaskItem(
+    title: 'Tugas 1 - Analisa Aplikasi',
+    course: 'UI/UX Design',
+    deadline: 'Hari ini, 23.59',
+    tag: 'Tenggat Dekat',
+    taskKey: 'UI/UX Design|Tugas 1 - Analisa Aplikasi',
+  ),
+  UpcomingTaskItem(
+    title: 'Pertemuan Pertama',
+    course: 'Internet of Things (IoT)',
+    deadline: 'Rabu, 23.59',
+    tag: '2 Hari Lagi',
+    taskKey: 'Internet of Things (IoT)|Pertemuan Pertama',
+  ),
+];
+
+// Titik grafik IPS per semester (Semester 1 = 3.80, Semester 2 = 4.00, Semester 3 = 3.90, Semester 4 = 3.78)
+const List<FlSpot> titikNilaiSemester = [
+  FlSpot(1, 3.80),
+  FlSpot(2, 4.00),
+  FlSpot(3, 3.90),
+  FlSpot(4, 3.78),
 ];
 
 class HomeScreen extends StatefulWidget {
@@ -64,39 +96,25 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  BoxDecoration _cardDecoration(Color color) {
-    final Color shadowColor;
-
-    if (color == _taskYellow) {
-      shadowColor = const Color(0xFFD6C45A); // Bayangan kuning gelap
-    } else {
-      shadowColor = const Color(0xFF7896C5); // Bayangan biru gelap
-    }
-
-    return BoxDecoration(
-      color: color,
-      borderRadius: BorderRadius.circular(18),
-      boxShadow: [
-        BoxShadow(
-          color: shadowColor.withValues(alpha: 0.45),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    );
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 11) return 'Selamat Pagi 🌤️';
+    if (hour < 15) return 'Selamat Siang ☀️';
+    if (hour < 18) return 'Selamat Sore 🌆';
+    return 'Selamat Malam 🌙';
   }
-
 
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
     final isDark = themeProvider.isDarkMode;
 
     final backgroundColor =
-        isDark ? const Color(0xFF23272F) : const Color(0xFFFDFDFD);
-    final titleColor = isDark ? Colors.white : Colors.black;
-    final blueTitleColor =
-        isDark ? const Color(0xFF82B1FF) : const Color(0xFF1E2B52);
+        isDark ? const Color(0xFF1E222A) : const Color(0xFFF7F9FC);
+    final titleColor = isDark ? Colors.white : const Color(0xFF1A2238);
+    final subtitleColor = isDark ? const Color(0xFF9AA4B8) : const Color(0xFF6B7280);
+    final cardBg = isDark ? const Color(0xFF282D37) : Colors.white;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -112,101 +130,132 @@ class _HomeScreenState extends State<HomeScreen> {
                 isDark
                     ? Icons.light_mode_rounded
                     : Icons.dark_mode_rounded,
-                size: 28,
+                size: 26,
                 color: titleColor,
               ),
             ),
           ),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(22, 16, 22, 12),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Text(
-                      'Selamat Pagi',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: titleColor,
+                  // Greeting & Student Name Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _greeting(),
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: subtitleColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            authProvider.userName,
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: titleColor,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Text(
-                      'Nama Mahasiswa',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : kNavy,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF323B4C) : const Color(0xFFE8EEFB),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF10B981),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Semester 4',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
 
-                  // Container IPK dan Kehadiran
+                  // Container IPK dan Kehadiran Modern Metric Cards
                   Row(
                     children: [
-                      Expanded(child: _buildIpkCard()),
-                      const SizedBox(width: 10),
-                      Expanded(child: _buildKehadiranCard()),
+                      Expanded(child: _buildModernIpkCard(isDark, cardBg)),
+                      const SizedBox(width: 14),
+                      Expanded(child: _buildModernKehadiranCard(isDark, cardBg)),
                     ],
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
-                  // Kelas dan tugas terdekat
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                          Text(
-                            'Kelas & Tugas Terdekat',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: titleColor,
-                            ),
-                          ),
-                        const SizedBox(width: 4),
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFC62828),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ],
-                    ),
+                  // ================= SECTION 1: KELAS TERDEKAT =================
+                  _buildSectionHeader(
+                    title: 'Jadwal Kelas Hari Ini',
+                    badgeText: '${daftarKelasTerdekat.length} Kelas',
+                    badgeColor: const Color(0xFF2563EB),
+                    titleColor: titleColor,
+                    isDark: isDark,
                   ),
                   const SizedBox(height: 12),
-
                   Column(
-                    children:
-                        daftarTugas.map((t) => _buildTaskCard(t)).toList(),
+                    children: daftarKelasTerdekat
+                        .map((item) => _buildClassScheduleCard(item, isDark, cardBg))
+                        .toList(),
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 22),
 
-                  // Grafik perkembangan nilai
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Text(
-                      'Perkembangan Nilai',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: blueTitleColor,
-                      ),
-                    ),
+                  // ================= SECTION 2: TUGAS MENDATANG =================
+                  _buildSectionHeader(
+                    title: 'Tugas Mendatang',
+                    badgeText: '${daftarTugasMendatang.length} Tugas',
+                    badgeColor: const Color(0xFFE11D48),
+                    titleColor: titleColor,
+                    isDark: isDark,
                   ),
                   const SizedBox(height: 12),
-                  _buildChart(),
-                  const SizedBox(height: 8),
+                  Column(
+                    children: daftarTugasMendatang
+                        .map((task) => _buildUpcomingTaskCard(task, isDark, cardBg))
+                        .toList(),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // ================= SECTION 3: GRAFIK PERKEMBANGAN NILAI =================
+                  _buildSectionHeader(
+                    title: 'Perkembangan Nilai',
+                    badgeText: 'Stabil',
+                    badgeColor: const Color(0xFF059669),
+                    titleColor: titleColor,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildModernChartCard(isDark, cardBg),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
@@ -217,55 +266,128 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Kartu IPK
-  Widget _buildIpkCard() {
+  // Header Tiap Section dengan Pill Badge
+  Widget _buildSectionHeader({
+    required String title,
+    required String badgeText,
+    required Color badgeColor,
+    required Color titleColor,
+    required bool isDark,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: titleColor,
+                letterSpacing: -0.2,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: badgeColor.withValues(alpha: isDark ? 0.2 : 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                badgeText,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: badgeColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Modern IPK Card
+  Widget _buildModernIpkCard(bool isDark, Color cardBg) {
     return Container(
-      height: 95,
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: _cardDecoration(kCardBlue),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Center(
-            child: Text(
-              'IPK Sementara',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.black,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'IPK Sementara',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                ),
               ),
-            ),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.trending_up_rounded,
+                  size: 16,
+                  color: Color(0xFF2563EB),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
-          const Row(
+          const SizedBox(height: 10),
+          Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
                 '3,78',
                 style: TextStyle(
-                  fontSize: 25,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                 ),
               ),
-              SizedBox(width: 3),
+              const SizedBox(width: 4),
               Text(
-                '/4,00',
+                '/ 4.00',
                 style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.black,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
                 ),
               ),
             ],
           ),
-          const Spacer(),
+          const SizedBox(height: 12),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: const LinearProgressIndicator(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
               value: 3.78 / 4.0,
-              minHeight: 5,
-              backgroundColor: Colors.white,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+              minHeight: 6,
+              backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
             ),
           ),
         ],
@@ -273,147 +395,482 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Kartu Kehadiran
-  Widget _buildKehadiranCard() {
+  // Modern Kehadiran Card
+  Widget _buildModernKehadiranCard(bool isDark, Color cardBg) {
     return Container(
-      height: 95,
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-      decoration: _cardDecoration(kCardBlue),
-      child: Column(
-        children: [
-          const Text(
-            'Kehadiran',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.black,
-            ),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
-          const Spacer(),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
+                'Kehadiran',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle_outline_rounded,
+                  size: 16,
+                  color: Color(0xFF10B981),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
                 '90%',
                 style: TextStyle(
-                  fontSize: 25,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                 ),
               ),
-              const SizedBox(width: 8),
-              const SizedBox(
-                width: 34,
-                height: 34,
+              SizedBox(
+                width: 32,
+                height: 32,
                 child: CircularProgressIndicator(
-                  value: 0.9,
+                  value: 0.90,
                   strokeWidth: 4,
-                  color: Colors.black,
-                  backgroundColor: Colors.white,
+                  strokeCap: StrokeCap.round,
+                  backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  color: const Color(0xFF10B981),
                 ),
               ),
             ],
           ),
-          const Spacer(),
+          const SizedBox(height: 8),
+          Text(
+            'Target min. 80% terpenuhi',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF059669),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // Kartu kelas dan tugas
-  Widget _buildTaskCard(TaskItem t) {
+  // Card Kelas Terdekat (Modern Education Tile)
+  Widget _buildClassScheduleCard(ClassScheduleItem item, bool isDark, Color cardBg) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 12,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      decoration: _cardDecoration(_taskYellow),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.menu_book_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : const Color(0xFF1E293B),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        item.countdown,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF2563EB),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.schedule_rounded,
+                      size: 13,
+                      color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      item.time,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white70 : const Color(0xFF475569),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Icon(
+                      Icons.meeting_room_outlined,
+                      size: 13,
+                      color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        item.room,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white70 : const Color(0xFF475569),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Card Tugas Mendatang
+  Widget _buildUpcomingTaskCard(UpcomingTaskItem task, bool isDark, Color cardBg) {
+    return GestureDetector(
+      onTap: task.taskKey.isNotEmpty
+          ? () {
+              final parts = task.taskKey.split('|');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DetailTugasScreen(
+                    taskTitle: parts.length > 1 ? parts[1] : task.title,
+                    className: parts[0],
+                  ),
+                ),
+              );
+            }
+          : null,
+      child: Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
       child: Row(
         children: [
-          if (t.isTask)
-            const Icon(
-              Icons.assignment_outlined,
-              size: 26,
-              color: Colors.black,
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
             ),
-          if (t.isTask) const SizedBox(width: 10),
+            child: const Icon(
+              Icons.assignment_turned_in_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  t.title,
-                  style: const TextStyle(
+                  task.title,
+                  style: TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : const Color(0xFF1E293B),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  t.subtitle,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Colors.black,
+                  task.course,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white60 : const Color(0xFF64748B),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 9,
-              vertical: 6,
-            ),
-            decoration: BoxDecoration(
-              color: kCardBlue,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              t.time,
-              style: const TextStyle(
-                fontSize: 10,
-                color: Colors.black,
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  task.tag,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFDC2626),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 4),
+              Text(
+                task.deadline,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                ),
+              ),
+            ],
           ),
         ],
       ),
+    ),
     );
   }
 
-  // Container grafik
-  Widget _buildChart() {
+  // Modern Chart Card dengan keterangan tiap semester & tooltip kontras tinggi
+  Widget _buildModernChartCard(bool isDark, Color cardBg) {
+    // Warna angka dan label yang sangat kontras (terbaca di light maupun dark mode)
+    final Color axisTextColor = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
+    final Color gridLineColor = isDark ? Colors.white12 : const Color(0xFFE2E8F0);
+
     return Container(
-      height: 150,
-      padding: const EdgeInsets.all(14),
-      decoration: _cardDecoration(kCardBlue),
-      child: LineChart(
-        LineChartData(
-          minY: -0.15,
-          maxY: 1.15,
-          gridData: const FlGridData(show: false),
-          titlesData: const FlTitlesData(show: false),
-          borderData: FlBorderData(show: false),
-          lineBarsData: [
-            LineChartBarData(
-              spots: titikNilai,
-              isCurved: false,
-              color: kNavy,
-              barWidth: 1.5,
-              dotData: FlDotData(
-                show: true,
-                getDotPainter: (spot, percent, barData, index) {
-                  return FlDotCirclePainter(
-                    radius: 2.5,
-                    color: kNavy,
-                    strokeWidth: 0,
-                  );
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(10, 20, 18, 14),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        height: 190,
+        child: LineChart(
+          LineChartData(
+            minX: 0.6,
+            maxX: 4.4,
+            minY: 3.0,
+            maxY: 4.15,
+            lineTouchData: LineTouchData(
+              handleBuiltInTouches: true,
+              touchTooltipData: LineTouchTooltipData(
+                getTooltipColor: (touchedSpot) => isDark ? const Color(0xFF1E293B) : Colors.white,
+                tooltipBorder: BorderSide(
+                  color: isDark ? const Color(0xFF3B82F6) : const Color(0xFFCBD5E1),
+                  width: 1.5,
+                ),
+                tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                  return touchedBarSpots.map((barSpot) {
+                    final smt = barSpot.x.toInt();
+                    return LineTooltipItem(
+                      'Smt $smt\n',
+                      TextStyle(
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: barSpot.y.toStringAsFixed(2),
+                          style: TextStyle(
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList();
                 },
               ),
             ),
-          ],
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              horizontalInterval: 0.2,
+              getDrawingHorizontalLine: (val) {
+                return FlLine(
+                  color: gridLineColor,
+                  strokeWidth: 1,
+                );
+              },
+            ),
+            titlesData: FlTitlesData(
+              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 40,
+                  interval: 0.2,
+                  getTitlesWidget: (val, meta) {
+                    if (val < 3.19 || val > 4.01) return const SizedBox.shrink();
+                    return Text(
+                      val.toStringAsFixed(1),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: axisTextColor,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 32,
+                  interval: 1,
+                  getTitlesWidget: (val, meta) {
+                    final int index = val.toInt();
+                    if (val == index.toDouble() && index >= 1 && index <= 4) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          'Smt $index',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: axisTextColor,
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
+            ),
+            borderData: FlBorderData(show: false),
+            lineBarsData: [
+              LineChartBarData(
+                spots: titikNilaiSemester,
+                isCurved: true,
+                curveSmoothness: 0.35,
+                color: const Color(0xFF2563EB),
+                barWidth: 3.5,
+                isStrokeCapRound: true,
+                belowBarData: BarAreaData(
+                  show: true,
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF2563EB).withValues(alpha: 0.28),
+                      const Color(0xFF2563EB).withValues(alpha: 0.0),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                dotData: FlDotData(
+                  show: true,
+                  getDotPainter: (spot, percent, barData, index) {
+                    return FlDotCirclePainter(
+                      radius: 5,
+                      color: isDark ? const Color(0xFF2563EB) : Colors.white,
+                      strokeColor: isDark ? Colors.white : const Color(0xFF2563EB),
+                      strokeWidth: 2.5,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
