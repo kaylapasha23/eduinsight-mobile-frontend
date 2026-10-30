@@ -43,15 +43,16 @@ class ProfileScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                          color: isDark ? const Color(0xFF10B981).withValues(alpha: 0.25) : const Color(0xFF10B981).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
+                          border: isDark ? Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.7), width: 1.2) : null,
                         ),
-                        child: const Text(
+                        child: Text(
                           'Mahasiswa Aktif',
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF059669),
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
                           ),
                         ),
                       ),
@@ -76,15 +77,16 @@ class ProfileScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                          color: isDark ? const Color(0xFF2563EB).withValues(alpha: 0.25) : const Color(0xFF2563EB).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
+                          border: isDark ? Border.all(color: const Color(0xFF60A5FA).withValues(alpha: 0.7), width: 1.2) : null,
                         ),
-                        child: const Text(
+                        child: Text(
                           'Akademik',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF2563EB),
+                            color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB),
                           ),
                         ),
                       ),
@@ -157,13 +159,14 @@ class ProfileScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                          color: isDark ? const Color(0xFF2563EB).withValues(alpha: 0.25) : const Color(0xFF2563EB).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
+                          border: isDark ? Border.all(color: const Color(0xFF60A5FA).withValues(alpha: 0.7), width: 1.2) : null,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.show_chart_rounded,
                           size: 20,
-                          color: Color(0xFF2563EB),
+                          color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB),
                         ),
                       ),
                       const Icon(
@@ -240,13 +243,14 @@ class ProfileScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                          color: isDark ? const Color(0xFF10B981).withValues(alpha: 0.25) : const Color(0xFF10B981).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
+                          border: isDark ? Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.7), width: 1.2) : null,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.assignment_outlined,
                           size: 20,
-                          color: Color(0xFF10B981),
+                          color: isDark ? const Color(0xFF34D399) : const Color(0xFF10B981),
                         ),
                       ),
                       const Icon(
@@ -517,13 +521,24 @@ class ModernRankingCard extends StatelessWidget {
   }) {
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: badgeColor.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: badgeColor, size: 22),
+        Builder(
+          builder: (context) {
+            final effectiveColor = isDark
+                ? (badgeColor == const Color(0xFFF59E0B)
+                    ? const Color(0xFFFBBF24)
+                    : const Color(0xFF60A5FA))
+                : badgeColor;
+
+            return Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isDark ? effectiveColor.withValues(alpha: 0.25) : effectiveColor.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+                border: isDark ? Border.all(color: effectiveColor.withValues(alpha: 0.7), width: 1.2) : null,
+              ),
+              child: Icon(icon, color: effectiveColor, size: 22),
+            );
+          },
         ),
         const SizedBox(width: 14),
         Expanded(

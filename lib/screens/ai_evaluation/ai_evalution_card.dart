@@ -129,7 +129,7 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF23272F) : const Color(0xFFFDFDFD);
+    final bgColor = isDark ? const Color(0xFF1E222A) : const Color(0xFFF7F9FC);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -157,20 +157,27 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
 
   // Filter tanggal dengan teks yang lebih singkat
   Widget _buildDateFilter() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF282D37) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1);
+    final iconBg = isDark ? const Color(0xFF334155) : const Color(0xFFEFF6FF);
+    final primaryBlue = isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB);
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+
     return GestureDetector(
       onTap: _pickDate,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFFDE7),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFFFEE87), width: 1.2),
+          color: cardBg,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: borderColor, width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFD4A300).withValues(alpha: 0.12),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -179,13 +186,13 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFEE87).withValues(alpha: 0.5),
+                color: iconBg,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.calendar_month_rounded,
-                color: Color(0xFF7A6500),
-                size: 22,
+                color: primaryBlue,
+                size: 20,
               ),
             ),
             const SizedBox(width: 14),
@@ -193,17 +200,23 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    'Filter Tanggal',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                    ),
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     _selectedDate != null
                         ? _formatDate(_selectedDate!)
-                        : 'Pilih Tanggal',
+                        : 'Semua Tanggal',
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: _selectedDate != null
-                          ? const Color(0xFF3A3000)
-                          : const Color(0xFF8A7000),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: textColor,
                     ),
                   ),
                 ],
@@ -219,22 +232,21 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
                     shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFFFFEE87)),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.close_rounded,
-                    color: Color(0xFF7A6500),
-                    size: 18,
+                    color: isDark ? Colors.white70 : const Color(0xFF475569),
+                    size: 16,
                   ),
                 ),
               )
             else
-              const Icon(
+              Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: Color(0xFF8A7000),
-                size: 24,
+                color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                size: 22,
               ),
           ],
         ),
@@ -350,124 +362,136 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFDDE8FF),
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF3B6FE8).withValues(alpha: 0.12),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Text(
-                    'AI Evaluation',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A2B4A),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  SizedBox(width: 6),
-                  Icon(
-                    Icons.auto_awesome,
-                    size: 16,
-                    color: Color(0xFF1E2B52),
+        Builder(
+          builder: (context) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final cardBg = isDark ? const Color(0xFF282D37) : Colors.white;
+            final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+            final noteBoxBg = isDark ? const Color(0xFF1E2532) : const Color(0xFFF8FAFC);
+            final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+            final headerBlue = isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB);
+
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: borderColor, width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-
-              // Pesan-pesan evaluasi AI
-              ...group.messages.map((msg) => _MessageTile(message: msg)),
-
-              // Catatan dosen
-              const SizedBox(height: 14),
-              Divider(
-                color: const Color(0xFF1E2B52).withValues(alpha: 0.12),
-                thickness: 1,
-                height: 1,
-              ),
-              const SizedBox(height: 14),
-              Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.person_pin_rounded,
-                    size: 18,
-                    color: Color(0xFF1A2B4A),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Catatan Dosen (${group.lecturerName})',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A2B4A),
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      group.lecturerNote != null
-                          ? Icons.edit_note_rounded
-                          : Icons.info_outline_rounded,
-                      size: 20,
-                      color: group.lecturerNote != null
-                          ? const Color(0xFF3A6BBF)
-                          : const Color(0xFF8EA3BF),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        group.lecturerNote ?? 'Tidak ada catatan dari dosen',
-                        style: TextStyle(
-                          fontSize: 13,
-                          height: 1.5,
-                          fontStyle: group.lecturerNote != null
-                              ? FontStyle.normal
-                              : FontStyle.italic,
-                          color: group.lecturerNote != null
-                              ? const Color(0xFF1A2B4A)
-                              : const Color(0xFF7A8FAB),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: headerBlue.withValues(alpha: isDark ? 0.2 : 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.auto_awesome,
+                          size: 16,
+                          color: headerBlue,
                         ),
                       ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'AI Evaluation',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: titleColor,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Pesan-pesan evaluasi AI
+                  ...group.messages.map((msg) => _MessageTile(message: msg)),
+
+                  // Catatan dosen
+                  const SizedBox(height: 12),
+                  Divider(
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                    thickness: 1,
+                    height: 1,
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.person_pin_rounded,
+                        size: 18,
+                        color: headerBlue,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Catatan Dosen (${group.lecturerName})',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: titleColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: noteBoxBg,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                      ),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          group.lecturerNote != null
+                              ? Icons.edit_note_rounded
+                              : Icons.info_outline_rounded,
+                          size: 20,
+                          color: headerBlue,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            group.lecturerNote ?? 'Tidak ada catatan dari dosen',
+                            style: TextStyle(
+                              fontSize: 13,
+                              height: 1.5,
+                              fontStyle: group.lecturerNote != null
+                                  ? FontStyle.normal
+                                  : FontStyle.italic,
+                              color: group.lecturerNote != null
+                                  ? (isDark ? Colors.white70 : const Color(0xFF334155))
+                                  : (isDark ? Colors.white38 : const Color(0xFF94A3B8)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );
@@ -482,41 +506,53 @@ class _MessageTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor =
-        message.isPositive ? const Color(0xFFEAFFF0) : const Color(0xFFFFEDED);
-    final borderColor = message.isPositive
-        ? const Color(0xFF34C759).withValues(alpha: 0.3)
-        : const Color(0xFFFF3B30).withValues(alpha: 0.3);
-    final iconColor =
-        message.isPositive ? const Color(0xFF34C759) : const Color(0xFFFF3B30);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final Color badgeBg = message.isPositive
+        ? (isDark ? const Color(0xFF064E3B).withValues(alpha: 0.55) : const Color(0xFFEAFFF0))
+        : (isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.55) : const Color(0xFFFFEDED));
+
+    final Color borderColor = message.isPositive
+        ? (isDark ? const Color(0xFF34D399).withValues(alpha: 0.55) : const Color(0xFF34C759).withValues(alpha: 0.3))
+        : (isDark ? const Color(0xFFF87171).withValues(alpha: 0.55) : const Color(0xFFFF3B30).withValues(alpha: 0.3));
+
+    final Color iconColor = message.isPositive
+        ? (isDark ? const Color(0xFF34D399) : const Color(0xFF10B981))
+        : (isDark ? const Color(0xFFF87171) : const Color(0xFFEF4444));
+
+    final Color textColor = isDark
+        ? (message.isPositive ? const Color(0xFFA7F3D0) : const Color(0xFFFECACA))
+        : const Color(0xFF1A2B4A);
+
     final icon = message.isPositive
         ? Icons.check_circle_outline_rounded
         : Icons.info_outline_rounded;
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: badgeBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderColor, width: 1),
+        border: Border.all(color: borderColor, width: 1.2),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 1),
+            padding: const EdgeInsets.only(top: 2),
             child: Icon(icon, size: 16, color: iconColor),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message.text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13.5,
                 height: 1.5,
-                color: Color(0xFF1A2B4A),
+                fontWeight: isDark ? FontWeight.w500 : FontWeight.normal,
+                color: textColor,
               ),
             ),
           ),

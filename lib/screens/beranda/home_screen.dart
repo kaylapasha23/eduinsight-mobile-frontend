@@ -49,9 +49,9 @@ const List<ClassScheduleItem> daftarKelasTerdekat = [
   ),
   ClassScheduleItem(
     title: 'Pemrograman Web',
-    time: '08.00 - 10.00 WIB (Besok)',
+    time: '16.00 - 17.20 WIB',
     room: 'Lantai 5, Ruang 502',
-    countdown: 'Besok Pagi',
+    countdown: 'Dalam 3 jam',
     lecturer: 'Ir. Tri Astuti, M.T.',
   ),
 ];
@@ -274,6 +274,17 @@ class _HomeScreenState extends State<HomeScreen> {
     required Color titleColor,
     required bool isDark,
   }) {
+    // Di dark mode, gunakan tone yang lebih cerah dan glowing
+    final Color effectiveColor = isDark
+        ? (badgeColor == const Color(0xFF2563EB)
+            ? const Color(0xFF60A5FA)
+            : (badgeColor == const Color(0xFFE11D48)
+                ? const Color(0xFFFB7185)
+                : (badgeColor == const Color(0xFF059669)
+                    ? const Color(0xFF34D399)
+                    : badgeColor)))
+        : badgeColor;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -290,17 +301,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(width: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
               decoration: BoxDecoration(
-                color: badgeColor.withValues(alpha: isDark ? 0.2 : 0.1),
+                color: isDark ? effectiveColor.withValues(alpha: 0.25) : effectiveColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
+                border: isDark ? Border.all(color: effectiveColor.withValues(alpha: 0.7), width: 1.2) : null,
               ),
               child: Text(
                 badgeText,
                 style: TextStyle(
                   fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: badgeColor,
+                  fontWeight: FontWeight.w800,
+                  color: effectiveColor,
                 ),
               ),
             ),
@@ -345,13 +357,14 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                  color: isDark ? const Color(0xFF3B82F6).withValues(alpha: 0.25) : const Color(0xFF2563EB).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
+                  border: isDark ? Border.all(color: const Color(0xFF60A5FA).withValues(alpha: 0.7), width: 1.2) : null,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.trending_up_rounded,
                   size: 16,
-                  color: Color(0xFF2563EB),
+                  color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB),
                 ),
               ),
             ],
@@ -430,13 +443,14 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                  color: isDark ? const Color(0xFF10B981).withValues(alpha: 0.25) : const Color(0xFF10B981).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
+                  border: isDark ? Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.7), width: 1.2) : null,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.check_circle_outline_rounded,
                   size: 16,
-                  color: Color(0xFF10B981),
+                  color: isDark ? const Color(0xFF34D399) : const Color(0xFF10B981),
                 ),
               ),
             ],
@@ -542,15 +556,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
+                        color: isDark ? const Color(0xFF60A5FA).withValues(alpha: 0.25) : const Color(0xFF3B82F6).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
+                        border: isDark ? Border.all(color: const Color(0xFF60A5FA).withValues(alpha: 0.6), width: 1) : null,
                       ),
                       child: Text(
                         item.countdown,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF2563EB),
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB),
                         ),
                       ),
                     ),
@@ -686,15 +701,16 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                  color: isDark ? const Color(0xFFF87171).withValues(alpha: 0.25) : const Color(0xFFEF4444).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
+                  border: isDark ? Border.all(color: const Color(0xFFF87171).withValues(alpha: 0.6), width: 1) : null,
                 ),
                 child: Text(
                   task.tag,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFDC2626),
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626),
                   ),
                 ),
               ),

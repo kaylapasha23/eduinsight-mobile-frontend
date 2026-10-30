@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import '../common_widgets.dart';
 import 'academic_widgets.dart';
@@ -109,7 +110,6 @@ class _NilaiScreenState extends State<NilaiScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Dropdown Pemilihan Semester Modern
                   YellowDropdown(
                     items: pilihanSemester,
                     selectedItem: _selected,
@@ -123,11 +123,9 @@ class _NilaiScreenState extends State<NilaiScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Header Semester & Summary Card
                   _buildSemesterSummaryCard(smt, isDark, cardBg),
                   const SizedBox(height: 22),
 
-                  // Section Title
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -142,15 +140,25 @@ class _NilaiScreenState extends State<NilaiScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                          color: isDark
+                              ? const Color(0xFF2563EB).withValues(alpha: 0.25)
+                              : const Color(0xFF2563EB).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
+                          border: isDark
+                              ? Border.all(
+                                  color: const Color(0xFF60A5FA).withValues(alpha: 0.7),
+                                  width: 1.2,
+                                )
+                              : null,
                         ),
                         child: Text(
                           '${smt.matkul.length} Matkul',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF2563EB),
+                            fontWeight: FontWeight.w800,
+                            color: isDark
+                                ? const Color(0xFF93C5FD)
+                                : const Color(0xFF2563EB),
                           ),
                         ),
                       ),
@@ -158,10 +166,13 @@ class _NilaiScreenState extends State<NilaiScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // List Nilai Matkul Modern
                   Column(
                     children: smt.matkul
-                        .map((m) => _NilaiTile(matkul: m, isDark: isDark, cardBg: cardBg))
+                        .map((m) => _NilaiTile(
+                              matkul: m,
+                              isDark: isDark,
+                              cardBg: cardBg,
+                            ))
                         .toList(),
                   ),
                   const SizedBox(height: 24),
@@ -175,7 +186,11 @@ class _NilaiScreenState extends State<NilaiScreen> {
     );
   }
 
-  Widget _buildSemesterSummaryCard(NilaiSemester smt, bool isDark, Color cardBg) {
+  Widget _buildSemesterSummaryCard(
+    NilaiSemester smt,
+    bool isDark,
+    Color cardBg,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -266,9 +281,17 @@ class _NilaiScreenState extends State<NilaiScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildStatMini('Total SKS', '${smt.totalSks} SKS', isDark),
-              Container(width: 1, height: 24, color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+              Container(
+                width: 1,
+                height: 24,
+                color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+              ),
               _buildStatMini('Mata Kuliah', '${smt.matkul.length} Matkul', isDark),
-              Container(width: 1, height: 24, color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+              Container(
+                width: 1,
+                height: 24,
+                color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+              ),
               _buildStatMini('Status', 'Lulus Penuh', isDark),
             ],
           ),
@@ -347,7 +370,9 @@ class _NilaiTile extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E2532) : const Color(0xFFF1F5F9),
+              color: isDark
+                  ? const Color(0xFF2563EB).withValues(alpha: 0.35)
+                  : const Color(0xFFF1F5F9),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -355,8 +380,8 @@ class _NilaiTile extends StatelessWidget {
                 '${matkul.nomor}',
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white70 : const Color(0xFF334155),
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : const Color(0xFF334155),
                 ),
               ),
             ),
@@ -409,10 +434,11 @@ class _NilaiTile extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: gradeColor.withValues(alpha: isDark ? 0.2 : 0.12),
+              color: gradeColor.withValues(alpha: isDark ? 0.25 : 0.12),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: gradeColor.withValues(alpha: 0.3),
+                color: gradeColor.withValues(alpha: isDark ? 0.7 : 0.3),
+                width: isDark ? 1.2 : 1.0,
               ),
             ),
             child: Center(

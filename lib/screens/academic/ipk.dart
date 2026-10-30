@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../common_widgets.dart';
@@ -28,7 +29,6 @@ const List<SemesterIpk> dataIpk = [
   SemesterIpk(semester: 'Semester 8', label: 'Smt 8', ipk: '-', value: null),
 ];
 
-// Titik riil IPK per semester (Smt 1=3.80, Smt 2=4.00, Smt 3=3.90, Smt 4=3.78)
 const List<FlSpot> titikIpkSemester = [
   FlSpot(1, 3.80),
   FlSpot(2, 4.00),
@@ -57,11 +57,9 @@ class IpkScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Summary Banner
                   _buildSummaryBanner(isDark, cardBg),
                   const SizedBox(height: 22),
 
-                  // Header Grafik
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -74,17 +72,30 @@ class IpkScreen extends StatelessWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
                         ),
-                        child: const Text(
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF2563EB).withValues(alpha: 0.25)
+                              : const Color(0xFF2563EB).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: isDark
+                              ? Border.all(
+                                  color: const Color(0xFF60A5FA).withValues(alpha: 0.7),
+                                  width: 1.2,
+                                )
+                              : null,
+                        ),
+                        child: Text(
                           'Smt 1 - 4',
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF2563EB),
+                            fontWeight: FontWeight.w800,
+                            color: isDark
+                                ? const Color(0xFF93C5FD)
+                                : const Color(0xFF2563EB),
                           ),
                         ),
                       ),
@@ -95,7 +106,6 @@ class IpkScreen extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
-                  // Detail Nilai per Semester
                   Text(
                     'Riwayat Indeks Prestasi per Semester',
                     style: TextStyle(
@@ -117,7 +127,6 @@ class IpkScreen extends StatelessWidget {
     );
   }
 
-  // Summary Banner dengan IPK Kumulatif yang Sangat Kontras
   Widget _buildSummaryBanner(bool isDark, Color cardBg) {
     return Container(
       width: double.infinity,
@@ -206,11 +215,11 @@ class IpkScreen extends StatelessWidget {
     );
   }
 
-  // Grafik Perkembangan IPK dengan Keterangan Semester dan Angka Sangat Jelas
   Widget _buildModernChartCard(bool isDark, Color cardBg) {
-    // Warna teks label axis yang sangat kontras
-    final Color axisTextColor = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-    final Color gridColor = isDark ? Colors.white12 : const Color(0xFFE2E8F0);
+    final Color axisTextColor =
+        isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
+    final Color gridColor =
+        isDark ? Colors.white12 : const Color(0xFFE2E8F0);
 
     return Container(
       width: double.infinity,
@@ -240,19 +249,28 @@ class IpkScreen extends StatelessWidget {
             lineTouchData: LineTouchData(
               handleBuiltInTouches: true,
               touchTooltipData: LineTouchTooltipData(
-                getTooltipColor: (touchedSpot) => isDark ? const Color(0xFF1E293B) : Colors.white,
+                getTooltipColor: (touchedSpot) =>
+                    isDark ? const Color(0xFF1E293B) : Colors.white,
                 tooltipBorder: BorderSide(
-                  color: isDark ? const Color(0xFF3B82F6) : const Color(0xFFCBD5E1),
+                  color: isDark
+                      ? const Color(0xFF3B82F6)
+                      : const Color(0xFFCBD5E1),
                   width: 1.5,
                 ),
-                tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                tooltipPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                   return touchedBarSpots.map((barSpot) {
                     final smt = barSpot.x.toInt();
+
                     return LineTooltipItem(
                       'Semester $smt\n',
                       TextStyle(
-                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
                         fontWeight: FontWeight.w600,
                         fontSize: 11,
                       ),
@@ -260,7 +278,9 @@ class IpkScreen extends StatelessWidget {
                         TextSpan(
                           text: barSpot.y.toStringAsFixed(2),
                           style: TextStyle(
-                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
                             fontWeight: FontWeight.w900,
                             fontSize: 15,
                           ),
@@ -280,15 +300,22 @@ class IpkScreen extends StatelessWidget {
               },
             ),
             titlesData: FlTitlesData(
-              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
               leftTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
                   reservedSize: 40,
                   interval: 0.2,
                   getTitlesWidget: (val, meta) {
-                    if (val < 3.19 || val > 4.01) return const SizedBox.shrink();
+                    if (val < 3.19 || val > 4.01) {
+                      return const SizedBox.shrink();
+                    }
+
                     return Text(
                       val.toStringAsFixed(1),
                       style: TextStyle(
@@ -307,6 +334,7 @@ class IpkScreen extends StatelessWidget {
                   interval: 1,
                   getTitlesWidget: (val, meta) {
                     final int index = val.toInt();
+
                     if (val == index.toDouble() && index >= 1 && index <= 4) {
                       return Padding(
                         padding: const EdgeInsets.only(top: 8),
@@ -320,6 +348,7 @@ class IpkScreen extends StatelessWidget {
                         ),
                       );
                     }
+
                     return const SizedBox.shrink();
                   },
                 ),
@@ -350,8 +379,11 @@ class IpkScreen extends StatelessWidget {
                   getDotPainter: (spot, percent, barData, index) {
                     return FlDotCirclePainter(
                       radius: 5,
-                      color: isDark ? const Color(0xFF2563EB) : Colors.white,
-                      strokeColor: isDark ? Colors.white : const Color(0xFF2563EB),
+                      color: isDark
+                          ? const Color(0xFF2563EB)
+                          : Colors.white,
+                      strokeColor:
+                          isDark ? Colors.white : const Color(0xFF2563EB),
                       strokeWidth: 2.5,
                     );
                   },
@@ -364,7 +396,6 @@ class IpkScreen extends StatelessWidget {
     );
   }
 
-  // Riwayat IPK 8 Semester
   Widget _buildSemesterListCard(bool isDark, Color cardBg) {
     return Container(
       width: double.infinity,
@@ -390,11 +421,18 @@ class IpkScreen extends StatelessWidget {
 
           return Container(
             margin: const EdgeInsets.symmetric(vertical: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
             decoration: BoxDecoration(
               color: isDark
-                  ? (hasScore ? const Color(0xFF1F2532) : Colors.transparent)
-                  : (hasScore ? const Color(0xFFF8FAFC) : Colors.transparent),
+                  ? (hasScore
+                      ? const Color(0xFF1F2532)
+                      : Colors.transparent)
+                  : (hasScore
+                      ? const Color(0xFFF8FAFC)
+                      : Colors.transparent),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
@@ -404,8 +442,12 @@ class IpkScreen extends StatelessWidget {
                   height: 32,
                   decoration: BoxDecoration(
                     color: hasScore
-                        ? const Color(0xFF2563EB).withValues(alpha: 0.15)
-                        : (isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+                        ? (isDark
+                            ? const Color(0xFF2563EB).withValues(alpha: 0.35)
+                            : const Color(0xFF2563EB).withValues(alpha: 0.15))
+                        : (isDark
+                            ? Colors.white12
+                            : const Color(0xFFE2E8F0)),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -413,10 +455,12 @@ class IpkScreen extends StatelessWidget {
                       '${index + 1}',
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: hasScore
-                            ? const Color(0xFF2563EB)
-                            : (isDark ? Colors.white38 : const Color(0xFF94A3B8)),
+                        fontWeight: FontWeight.w800,
+                        color: isDark
+                            ? Colors.white
+                            : (hasScore
+                                ? const Color(0xFF2563EB)
+                                : const Color(0xFF64748B)),
                       ),
                     ),
                   ),
@@ -430,28 +474,40 @@ class IpkScreen extends StatelessWidget {
                         item.semester,
                         style: TextStyle(
                           fontSize: 14,
-                          fontWeight: hasScore ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight:
+                              hasScore ? FontWeight.w700 : FontWeight.w500,
                           color: hasScore
-                              ? (isDark ? Colors.white : const Color(0xFF0F172A))
-                              : (isDark ? Colors.white38 : const Color(0xFF94A3B8)),
+                              ? (isDark
+                                  ? Colors.white
+                                  : const Color(0xFF0F172A))
+                              : (isDark
+                                  ? Colors.white38
+                                  : const Color(0xFF94A3B8)),
                         ),
                       ),
                       Text(
                         hasScore ? '22 SKS Selesai' : 'Belum Ditempuh',
                         style: TextStyle(
                           fontSize: 11,
-                          color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                          color: isDark
+                              ? Colors.white54
+                              : const Color(0xFF64748B),
                         ),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: hasScore
                         ? const Color(0xFF10B981).withValues(alpha: 0.15)
-                        : (isDark ? Colors.white10 : const Color(0xFFF1F5F9)),
+                        : (isDark
+                            ? Colors.white10
+                            : const Color(0xFFF1F5F9)),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -460,8 +516,12 @@ class IpkScreen extends StatelessWidget {
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                       color: hasScore
-                          ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
-                          : (isDark ? Colors.white38 : const Color(0xFF94A3B8)),
+                          ? (isDark
+                              ? const Color(0xFF34D399)
+                              : const Color(0xFF059669))
+                          : (isDark
+                              ? Colors.white38
+                              : const Color(0xFF94A3B8)),
                     ),
                   ),
                 ),

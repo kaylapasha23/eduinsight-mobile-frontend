@@ -82,8 +82,9 @@ class _GabungKelasScreenState extends State<GabungKelasScreen> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                          color: isDark ? const Color(0xFF2563EB).withValues(alpha: 0.25) : const Color(0xFF2563EB).withValues(alpha: 0.1),
                           shape: BoxShape.circle,
+                          border: isDark ? Border.all(color: const Color(0xFF60A5FA).withValues(alpha: 0.7), width: 1.2) : null,
                         ),
                         child: const Icon(
                           Icons.add_link_rounded,

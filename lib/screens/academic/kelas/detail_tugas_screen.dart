@@ -2,22 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'kelas_provider.dart';
 
-// ── Custom ScrollBehavior to completely remove scrollbars on all platforms ──
 class _NoScrollbarBehavior extends ScrollBehavior {
   const _NoScrollbarBehavior();
 
   @override
-  Widget buildScrollbar(BuildContext context, Widget child, ScrollableDetails details) {
+  Widget buildScrollbar(
+      BuildContext context, Widget child, ScrollableDetails details) {
     return child;
   }
 
   @override
-  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) {
+  Widget buildOverscrollIndicator(
+      BuildContext context, Widget child, ScrollableDetails details) {
     return child;
   }
 }
 
-// ── Task detail data ───────────────────────────────────────────────────────────
 class _TaskDetail {
   final String classLabel;
   final String taskName;
@@ -35,7 +35,6 @@ class _TaskDetail {
 }
 
 const Map<String, _TaskDetail> _taskDetails = {
-  // ── Segera ───────────────────────────────────────────────────────────────────
   'Kewirausahaan|Tugas 1 - Quiziz': _TaskDetail(
     classLabel: 'Kewirausahaan',
     taskName: 'Tugas 1 - Quiziz',
@@ -44,9 +43,7 @@ const Map<String, _TaskDetail> _taskDetails = {
         'Kerjakan kuis Kewirausahaan melalui Quizizz materi BMC (Business Model Canvas).\n\n'
         '• Kerjakan tepat waktu sebelum tenggat\n'
         '• Screenshot nilai akhir kuis dan lampirkan sebagai bukti pengerjaan tugas.',
-    lecturerDocs: [
-      'Panduan_Kuis_Kewirausahaan.pdf',
-    ],
+    lecturerDocs: ['Panduan_Kuis_Kewirausahaan.pdf'],
   ),
   'UI/UX Design|Tugas 1 - Analisa Aplikasi': _TaskDetail(
     classLabel: 'UI/UX Design',
@@ -56,9 +53,7 @@ const Map<String, _TaskDetail> _taskDetails = {
         'Lakukan analisa heuristik pada aplikasi mobile EduTech pilihanmu.\n\n'
         '• Identifikasi 5 masalah usability beserta rekomendasi perbaikannya\n'
         '• Kumpulkan dalam format PDF rangkuman laporan.',
-    lecturerDocs: [
-      'Template_Analisa_Heuristik.pdf',
-    ],
+    lecturerDocs: ['Template_Analisa_Heuristik.pdf'],
   ),
   'Internet of Things (IoT)|Pertemuan Pertama': _TaskDetail(
     classLabel: 'Internet of Things (IoT)',
@@ -69,8 +64,6 @@ const Map<String, _TaskDetail> _taskDetails = {
         '• Format: PDF (maksimal 2 halaman)\n'
         '• Unggah dokumen hasil resume pada bagian Tugas Saya di bawah.',
   ),
-
-  // ── Selesai ──────────────────────────────────────────────────────────────────
   'Kecerdasan Buatan|Tugas Pengenalan AI': _TaskDetail(
     classLabel: 'Kecerdasan Buatan',
     taskName: 'Tugas Pengenalan AI',
@@ -78,9 +71,7 @@ const Map<String, _TaskDetail> _taskDetails = {
     description:
         'Rangkuman pengantar AI, perbedaan antara machine learning dan deep learning, serta implementasi agen cerdas.\n\n'
         'Status: Sudah diserahkan tepat waktu.',
-    lecturerDocs: [
-      'Modul_Pengenalan_AI.pdf',
-    ],
+    lecturerDocs: ['Modul_Pengenalan_AI.pdf'],
   ),
   'Basis Data|Latihan SQL Dasar': _TaskDetail(
     classLabel: 'Basis Data Terdistribusi',
@@ -130,335 +121,463 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
   Widget build(BuildContext context) {
     final key = '${widget.className}|${widget.taskTitle}';
     final detail = _taskDetails[key];
+
     final classLabel = detail?.classLabel ?? widget.className;
     final taskName = detail?.taskName ?? widget.taskTitle;
-    final description = detail?.description ?? 'Tugas perkuliahan semester berjalan. Silakan pelajari instruksi dan kumpulkan dokumen pekerjaan Anda.';
+    final description = detail?.description ??
+        'Tugas perkuliahan semester berjalan. Silakan pelajari instruksi dan kumpulkan dokumen pekerjaan Anda.';
     final deadline = detail?.deadline ?? 'Rabu, 23.59';
     final lecturerDocs = detail?.lecturerDocs ?? const <String>[];
 
-    return Consumer<KelasProvider>(builder: (context, kelas, _) {
-      final isCompleted = kelas.isCompleted(key);
-      final isLate = kelas.isLate(key);
-      final hasDoc = kelas.hasDoc(key);
-      final fileName = kelas.mockFileName(key);
+    return Consumer<KelasProvider>(
+      builder: (context, kelas, _) {
+        final isCompleted = kelas.isCompleted(key);
+        final isLate = kelas.isLate(key);
+        final hasDoc = kelas.hasDoc(key);
+        final fileName = kelas.mockFileName(key);
 
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      final bgColor = isDark ? const Color(0xFF1E222A) : const Color(0xFFF7F9FC);
-      final cardBg = isDark ? const Color(0xFF282D37) : Colors.white;
+        final isDark =
+            Theme.of(context).brightness == Brightness.dark;
 
-      return Scaffold(
-        backgroundColor: bgColor,
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(64),
-          child: Container(
-            color: const Color(0xFF1E2B52),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                child: Row(
-                  children: [
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    const SizedBox(width: 16),
-                    const Text(
-                      'Detail Tugas',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
+        final bgColor = isDark
+            ? const Color(0xFF171C26)
+            : const Color(0xFFF7F9FC);
+
+        final cardBg = isDark
+            ? const Color(0xFF252D3A)
+            : Colors.white;
+
+        final secondaryBg = isDark
+            ? const Color(0xFF354258)
+            : const Color(0xFFF1F5F9);
+
+        final borderColor = isDark
+            ? const Color(0xFF52627A)
+            : const Color(0xFFE2E8F0);
+
+        return Scaffold(
+          backgroundColor: bgColor,
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(64),
+            child: Container(
+              color: const Color(0xFF1E2B52),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        onPressed: () => Navigator.pop(context),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 16),
+                      const Text(
+                        'Detail Tugas',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            final totalHeight = constraints.maxHeight;
-            const minHeight = 220.0;
-            final maxHeight = (totalHeight * 0.94).clamp(minHeight, totalHeight);
-            _sheetHeight ??= minHeight;
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              final totalHeight = constraints.maxHeight;
 
-            void onDragStart(DragStartDetails details) {
-              _isDragging = true;
-            }
+              final minHeight =
+                  (totalHeight * 0.28).clamp(160.0, 240.0);
 
-            void onDragUpdate(DragUpdateDetails details) {
-              setState(() {
-                _sheetHeight = ((_sheetHeight ?? minHeight) - details.delta.dy)
-                    .clamp(minHeight, maxHeight);
-              });
-            }
+              final maxHeight =
+                  (totalHeight * 0.92).clamp(
+                minHeight + 60.0,
+                totalHeight,
+              );
 
-            void onDragEnd(DragEndDetails details) {
-              _isDragging = false;
-              setState(() {
-                if (details.primaryVelocity != null && details.primaryVelocity! < -200) {
-                  _sheetHeight = maxHeight;
-                } else if (details.primaryVelocity != null && details.primaryVelocity! > 200) {
-                  _sheetHeight = minHeight;
-                } else {
-                  if ((_sheetHeight ?? minHeight) > (minHeight + maxHeight) / 2) {
+              if (_sheetHeight == null) {
+                _sheetHeight = minHeight;
+              } else {
+                _sheetHeight =
+                    _sheetHeight!.clamp(minHeight, maxHeight);
+              }
+
+              void onDragStart(DragStartDetails details) {
+                _isDragging = true;
+              }
+
+              void onDragUpdate(DragUpdateDetails details) {
+                setState(() {
+                  _sheetHeight = ((_sheetHeight ?? minHeight) -
+                          details.delta.dy)
+                      .clamp(minHeight, maxHeight);
+                });
+              }
+
+              void onDragEnd(DragEndDetails details) {
+                _isDragging = false;
+
+                setState(() {
+                  final velocity = details.primaryVelocity ?? 0;
+
+                  if (velocity < -200) {
                     _sheetHeight = maxHeight;
-                  } else {
+                  } else if (velocity > 200) {
                     _sheetHeight = minHeight;
+                  } else {
+                    _sheetHeight =
+                        (_sheetHeight! > (minHeight + maxHeight) / 2)
+                            ? maxHeight
+                            : minHeight;
                   }
-                }
-              });
-            }
+                });
+              }
 
-            void toggleSheet() {
-              setState(() {
-                if ((_sheetHeight ?? minHeight) < (minHeight + maxHeight) / 2) {
-                  _sheetHeight = maxHeight;
-                } else {
-                  _sheetHeight = minHeight;
-                }
-              });
-            }
+              void toggleSheet() {
+                setState(() {
+                  _sheetHeight =
+                      (_sheetHeight! < (minHeight + maxHeight) / 2)
+                          ? maxHeight
+                          : minHeight;
+                });
+              }
 
-            final isExpanded = (_sheetHeight ?? minHeight) > (minHeight + maxHeight) / 2;
+              final isExpanded =
+                  _sheetHeight! > (minHeight + maxHeight) / 2;
 
-            return Stack(
-              children: [
-                // ── Main scrollable task content ─────────────────────────────
-                ScrollConfiguration(
-                  behavior: const _NoScrollbarBehavior(),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 260),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Header info card
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: cardBg,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    bottom: _sheetHeight,
+                    child: ScrollConfiguration(
+                      behavior: const _NoScrollbarBehavior(),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(
+                            20, 20, 20, 20),
+                        child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.stretch,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: cardBg,
+                                borderRadius:
+                                    BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: borderColor,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(
+                                      alpha: isDark ? 0.3 : 0.04,
+                                    ),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding:
+                                        const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF2563EB).withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(10),
+                                      color: isDark
+                                          ? const Color(0xFF1D4ED8)
+                                              .withValues(alpha: 0.35)
+                                          : const Color(0xFF2563EB)
+                                              .withValues(alpha: 0.1),
+                                      borderRadius:
+                                          BorderRadius.circular(10),
+                                      border: isDark
+                                          ? Border.all(
+                                              color: const Color(
+                                                  0xFF60A5FA),
+                                            )
+                                          : null,
                                     ),
                                     child: Text(
                                       classLabel,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF2563EB),
+                                        fontWeight: FontWeight.w800,
+                                        color: isDark
+                                            ? const Color(0xFFBFDBFE)
+                                            : const Color(0xFF2563EB),
                                       ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    taskName,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF0F172A),
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 10),
-                              Text(
-                                taskName,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Body task card
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: cardBg,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: cardBg,
+                                borderRadius:
+                                    BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: borderColor,
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.access_time_rounded,
-                                        size: 14, color: Color(0xFFDC2626)),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Tenggat: $deadline',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Color(0xFFDC2626),
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(
+                                      alpha: isDark ? 0.3 : 0.04,
                                     ),
-                                  ],
-                                ),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 16),
-                              Text(
-                                description,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  height: 1.6,
-                                  color: isDark ? Colors.white70 : const Color(0xFF334155),
-                                ),
-                              ),
-                              if (lecturerDocs.isNotEmpty) ...[
-                                const SizedBox(height: 20),
-                                Divider(
-                                  color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
-                                  thickness: 1,
-                                  height: 1,
-                                ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  children: [
-                                    Icon(Icons.attachment_rounded,
-                                        size: 16, color: isDark ? Colors.white70 : const Color(0xFF1E293B)),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Lampiran dari Pengajar',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                      ),
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding:
+                                        const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
                                     ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                ...lecturerDocs.map(
-                                  (doc) => Container(
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 12),
                                     decoration: BoxDecoration(
-                                      color: isDark ? const Color(0xFF1E2532) : const Color(0xFFF8FAFC),
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(
-                                          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                                      color: isDark
+                                          ? const Color(0xFF7F1D1D)
+                                              .withValues(alpha: 0.45)
+                                          : const Color(0xFFEF4444)
+                                              .withValues(alpha: 0.1),
+                                      borderRadius:
+                                          BorderRadius.circular(12),
+                                      border: isDark
+                                          ? Border.all(
+                                              color: const Color(
+                                                  0xFFF87171),
+                                            )
+                                          : null,
                                     ),
                                     child: Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(Icons.file_present_rounded,
-                                            size: 20, color: Color(0xFF2563EB)),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(
-                                            doc,
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                              color: isDark ? Colors.white : const Color(0xFF1E293B),
-                                            ),
+                                        Icon(
+                                          Icons.access_time_rounded,
+                                          size: 14,
+                                          color: isDark
+                                              ? const Color(0xFFFCA5A5)
+                                              : const Color(0xFFDC2626),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Tenggat: $deadline',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: isDark
+                                                ? const Color(0xFFFECACA)
+                                                : const Color(0xFFDC2626),
+                                            fontWeight: FontWeight.w800,
                                           ),
                                         ),
-                                        const Icon(Icons.download_rounded,
-                                            size: 18, color: Color(0xFF64748B)),
                                       ],
                                     ),
                                   ),
-                                ),
-                              ],
-                            ],
-                          ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    description,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      height: 1.6,
+                                      color: isDark
+                                          ? const Color(0xFFE2E8F0)
+                                          : const Color(0xFF334155),
+                                    ),
+                                  ),
+                                  if (lecturerDocs.isNotEmpty) ...[
+                                    const SizedBox(height: 20),
+                                    Divider(
+                                      color: isDark
+                                          ? const Color(0xFF52627A)
+                                          : const Color(0xFFE2E8F0),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.attachment_rounded,
+                                          size: 16,
+                                          color: isDark
+                                              ? const Color(0xFFBFDBFE)
+                                              : const Color(0xFF1E293B),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Lampiran dari Pengajar',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight:
+                                                FontWeight.w700,
+                                            color: isDark
+                                                ? Colors.white
+                                                : const Color(0xFF0F172A),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    ...lecturerDocs.map(
+                                      (doc) => Container(
+                                        margin: const EdgeInsets.only(
+                                            bottom: 8),
+                                        padding:
+                                            const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 12,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: secondaryBg,
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                          border: Border.all(
+                                            color: borderColor,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.file_present_rounded,
+                                              size: 20,
+                                              color: Color(0xFF60A5FA),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Text(
+                                                doc,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight:
+                                                      FontWeight.w600,
+                                                  color: isDark
+                                                      ? Colors.white
+                                                      : const Color(0xFF1E293B),
+                                                ),
+                                              ),
+                                            ),
+                                            Icon(
+                                              Icons.download_rounded,
+                                              size: 18,
+                                              color: isDark
+                                                  ? const Color(0xFFBFDBFE)
+                                                  : const Color(0xFF64748B),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-
-                // ── Interactive Bottom Sheet: "Tugas Saya" ─────────────────────
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: _sheetHeight,
-                  child: AnimatedContainer(
-                    duration: _isDragging ? Duration.zero : const Duration(milliseconds: 260),
-                    curve: Curves.easeOutCubic,
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF282D37) : Colors.white,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(28),
-                        topRight: Radius.circular(28),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.15),
-                          blurRadius: 30,
-                          offset: const Offset(0, -6),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: _sheetHeight,
+                    child: AnimatedContainer(
+                      duration: _isDragging
+                          ? Duration.zero
+                          : const Duration(milliseconds: 260),
+                      curve: Curves.easeOutCubic,
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(28),
+                          topRight: Radius.circular(28),
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Drag Handle & Header bar with full mouse/touch drag support
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onVerticalDragStart: onDragStart,
-                          onVerticalDragUpdate: onDragUpdate,
-                          onVerticalDragEnd: onDragEnd,
-                          onTap: toggleSheet,
-                          child: Container(
-                            color: Colors.transparent,
+                        border: Border(
+                          top: BorderSide(
+                            color: isDark
+                                ? const Color(0xFF52627A)
+                                : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(
+                              alpha: isDark ? 0.5 : 0.15,
+                            ),
+                            blurRadius: 30,
+                            offset: const Offset(0, -6),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.stretch,
+                        children: [
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onVerticalDragStart: onDragStart,
+                            onVerticalDragUpdate: onDragUpdate,
+                            onVerticalDragEnd: onDragEnd,
+                            onTap: toggleSheet,
                             child: Column(
                               children: [
                                 Center(
                                   child: Container(
-                                    margin: const EdgeInsets.symmetric(vertical: 12),
+                                    margin:
+                                        const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
                                     width: 48,
                                     height: 5,
                                     decoration: BoxDecoration(
-                                      color: isDark ? Colors.white24 : Colors.black26,
-                                      borderRadius: BorderRadius.circular(3),
+                                      color: isDark
+                                          ? const Color(0xFF94A3B8)
+                                          : Colors.black26,
+                                      borderRadius:
+                                          BorderRadius.circular(3),
                                     ),
                                   ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 4,
+                                  ),
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Row(
                                         children: [
@@ -466,8 +585,11 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                             'Tugas Saya',
                                             style: TextStyle(
                                               fontSize: 17,
-                                              fontWeight: FontWeight.w800,
-                                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                              fontWeight:
+                                                  FontWeight.w800,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : const Color(0xFF0F172A),
                                             ),
                                           ),
                                           const SizedBox(width: 8),
@@ -475,33 +597,15 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                             isExpanded
                                                 ? Icons.keyboard_arrow_down_rounded
                                                 : Icons.keyboard_arrow_up_rounded,
-                                            color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                                            color: isDark
+                                                ? const Color(0xFFCBD5E1)
+                                                : const Color(0xFF64748B),
                                             size: 22,
                                           ),
                                         ],
                                       ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 12, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: isCompleted
-                                              ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.2 : 0.12)
-                                              : (isLate
-                                                  ? const Color(0xFFEF4444).withValues(alpha: isDark ? 0.2 : 0.12)
-                                                  : const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.2 : 0.12)),
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: Text(
-                                          isCompleted ? 'Diserahkan' : (isLate ? 'Terlambat' : 'Belum Diserahkan'),
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: isCompleted
-                                                ? const Color(0xFF10B981)
-                                                : (isLate ? const Color(0xFFEF4444) : const Color(0xFFD97706)),
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
+                                      _statusBadge(
+                                          isCompleted, isLate, isDark),
                                     ],
                                   ),
                                 ),
@@ -509,126 +613,193 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                               ],
                             ),
                           ),
-                        ),
-
-                        // Inner scrollable content - Tanpa scrollbar tapi bisa discroll halus
-                        Expanded(
-                          child: ScrollConfiguration(
-                            behavior: const _NoScrollbarBehavior(),
-                            child: SingleChildScrollView(
-                              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  if (isCompleted) ...[
-                                    // Tugas Selesai: Default sudah ada dokumen yang diunggah
-                                    _docChip(fileName, isDark),
-                                    const SizedBox(height: 18),
-                                    // Tombol Unsubmit (Batalkan Pengiriman)
-                                    _fullWidthButton(
-                                      'Batalkan Pengiriman',
-                                      color: const Color(0xFFEF4444),
-                                      textColor: Colors.white,
-                                      onTap: () {
-                                        kelas.cancelSubmission(key);
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              kelas.isLate(key)
-                                                  ? 'Pengiriman dibatalkan. Tugas ditandai Terlambat karena telah melewati deadline.'
-                                                  : 'Pengiriman dibatalkan. Tugas kembali ke kategori Segera.',
-                                            ),
-                                            backgroundColor: kelas.isLate(key)
-                                                ? const Color(0xFFEF4444)
-                                                : const Color(0xFFF59E0B),
-                                            behavior: SnackBarBehavior.floating,
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                    const SizedBox(height: 36),
-                                  ] else ...[
-                                    if (!hasDoc)
-                                      Container(
-                                        height: 96,
-                                        decoration: BoxDecoration(
-                                          color: isDark ? const Color(0xFF1E2532) : const Color(0xFFF8FAFC),
-                                          borderRadius: BorderRadius.circular(16),
-                                          border: Border.all(
-                                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                                            width: 1.5,
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(Icons.cloud_upload_outlined,
-                                                  color: const Color(0xFF2563EB), size: 30),
-                                              const SizedBox(height: 6),
-                                              Text(
-                                                'Belum ada dokumen yang diunggah',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: isDark ? Colors.white60 : const Color(0xFF64748B),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      )
-                                    else
+                          Expanded(
+                            child: ScrollConfiguration(
+                              behavior: const _NoScrollbarBehavior(),
+                              child: SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 8,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    if (isCompleted) ...[
                                       _docChip(fileName, isDark),
-                                    const SizedBox(height: 14),
-                                    _fullWidthButton(
-                                      '+ Unggah Dokumen Di Sini',
-                                      color: isDark ? const Color(0xFF1E2532) : const Color(0xFFEFF6FF),
-                                      textColor: const Color(0xFF2563EB),
-                                      borderColor: const Color(0xFF2563EB).withValues(alpha: 0.3),
-                                      onTap: () => kelas.uploadDoc(key),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    _fullWidthButton(
-                                      'Tandai Selesai',
-                                      color: const Color(0xFF2563EB),
-                                      textColor: Colors.white,
-                                      onTap: () => kelas.markComplete(key),
-                                    ),
-                                    const SizedBox(height: 36),
+                                      const SizedBox(height: 18),
+                                      _fullWidthButton(
+                                        'Batalkan Pengiriman',
+                                        color: const Color(0xFFEF4444),
+                                        textColor: Colors.white,
+                                        onTap: () {
+                                          kelas.cancelSubmission(key);
+
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                kelas.isLate(key)
+                                                    ? 'Pengiriman dibatalkan. Tugas ditandai Terlambat karena telah melewati deadline.'
+                                                    : 'Pengiriman dibatalkan. Tugas kembali ke kategori Segera.',
+                                              ),
+                                              backgroundColor:
+                                                  kelas.isLate(key)
+                                                      ? const Color(0xFFDC2626)
+                                                      : const Color(0xFFF59E0B),
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ] else ...[
+                                      if (!hasDoc)
+                                        Container(
+                                          height: 96,
+                                          decoration: BoxDecoration(
+                                            color: secondaryBg,
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                            border: Border.all(
+                                              color: borderColor,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                const Icon(
+                                                  Icons.cloud_upload_outlined,
+                                                  color: Color(0xFF60A5FA),
+                                                  size: 30,
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Text(
+                                                  'Belum ada dokumen yang diunggah',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: isDark
+                                                        ? const Color(0xFFCBD5E1)
+                                                        : const Color(0xFF64748B),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        _docChip(fileName, isDark),
+                                      const SizedBox(height: 14),
+                                      _fullWidthButton(
+                                        '+ Unggah Dokumen Di Sini',
+                                        color: isDark
+                                            ? const Color(0xFF354258)
+                                            : const Color(0xFFEFF6FF),
+                                        textColor: isDark
+                                            ? const Color(0xFFBFDBFE)
+                                            : const Color(0xFF2563EB),
+                                        borderColor:
+                                            const Color(0xFF60A5FA),
+                                        onTap: () => kelas.uploadDoc(key),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      _fullWidthButton(
+                                        'Tandai Selesai',
+                                        color: const Color(0xFF2563EB),
+                                        textColor: Colors.white,
+                                        onTap: () =>
+                                            kelas.markComplete(key),
+                                      ),
+                                    ],
+                                    const SizedBox(height: 24),
                                   ],
-                                ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _statusBadge(bool isCompleted, bool isLate, bool isDark) {
+    final Color badgeColor = isCompleted
+        ? (isDark
+            ? const Color(0xFF6EE7B7)
+            : const Color(0xFF10B981))
+        : isLate
+            ? (isDark
+                ? const Color(0xFFFCA5A5)
+                : const Color(0xFFEF4444))
+            : (isDark
+                ? const Color(0xFFFDE68A)
+                : const Color(0xFFD97706));
+
+    final badgeBg = isCompleted
+        ? const Color(0xFF065F46).withValues(alpha: isDark ? 0.5 : 0.12)
+        : isLate
+            ? const Color(0xFF7F1D1D).withValues(alpha: isDark ? 0.5 : 0.12)
+            : const Color(0xFF78350F).withValues(alpha: isDark ? 0.5 : 0.12);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: isDark ? badgeBg : badgeColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: badgeColor.withValues(alpha: isDark ? 0.85 : 0.3),
+          width: 1.2,
         ),
-      );
-    });
+      ),
+      child: Text(
+        isCompleted
+            ? 'Diserahkan'
+            : isLate
+                ? 'Terlambat'
+                : 'Belum Diserahkan',
+        style: TextStyle(
+          fontSize: 11,
+          color: badgeColor,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
   }
 
   Widget _docChip(String fileName, bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E2532) : const Color(0xFFF8FAFC),
+        color: isDark
+            ? const Color(0xFF354258)
+            : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          color: isDark
+              ? const Color(0xFF64748B)
+              : const Color(0xFFE2E8F0),
           width: 1.2,
         ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.description_rounded, color: Color(0xFF2563EB), size: 24),
+          const Icon(
+            Icons.description_rounded,
+            color: Color(0xFF60A5FA),
+            size: 24,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -639,7 +810,9 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    color: isDark
+                        ? Colors.white
+                        : const Color(0xFF0F172A),
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -648,13 +821,19 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                   'Lampiran Tugas Mahasiswa',
                   style: TextStyle(
                     fontSize: 11,
-                    color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                    color: isDark
+                        ? const Color(0xFFCBD5E1)
+                        : const Color(0xFF64748B),
                   ),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 18),
+          const Icon(
+            Icons.check_circle_rounded,
+            color: Color(0xFF34D399),
+            size: 18,
+          ),
         ],
       ),
     );
@@ -675,11 +854,14 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(16),
-          border: borderColor != null ? Border.all(color: borderColor) : null,
+          border: borderColor != null
+              ? Border.all(color: borderColor)
+              : null,
           boxShadow: [
             BoxShadow(
               color: color == const Color(0xFFEF4444)
-                  ? const Color(0xFFEF4444).withValues(alpha: 0.28)
+                  ? const Color(0xFFEF4444)
+                      .withValues(alpha: 0.28)
                   : Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 3),

@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'kelas_screen.dart';
@@ -6,6 +7,7 @@ import 'kelas_provider.dart';
 
 class TugasListScreen extends StatefulWidget {
   final String type;
+
   const TugasListScreen({super.key, required this.type});
 
   @override
@@ -24,194 +26,283 @@ class _TugasListScreenState extends State<TugasListScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1E222A) : const Color(0xFFF7F9FC);
-    final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final cardBg = isDark ? const Color(0xFF282D37) : Colors.white;
 
-    return Consumer<KelasProvider>(builder: (context, kelas, _) {
-      // 1. Tugas Selesai (semua tugas yang ditandai complete di provider)
-      final allAvailableTasks = [...allSegeraTasks, ...allSelesaiTasks];
+    final bgColor = isDark
+        ? const Color(0xFF1E222A)
+        : const Color(0xFFF7F9FC);
 
-      final selesaiTasks = allAvailableTasks
-          .where((t) => kelas.isCompleted('${t.className}|${t.title}'))
-          .map((t) => TaskItem(t.title, t.subtitle, 'Diserahkan', t.className))
-          .toList();
+    final titleColor = isDark
+        ? Colors.white
+        : const Color(0xFF0F172A);
 
-      // 2. Tugas Terlambat (tugas yang diunsub dan lewat deadline)
-      final terlambatTasks = allAvailableTasks
-          .where((t) => !kelas.isCompleted('${t.className}|${t.title}') && kelas.isLate('${t.className}|${t.title}'))
-          .map((t) => TaskItem(t.title, t.subtitle, 'Terlambat', t.className))
-          .toList();
+    final cardBg = isDark
+        ? const Color(0xFF252D3A)
+        : Colors.white;
 
-      // 3. Tugas Segera (tugas yang belum complete dan belum terlambat)
-      final segeraTasks = allAvailableTasks
-          .where((t) => !kelas.isCompleted('${t.className}|${t.title}') && !kelas.isLate('${t.className}|${t.title}'))
-          .toList();
+    final borderColor = isDark
+        ? const Color(0xFF475569)
+        : const Color(0xFFE2E8F0);
 
-      List<TaskItem> activeTasks;
-      if (widget.type == 'segera') {
-        activeTasks = segeraTasks;
-      } else if (widget.type == 'selesai') {
-        activeTasks = selesaiTasks;
-      } else {
-        activeTasks = terlambatTasks;
-      }
+    return Consumer<KelasProvider>(
+      builder: (context, kelas, _) {
+        final allAvailableTasks = [
+          ...allSegeraTasks,
+          ...allSelesaiTasks,
+        ];
 
-      final classOptions = <String>{'Semua Mata Kuliah'};
-      for (var t in activeTasks) {
-        classOptions.add(t.className);
-      }
+        final selesaiTasks = allAvailableTasks
+            .where(
+              (t) => kelas.isCompleted('${t.className}|${t.title}'),
+            )
+            .map(
+              (t) => TaskItem(
+                t.title,
+                t.subtitle,
+                'Diserahkan',
+                t.className,
+              ),
+            )
+            .toList();
 
-      if (!classOptions.contains(_selectedClass)) _selectedClass = 'Semua Mata Kuliah';
+        final terlambatTasks = allAvailableTasks
+            .where(
+              (t) =>
+                  !kelas.isCompleted('${t.className}|${t.title}') &&
+                  kelas.isLate('${t.className}|${t.title}'),
+            )
+            .map(
+              (t) => TaskItem(
+                t.title,
+                t.subtitle,
+                'Terlambat',
+                t.className,
+              ),
+            )
+            .toList();
 
-      final filtered = _selectedClass == 'Semua Mata Kuliah'
-          ? activeTasks
-          : activeTasks.where((t) => t.className == _selectedClass).toList();
+        final segeraTasks = allAvailableTasks
+            .where(
+              (t) =>
+                  !kelas.isCompleted('${t.className}|${t.title}') &&
+                  !kelas.isLate('${t.className}|${t.title}'),
+            )
+            .map(
+              (t) => TaskItem(
+                t.title,
+                t.subtitle,
+                'Segera',
+                t.className,
+              ),
+            )
+            .toList();
 
-      return Scaffold(
-        backgroundColor: bgColor,
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(64),
-          child: Container(
-            color: const Color(0xFF1E2B52),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                child: Row(
-                  children: [
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
+        List<TaskItem> activeTasks;
+
+        if (widget.type == 'segera') {
+          activeTasks = segeraTasks;
+        } else if (widget.type == 'selesai') {
+          activeTasks = selesaiTasks;
+        } else {
+          activeTasks = terlambatTasks;
+        }
+
+        final classOptions = <String>{'Semua Mata Kuliah'};
+
+        for (var t in activeTasks) {
+          classOptions.add(t.className);
+        }
+
+        if (!classOptions.contains(_selectedClass)) {
+          _selectedClass = 'Semua Mata Kuliah';
+        }
+
+        final filtered = _selectedClass == 'Semua Mata Kuliah'
+            ? activeTasks
+            : activeTasks
+                .where((t) => t.className == _selectedClass)
+                .toList();
+
+        return Scaffold(
+          backgroundColor: bgColor,
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(64),
+            child: Container(
+              color: const Color(0xFF1E2B52),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        onPressed: () => Navigator.pop(context),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 16),
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        body: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Filter Mata Kuliah
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderColor),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(
+                          alpha: isDark ? 0.15 : 0.04,
+                        ),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: _selectedClass,
+                      dropdownColor: cardBg,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: titleColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      icon: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: isDark
+                            ? const Color(0xFFCBD5E1)
+                            : const Color(0xFF64748B),
+                      ),
+                      items: classOptions.map((v) {
+                        return DropdownMenuItem(
+                          value: v,
+                          child: Text(v),
+                        );
+                      }).toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setState(() => _selectedClass = v);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+
+                // Judul Daftar Tugas
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Modern Dropdown Filter Mata Kuliah
+                    Text(
+                      'Daftar Tugas',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: titleColor,
+                      ),
+                    ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: cardBg,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
+                        color: isDark
+                            ? const Color(0xFF354258)
+                            : const Color(0xFFE8EEFB),
+                        borderRadius: BorderRadius.circular(10),
+                        border: isDark
+                            ? Border.all(
+                                color: const Color(0xFF52627A),
+                              )
+                            : null,
                       ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          value: _selectedClass,
-                          dropdownColor: cardBg,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: isDark ? Colors.white : const Color(0xFF0F172A),
-                            fontWeight: FontWeight.w600,
-                          ),
-                          icon: Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: isDark ? Colors.white70 : const Color(0xFF64748B),
-                          ),
-                          items: classOptions.map((v) {
-                            return DropdownMenuItem(
-                              value: v,
-                              child: Text(v),
-                            );
-                          }).toList(),
-                          onChanged: (v) {
-                            if (v != null) setState(() => _selectedClass = v);
-                          },
+                      child: Text(
+                        '${filtered.length} Tugas',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? const Color(0xFFCBD5E1)
+                              : const Color(0xFF2563EB),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    // Section Title
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Daftar Tugas',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: titleColor,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2563EB).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '${filtered.length} Tugas',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF2563EB),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-
-                    _buildContent(context, filtered, isDark, cardBg),
                   ],
                 ),
-              ),
+
+                const SizedBox(height: 14),
+
+                _buildContent(
+                  context,
+                  filtered,
+                  isDark,
+                  cardBg,
+                  borderColor,
+                ),
+              ],
             ),
-          ],
-        ),
-      );
-    });
+          ),
+        );
+      },
+    );
   }
 
-  Widget _buildContent(BuildContext context, List<TaskItem> tasks, bool isDark, Color cardBg) {
+  Widget _buildContent(
+    BuildContext context,
+    List<TaskItem> tasks,
+    bool isDark,
+    Color cardBg,
+    Color borderColor,
+  ) {
     if (tasks.isEmpty) {
       final isTerlambat = widget.type == 'terlambat';
+
+      final iconColor = isDark
+          ? const Color(0xFF94A3B8)
+          : const Color(0xFF64748B);
+
       return Container(
         padding: const EdgeInsets.all(32),
         width: double.infinity,
         decoration: BoxDecoration(
           color: cardBg,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: borderColor),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+              color: Colors.black.withValues(
+                alpha: isDark ? 0.15 : 0.03,
+              ),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
@@ -224,20 +315,28 @@ class _TugasListScreenState extends State<TugasListScreen> {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: (isTerlambat ? const Color(0xFF10B981) : const Color(0xFF2563EB)).withValues(alpha: 0.1),
+                color: isDark
+                    ? const Color(0xFF34D399)
+                    : const Color(0xFF10B981),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                isTerlambat ? Icons.check_circle_outline_rounded : Icons.inbox_outlined,
-                color: isTerlambat ? const Color(0xFF10B981) : const Color(0xFF2563EB),
+                isTerlambat
+                    ? Icons.check_circle_outline_rounded
+                    : Icons.inbox_outlined,
+                color: iconColor,
                 size: 28,
               ),
             ),
             const SizedBox(height: 14),
             Text(
-              isTerlambat ? 'Bagus! Tidak ada tugas yang terlambat' : 'Tidak ada tugas dalam kategori ini',
+              isTerlambat
+                  ? 'Bagus! Tidak ada tugas yang terlambat'
+                  : 'Tidak ada tugas dalam kategori ini',
               style: TextStyle(
-                color: isDark ? Colors.white : const Color(0xFF1E293B),
+                color: isDark
+                    ? Colors.white
+                    : const Color(0xFF1E293B),
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
@@ -249,35 +348,72 @@ class _TugasListScreenState extends State<TugasListScreen> {
     }
 
     return Column(
-      children: tasks.map((t) => _buildTaskCard(context, t, isDark, cardBg)).toList(),
+      children: tasks
+          .map(
+            (t) => _buildTaskCard(
+              context,
+              t,
+              isDark,
+              cardBg,
+              borderColor,
+            ),
+          )
+          .toList(),
     );
   }
 
-  Widget _buildTaskCard(BuildContext context, TaskItem task, bool isDark, Color cardBg) {
+  Widget _buildTaskCard(
+    BuildContext context,
+    TaskItem task,
+    bool isDark,
+    Color cardBg,
+    Color borderColor,
+  ) {
     final bool isDone = task.status == 'Diserahkan';
     final bool isLate = task.status == 'Terlambat';
 
-    final Color badgeBg = isDone
-        ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.2 : 0.12)
-        : (isLate
-            ? const Color(0xFFEF4444).withValues(alpha: isDark ? 0.2 : 0.12)
-            : const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.2 : 0.12));
-
+    // Warna status dibuat lebih lembut
     final Color badgeText = isDone
-        ? const Color(0xFF10B981)
-        : (isLate ? const Color(0xFFEF4444) : const Color(0xFFD97706));
+        ? (isDark
+            ? const Color(0xFF86CDB2)
+            : const Color(0xFF10B981))
+        : isLate
+            ? (isDark
+                ? const Color(0xFFE59A9A)
+                : const Color(0xFFEF4444))
+            : (isDark
+                ? const Color(0xFFE4C27A)
+                : const Color(0xFFD97706));
+
+    final Color badgeBg = isDone
+        ? (isDark
+            ? const Color(0xFF315044)
+            : const Color(0xFF10B981).withValues(alpha: 0.1))
+        : isLate
+            ? (isDark
+                ? const Color(0xFF50383F)
+                : const Color(0xFFEF4444).withValues(alpha: 0.1))
+            : (isDark
+                ? const Color(0xFF504735)
+                : const Color(0xFFF59E0B).withValues(alpha: 0.1));
+
+    final Color iconColor = isDone
+        ? const Color(0xFF86CDB2)
+        : isLate
+            ? const Color(0xFFE59A9A)
+            : const Color(0xFFE4C27A);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-        ),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            color: Colors.black.withValues(
+              alpha: isDark ? 0.15 : 0.03,
+            ),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -300,22 +436,30 @@ class _TugasListScreenState extends State<TugasListScreen> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
+                // Ikon Tugas
                 Container(
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E2532) : const Color(0xFFF1F5F9),
+                    color: isDark
+                        ? const Color(0xFF354258)
+                        : const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
                     isDone
                         ? Icons.task_alt_rounded
-                        : (isLate ? Icons.warning_amber_rounded : Icons.assignment_outlined),
+                        : isLate
+                            ? Icons.warning_amber_rounded
+                            : Icons.assignment_outlined,
                     size: 22,
-                    color: badgeText,
+                    color: iconColor,
                   ),
                 ),
+
                 const SizedBox(width: 14),
+
+                // Informasi Tugas
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -325,31 +469,57 @@ class _TugasListScreenState extends State<TugasListScreen> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 4),
                       Text(
                         task.subtitle,
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                          color: isDark
+                              ? const Color(0xFFB0BDCE)
+                              : const Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        task.className,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? const Color(0xFF9EADBF)
+                              : const Color(0xFF64748B),
                         ),
                       ),
                     ],
                   ),
                 ),
+
+                const SizedBox(width: 8),
+
+                // Status Tugas
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: badgeBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: badgeText.withValues(alpha: 0.3)),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: badgeText.withValues(
+                        alpha: isDark ? 0.45 : 0.3,
+                      ),
+                    ),
                   ),
                   child: Text(
                     task.status,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: badgeText,
                     ),
