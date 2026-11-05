@@ -498,8 +498,6 @@ class _RiwayatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = _statusColor(pertemuan.status);
 
-    const numberColor = Color(0xFF60A5FA);
-
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
@@ -529,23 +527,25 @@ class _RiwayatTile extends StatelessWidget {
             height: 38,
             decoration: BoxDecoration(
               color: isDark
-                  ? const Color(0xFF323B4C)
-                  : const Color(0xFFEFF6FF),
+                  ? const Color(0xFF2563EB).withValues(alpha: 0.35)
+                  : const Color(0xFF2563EB).withValues(alpha: 0.15),
               shape: BoxShape.circle,
               border: Border.all(
                 color: isDark
-                    ? const Color(0xFF52627A)
+                    ? const Color(0xFF60A5FA).withValues(alpha: 0.7)
                     : const Color(0xFFBFDBFE),
-                width: 1,
+                width: 1.2,
               ),
             ),
             child: Center(
               child: Text(
                 '${pertemuan.nomor}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
-                  color: numberColor,
+                  color: isDark
+                      ? const Color(0xFF93C5FD)
+                      : const Color(0xFF2563EB),
                 ),
               ),
             ),
