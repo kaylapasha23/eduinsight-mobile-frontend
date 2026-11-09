@@ -1,8 +1,9 @@
-
 import 'package:flutter/material.dart';
+import '../../database/app_database.dart';
+import '../../services/academic_api_service.dart';
+import '../../services/notification_service.dart';
 import '../common_widgets.dart';
 import 'academic_widgets.dart';
-
 class NilaiMatkul {
   final int nomor;
   final String nama;
@@ -88,7 +89,114 @@ class NilaiScreen extends StatefulWidget {
 }
 
 class _NilaiScreenState extends State<NilaiScreen> {
-  ListItem _selected = pilihanSemester[0];
+  List<NilaiSemester> _listNilai = List.from(dataNilai);
+  List<ListItem> _dropdownItems = List.from(pilihanSemester);
+  late ListItem _selected;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = _dropdownItems.first;
+    _loadFromDriftOrSeed();
+  }
+
+  Future<void> _loadFromDriftOrSeed() async {
+    try {
+      final cached = await AppDb.instance.getNilaiFromDrift();
+      if (cached.isNotEmpty) {
+        _applyCachedData(cached);
+      } else {
+        final seedList = dataNilai.map((s) => {
+          'judul': s.judul,
+          'tahunAjaran': s.tahunAjaran,
+          'ips': s.ips,
+          'totalSks': s.totalSks,
+          'matkul': s.matkul.map((m) => {
+            'nomor': m.nomor,
+            'nama': m.nama,
+            'kode': m.kode,
+            'sks': m.sks,
+            'grade': m.grade,
+          }).toList(),
+        }).toList();
+        await AppDb.instance.saveNilaiToDrift(seedList);
+      }
+    } catch (_) {}
+  }
+
+  void _applyCachedData(List<Map<String, dynamic>> cached) {
+    final List<NilaiSemester> parsed = cached.map((c) {
+      final matkulList = (c['matkul'] as List? ?? []).map((m) {
+        return NilaiMatkul(
+          nomor: m['nomor'] ?? 0,
+          nama: m['nama'] ?? '',
+          kode: m['kode'] ?? '',
+          sks: m['sks'] ?? 0,
+          grade: m['grade'] ?? 'A',
+        );
+      }).toList();
+
+      return NilaiSemester(
+        judul: c['judul'] ?? '',
+        tahunAjaran: c['tahunAjaran'] ?? '',
+        ips: (c['ips'] as num?)?.toDouble() ?? 0.0,
+        totalSks: c['totalSks'] ?? 0,
+        matkul: matkulList,
+      );
+    }).toList();
+
+    if (parsed.isNotEmpty && mounted) {
+      setState(() {
+        _listNilai = parsed;
+        _dropdownItems = List.generate(
+          parsed.length,
+          (i) => ListItem(
+            value: i,
+            name: ' - ',
+          ),
+        );
+        if (_selected.value >= parsed.length) {
+          _selected = _dropdownItems.first;
+        } else {
+          _selected = _dropdownItems[_selected.value];
+        }
+      });
+    }
+  }
+
+  Future<void> _refreshFromBackend() async {
+    setState(() => _isLoading = true);
+
+    final bool success = await AcademicApiService.syncNilai();
+
+    final cached = await AppDb.instance.getNilaiFromDrift();
+    if (cached.isNotEmpty) {
+      _applyCachedData(cached);
+    }
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+
+      if (success) {
+        NotificationService.showPushNotification(
+          context,
+          title: 'Nilai Akademik Disinkronkan!',
+          body: 'Data KHS & Nilai semester terbaru dari server Express.js berhasil disimpan ke SQLite Drift.',
+          icon: Icons.school_rounded,
+          iconColor: const Color(0xFF2563EB),
+        );
+      } else {
+        NotificationService.showPushNotification(
+          context,
+          title: 'Mode Offline (SQLite Drift)',
+          body: 'Server offline. Data rincian nilai tetap dimuat dari database lokal SQLite.',
+          icon: Icons.cloud_off_rounded,
+          iconColor: const Color(0xFFF59E0B),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +205,8 @@ class _NilaiScreenState extends State<NilaiScreen> {
     final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final cardBg = isDark ? const Color(0xFF282D37) : Colors.white;
 
-    NilaiSemester smt = dataNilai[_selected.value];
+    final safeIndex = _selected.value.clamp(0, _listNilai.isNotEmpty ? _listNilai.length - 1 : 0);
+    NilaiSemester smt = _listNilai.isNotEmpty ? _listNilai[safeIndex] : dataNilai[0];
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -105,13 +214,17 @@ class _NilaiScreenState extends State<NilaiScreen> {
         children: [
           const BackHeaderBar(title: 'Rincian Nilai Semester'),
           Expanded(
-            child: SingleChildScrollView(
+            child: RefreshIndicator(
+              onRefresh: _refreshFromBackend,
+              color: const Color(0xFF2563EB),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   YellowDropdown(
-                    items: pilihanSemester,
+                    items: _dropdownItems,
                     selectedItem: _selected,
                     onChanged: (ListItem? value) {
                       if (value != null) {
@@ -177,6 +290,7 @@ class _NilaiScreenState extends State<NilaiScreen> {
                   ),
                   const SizedBox(height: 24),
                 ],
+              ),
               ),
             ),
           ),

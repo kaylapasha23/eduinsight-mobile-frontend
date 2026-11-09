@@ -1,8 +1,9 @@
-
 import 'package:flutter/material.dart';
+import '../../database/app_database.dart';
+import '../../services/academic_api_service.dart';
+import '../../services/notification_service.dart';
 import '../common_widgets.dart';
 import 'academic_widgets.dart';
-
 class Pertemuan {
   final int nomor;
   final String topik;
@@ -138,7 +139,105 @@ class KehadiranScreen extends StatefulWidget {
 }
 
 class _KehadiranScreenState extends State<KehadiranScreen> {
-  ListItem _selected = pilihanMatkul[0];
+  List<MataKuliahHadir> _listMatkul = List.from(dataKehadiran);
+  List<ListItem> _dropdownItems = List.from(pilihanMatkul);
+  late ListItem _selected;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = _dropdownItems.first;
+    _loadFromDriftOrSeed();
+  }
+
+  Future<void> _loadFromDriftOrSeed() async {
+    try {
+      final cached = await AppDb.instance.getKehadiranFromDrift();
+      if (cached.isNotEmpty) {
+        _applyCachedData(cached);
+      } else {
+        final seedList = dataKehadiran.map((mk) => {
+          'nama': mk.nama,
+          'jadwal': mk.jadwal,
+          'riwayat': mk.riwayat.map((p) => {
+            'nomor': p.nomor,
+            'topik': p.topik,
+            'tanggal': p.tanggal,
+            'status': p.status,
+          }).toList(),
+        }).toList();
+        await AppDb.instance.saveKehadiranToDrift(seedList);
+      }
+    } catch (_) {}
+  }
+
+  void _applyCachedData(List<Map<String, dynamic>> cached) {
+    final List<MataKuliahHadir> parsed = cached.map((c) {
+      final riwayatList = (c['riwayat'] as List? ?? []).map((r) {
+        return Pertemuan(
+          nomor: r['nomor'] ?? 0,
+          topik: r['topik'] ?? '',
+          tanggal: r['tanggal'] ?? '',
+          status: r['status'] ?? 'Hadir',
+        );
+      }).toList();
+
+      return MataKuliahHadir(
+        nama: c['nama'] ?? '',
+        jadwal: c['jadwal'] ?? '',
+        riwayat: riwayatList,
+      );
+    }).toList();
+
+    if (parsed.isNotEmpty && mounted) {
+      setState(() {
+        _listMatkul = parsed;
+        _dropdownItems = List.generate(
+          parsed.length,
+          (i) => ListItem(value: i, name: parsed[i].nama),
+        );
+        if (_selected.value >= parsed.length) {
+          _selected = _dropdownItems.first;
+        } else {
+          _selected = _dropdownItems[_selected.value];
+        }
+      });
+    }
+  }
+
+  Future<void> _refreshFromBackend() async {
+    setState(() => _isLoading = true);
+
+    final bool success = await AcademicApiService.syncKehadiran();
+
+    final cached = await AppDb.instance.getKehadiranFromDrift();
+    if (cached.isNotEmpty) {
+      _applyCachedData(cached);
+    }
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+
+      if (success) {
+        NotificationService.showPushNotification(
+          context,
+          title: 'Presensi Disinkronkan!',
+          body: 'Data kehadiran terbaru dari server Express.js berhasil disimpan ke SQLite Drift.',
+          icon: Icons.check_circle_rounded,
+          iconColor: const Color(0xFF10B981),
+        );
+      } else {
+        NotificationService.showPushNotification(
+          context,
+          title: 'Mode Offline (SQLite Drift)',
+          body: 'Server offline. Data presensi tetap dimuat dari database lokal SQLite.',
+          icon: Icons.cloud_off_rounded,
+          iconColor: const Color(0xFFF59E0B),
+        );
+      }
+    }
+  }
 
   int _hitung(MataKuliahHadir mk, String status) {
     int jumlah = 0;
@@ -168,7 +267,8 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
         ? const Color(0xFF282D37)
         : Colors.white;
 
-    MataKuliahHadir mk = dataKehadiran[_selected.value];
+    final safeIndex = _selected.value.clamp(0, _listMatkul.isNotEmpty ? _listMatkul.length - 1 : 0);
+    MataKuliahHadir mk = _listMatkul.isNotEmpty ? _listMatkul[safeIndex] : dataKehadiran[0];
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -176,7 +276,11 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
         children: [
           const BackHeaderBar(title: 'Kehadiran'),
           Expanded(
-            child: SingleChildScrollView(
+            child: RefreshIndicator(
+              onRefresh: _refreshFromBackend,
+              color: const Color(0xFF2563EB),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(
                 horizontal: 20,
                 vertical: 16,
@@ -185,7 +289,7 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   YellowDropdown(
-                    items: pilihanMatkul,
+                    items: _dropdownItems,
                     selectedItem: _selected,
                     onChanged: (ListItem? value) {
                       if (value != null) {
@@ -233,6 +337,7 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
                   _buildRiwayat(mk, isDark, cardBg, titleColor),
                   const SizedBox(height: 24),
                 ],
+              ),
               ),
             ),
           ),

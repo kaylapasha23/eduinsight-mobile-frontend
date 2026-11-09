@@ -20,6 +20,8 @@ class CompletedTasks extends Table {
 class AppDb extends _$AppDb {
   AppDb() : super(driftDatabase(name: 'eduinsight'));
 
+  static final AppDb instance = AppDb();
+
   @override
   int get schemaVersion => 1;
 
@@ -45,4 +47,169 @@ class AppDb extends _$AppDb {
       (delete(completedTasks)
             ..where((t) => t.className.equals(className) & t.title.equals(title)))
           .go();
+
+  // ══════════════════════════════════════════════════════════════════
+  // TABEL SQLITE DRIFT UNTUK KEHADIRAN & NILAI (OFFLINE CACHE / SYNC)
+  // ══════════════════════════════════════════════════════════════════
+
+  Future<void> initAcademicTables() async {
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS kehadiran_cache (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        matkul_name TEXT NOT NULL,
+        matkul_jadwal TEXT NOT NULL,
+        nomor INTEGER NOT NULL,
+        topik TEXT NOT NULL,
+        tanggal TEXT NOT NULL,
+        status TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    ''');
+
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS nilai_cache (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        semester_judul TEXT NOT NULL,
+        tahun_ajaran TEXT NOT NULL,
+        ips REAL NOT NULL,
+        total_sks INTEGER NOT NULL,
+        matkul_nomor INTEGER NOT NULL,
+        matkul_nama TEXT NOT NULL,
+        matkul_kode TEXT NOT NULL,
+        matkul_sks INTEGER NOT NULL,
+        matkul_grade TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    ''');
+  }
+
+  // ─── KEHADIRAN SQLITE OPERATIONS ───
+
+  Future<void> saveKehadiranToDrift(List<Map<String, dynamic>> matkulList) async {
+    await initAcademicTables();
+    await customStatement('DELETE FROM kehadiran_cache');
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    for (final mk in matkulList) {
+      final String matkulName = mk['nama'] ?? '';
+      final String jadwal = mk['jadwal'] ?? '';
+      final List riwayat = mk['riwayat'] as List? ?? [];
+
+      for (final p in riwayat) {
+        await customInsert(
+          'INSERT INTO kehadiran_cache (matkul_name, matkul_jadwal, nomor, topik, tanggal, status, updated_at) '
+          'VALUES (?, ?, ?, ?, ?, ?, ?)',
+          variables: [
+            Variable.withString(matkulName),
+            Variable.withString(jadwal),
+            Variable.withInt(p['nomor'] ?? 0),
+            Variable.withString(p['topik'] ?? ''),
+            Variable.withString(p['tanggal'] ?? ''),
+            Variable.withString(p['status'] ?? 'Hadir'),
+            Variable.withInt(now),
+          ],
+        );
+      }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getKehadiranFromDrift() async {
+    await initAcademicTables();
+    final rows = await customSelect(
+      'SELECT * FROM kehadiran_cache ORDER BY matkul_name ASC, nomor DESC',
+    ).get();
+
+    if (rows.isEmpty) return [];
+
+    final Map<String, Map<String, dynamic>> grouped = {};
+    for (final row in rows) {
+      final name = row.read<String>('matkul_name');
+      final jadwal = row.read<String>('matkul_jadwal');
+
+      grouped.putIfAbsent(name, () => {
+        'nama': name,
+        'jadwal': jadwal,
+        'riwayat': <Map<String, dynamic>>[],
+      });
+
+      (grouped[name]!['riwayat'] as List<Map<String, dynamic>>).add({
+        'nomor': row.read<int>('nomor'),
+        'topik': row.read<String>('topik'),
+        'tanggal': row.read<String>('tanggal'),
+        'status': row.read<String>('status'),
+      });
+    }
+
+    return grouped.values.toList();
+  }
+
+  // ─── NILAI SQLITE OPERATIONS ───
+
+  Future<void> saveNilaiToDrift(List<Map<String, dynamic>> semesterList) async {
+    await initAcademicTables();
+    await customStatement('DELETE FROM nilai_cache');
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    for (final s in semesterList) {
+      final String judul = s['judul'] ?? '';
+      final String tahunAjaran = s['tahunAjaran'] ?? '';
+      final double ips = (s['ips'] as num?)?.toDouble() ?? 0.0;
+      final int totalSks = s['totalSks'] ?? 0;
+      final List matkul = s['matkul'] as List? ?? [];
+
+      for (final m in matkul) {
+        await customInsert(
+          'INSERT INTO nilai_cache (semester_judul, tahun_ajaran, ips, total_sks, matkul_nomor, matkul_nama, matkul_kode, matkul_sks, matkul_grade, updated_at) '
+          'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          variables: [
+            Variable.withString(judul),
+            Variable.withString(tahunAjaran),
+            Variable.withReal(ips),
+            Variable.withInt(totalSks),
+            Variable.withInt(m['nomor'] ?? 0),
+            Variable.withString(m['nama'] ?? ''),
+            Variable.withString(m['kode'] ?? ''),
+            Variable.withInt(m['sks'] ?? 0),
+            Variable.withString(m['grade'] ?? 'A'),
+            Variable.withInt(now),
+          ],
+        );
+      }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getNilaiFromDrift() async {
+    await initAcademicTables();
+    final rows = await customSelect(
+      'SELECT * FROM nilai_cache ORDER BY id ASC',
+    ).get();
+
+    if (rows.isEmpty) return [];
+
+    final Map<String, Map<String, dynamic>> grouped = {};
+    for (final row in rows) {
+      final judul = row.read<String>('semester_judul');
+      final tahun = row.read<String>('tahun_ajaran');
+      final ips = row.read<double>('ips');
+      final totalSks = row.read<int>('total_sks');
+
+      grouped.putIfAbsent(judul, () => {
+        'judul': judul,
+        'tahunAjaran': tahun,
+        'ips': ips,
+        'totalSks': totalSks,
+        'matkul': <Map<String, dynamic>>[],
+      });
+
+      (grouped[judul]!['matkul'] as List<Map<String, dynamic>>).add({
+        'nomor': row.read<int>('matkul_nomor'),
+        'nama': row.read<String>('matkul_nama'),
+        'kode': row.read<String>('matkul_kode'),
+        'sks': row.read<int>('matkul_sks'),
+        'grade': row.read<String>('matkul_grade'),
+      });
+    }
+
+    return grouped.values.toList();
+  }
 }
