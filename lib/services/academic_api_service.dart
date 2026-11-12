@@ -18,7 +18,7 @@ class AcademicApiService {
       try {
         final res = await http
             .get(Uri.parse('$base/$endpoint'))
-            .timeout(const Duration(seconds: 3));
+            .timeout(const Duration(seconds: 2));
         if (res.statusCode == 200) {
           return res;
         }
@@ -67,5 +67,58 @@ class AcademicApiService {
       // Offline fallback
     }
     return false;
+  }
+
+  /// Mengambil semua daftar tugas aktif/riwayat dari backend
+  static Future<List<Map<String, dynamic>>?> fetchTugas() async {
+    try {
+      final res = await _getWithFallback('tugas');
+      if (res != null) {
+        final dynamic body = jsonDecode(res.body);
+        if (body is List) {
+          return body.map((e) => Map<String, dynamic>.from(e)).toList();
+        } else if (body is Map && body['data'] is List) {
+          return (body['data'] as List).map((e) => Map<String, dynamic>.from(e)).toList();
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
+    return null;
+  }
+
+  /// Mengambil semua jadwal kelas dari backend
+  static Future<List<Map<String, dynamic>>?> fetchClasses() async {
+    try {
+      final res = await _getWithFallback('classes');
+      if (res != null) {
+        final dynamic body = jsonDecode(res.body);
+        if (body is List) {
+          return body.map((e) => Map<String, dynamic>.from(e)).toList();
+        } else if (body is Map && body['data'] is List) {
+          return (body['data'] as List).map((e) => Map<String, dynamic>.from(e)).toList();
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
+    return null;
+  }
+
+  /// Mengambil total mahasiswa dari backend untuk sinkronisasi ranking
+  static Future<int?> fetchTotalMahasiswa() async {
+    try {
+      final res = await _getWithFallback('users');
+      if (res != null) {
+        final dynamic body = jsonDecode(res.body);
+        if (body is List) {
+          final mhsList = body.where((u) => u['role'] == 'mahasiswa').toList();
+          return mhsList.length;
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
+    return null;
   }
 }

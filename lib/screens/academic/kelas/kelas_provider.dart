@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'kelas_screen.dart';
+import '../../../services/academic_api_service.dart';
 
 /// Keys are formatted as "ClassName|TaskTitle"
 class KelasProvider extends ChangeNotifier {
   static const _prefUserCompleted = 'kelas_user_completed';
   static const _prefLateTasks = 'kelas_late_tasks';
+
+  // Dynamic backend tasks
+  List<TaskItem> _dynamicTasks = [];
+  bool _isLoading = false;
 
   // Tasks that are initially "selesai" (pre-submitted default tasks)
   final Set<String> _initiallyCompleted = {
@@ -12,7 +18,6 @@ class KelasProvider extends ChangeNotifier {
     'Basis Data|Latihan SQL Dasar',
     'Pemrograman Web|Tugas Array & Function',
     'Internet of Things (IoT)|Laporan Praktikum 1',
-    // Detailed list keys from previous mock data
     'UI/UX|CBL 2: Low-Fidelity',
     'Statistika dan Data|Quizziz Matriks',
     'Kecerdasan Buatan|AI Klasik dan Modern',
@@ -33,6 +38,47 @@ class KelasProvider extends ChangeNotifier {
 
   KelasProvider() {
     _loadPersistedState();
+    syncWithBackend();
+  }
+
+  bool get isLoading => _isLoading;
+  List<TaskItem> get dynamicTasks => _dynamicTasks;
+
+  /// Load tasks from Backend API
+  Future<void> syncWithBackend() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final list = await AcademicApiService.fetchTugas();
+      if (list != null && list.isNotEmpty) {
+        _dynamicTasks = list.map((item) {
+          final title = item['title']?.toString() ?? 'Tugas';
+          final className = item['class_name']?.toString() ?? 'Mata Kuliah';
+          final deadline = item['deadline_text']?.toString() ?? 'Hari ini, 23.59';
+          final category = item['category']?.toString() ?? 'segera';
+          return TaskItem(
+            title,
+            className,
+            deadline,
+            className,
+            isDefaultPastDeadline: category == 'selesai' || category == 'terlambat',
+          );
+        }).toList();
+
+        for (final item in list) {
+          final key = '${item['class_name']}|${item['title']}';
+          if (item['category'] == 'selesai') {
+            _initiallyCompleted.add(key);
+          }
+        }
+      }
+    } catch (_) {
+      // offline fallback
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   /// Load persisted state dari SharedPreferences
@@ -67,7 +113,10 @@ class KelasProvider extends ChangeNotifier {
 
   bool isCompleted(String key) => completedKeys.contains(key);
   bool isLate(String key) => _lateTasks.contains(key);
-  bool hasDoc(String key) => _docUploaded.contains(key) || _initiallyCompleted.contains(key) || _userCompleted.contains(key);
+  bool hasDoc(String key) =>
+      _docUploaded.contains(key) ||
+      _initiallyCompleted.contains(key) ||
+      _userCompleted.contains(key);
 
   int get selesaiCount => completedKeys.length;
 

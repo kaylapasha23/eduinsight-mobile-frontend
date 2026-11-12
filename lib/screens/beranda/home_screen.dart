@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../academic/kelas/kelas_provider.dart';
+import '../academic/kelas/kelas_screen.dart';
 import '../common_widgets.dart';
 import '../academic/kelas/detail_tugas_screen.dart';
 
@@ -229,18 +231,82 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 22),
 
                   // ================= SECTION 2: TUGAS MENDATANG =================
-                  _buildSectionHeader(
-                    title: 'Tugas Mendatang',
-                    badgeText: '${daftarTugasMendatang.length} Tugas',
-                    badgeColor: const Color(0xFFE11D48),
-                    titleColor: titleColor,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: 12),
-                  Column(
-                    children: daftarTugasMendatang
-                        .map((task) => _buildUpcomingTaskCard(task, isDark, cardBg))
-                        .toList(),
+                  Consumer<KelasProvider>(
+                    builder: (context, kelasProvider, _) {
+                      final availableTasks = kelasProvider.dynamicTasks.isNotEmpty
+                          ? kelasProvider.dynamicTasks
+                          : [...allSegeraTasks, ...allSelesaiTasks];
+                      final segeraList = availableTasks
+                          .where((t) => !kelasProvider.isCompleted('${t.className}|${t.title}') && !kelasProvider.isLate('${t.className}|${t.title}'))
+                          .toList();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionHeader(
+                            title: 'Tugas Mendatang',
+                            badgeText: '${segeraList.length} Tugas',
+                            badgeColor: const Color(0xFFE11D48),
+                            titleColor: titleColor,
+                            isDark: isDark,
+                          ),
+                          const SizedBox(height: 12),
+                          if (segeraList.isEmpty)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                              margin: const EdgeInsets.only(bottom: 12),
+                              decoration: BoxDecoration(
+                                color: cardBg,
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.task_alt_rounded,
+                                    size: 36,
+                                    color: isDark ? const Color(0xFF34D399) : const Color(0xFF10B981),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Tidak Ada Tugas Mendatang',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: titleColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Semua tugas telah diselesaikan atau belum ada tugas baru.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: subtitleColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            Column(
+                              children: segeraList.map((t) {
+                                final item = UpcomingTaskItem(
+                                  title: t.title,
+                                  course: t.className,
+                                  deadline: t.status,
+                                  tag: 'Segera',
+                                  taskKey: '${t.className}|${t.title}',
+                                );
+                                return _buildUpcomingTaskCard(item, isDark, cardBg);
+                              }).toList(),
+                            ),
+                        ],
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 24),

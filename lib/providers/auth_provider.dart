@@ -31,7 +31,7 @@ class AuthProvider extends ChangeNotifier {
     final loggedIn = await AuthService.isLoggedIn();
     if (loggedIn) {
       _isLoggedIn = true;
-      _user = await AuthService.getSavedUser();
+      _user = await AuthService.getUser();
       _token = await AuthService.getToken();
     }
 

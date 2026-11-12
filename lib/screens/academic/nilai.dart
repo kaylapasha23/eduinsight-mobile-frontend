@@ -92,7 +92,6 @@ class _NilaiScreenState extends State<NilaiScreen> {
   List<NilaiSemester> _listNilai = List.from(dataNilai);
   List<ListItem> _dropdownItems = List.from(pilihanSemester);
   late ListItem _selected;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -166,7 +165,6 @@ class _NilaiScreenState extends State<NilaiScreen> {
   }
 
   Future<void> _refreshFromBackend() async {
-    setState(() => _isLoading = true);
 
     final bool success = await AcademicApiService.syncNilai();
 
@@ -176,7 +174,6 @@ class _NilaiScreenState extends State<NilaiScreen> {
     }
 
     if (mounted) {
-      setState(() => _isLoading = false);
 
       if (success) {
         NotificationService.showPushNotification(

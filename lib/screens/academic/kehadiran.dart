@@ -142,7 +142,6 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
   List<MataKuliahHadir> _listMatkul = List.from(dataKehadiran);
   List<ListItem> _dropdownItems = List.from(pilihanMatkul);
   late ListItem _selected;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -207,7 +206,6 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
   }
 
   Future<void> _refreshFromBackend() async {
-    setState(() => _isLoading = true);
 
     final bool success = await AcademicApiService.syncKehadiran();
 
@@ -217,7 +215,6 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
     }
 
     if (mounted) {
-      setState(() => _isLoading = false);
 
       if (success) {
         NotificationService.showPushNotification(

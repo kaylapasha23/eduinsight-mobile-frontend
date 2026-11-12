@@ -45,10 +45,12 @@ class _TugasListScreenState extends State<TugasListScreen> {
 
     return Consumer<KelasProvider>(
       builder: (context, kelas, _) {
-        final allAvailableTasks = [
-          ...allSegeraTasks,
-          ...allSelesaiTasks,
-        ];
+        final allAvailableTasks = kelas.dynamicTasks.isNotEmpty
+            ? kelas.dynamicTasks
+            : [
+                ...allSegeraTasks,
+                ...allSelesaiTasks,
+              ];
 
         final selesaiTasks = allAvailableTasks
             .where(

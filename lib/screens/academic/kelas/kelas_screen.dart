@@ -107,40 +107,18 @@ class KelasScreen extends StatelessWidget {
   }
 
   int _hitungJumlah(String type, KelasProvider kelas) {
-    final userCompletedSegeraCount = allSegeraTasks
+    final availableTasks = kelas.dynamicTasks.isNotEmpty
+        ? kelas.dynamicTasks
+        : [...allSegeraTasks, ...allSelesaiTasks];
+    final totalSelesai = availableTasks
         .where((t) => kelas.isCompleted('${t.className}|${t.title}'))
         .length;
-
-    final activeSelesaiCount = allSelesaiTasks
-        .where((t) => kelas.isCompleted('${t.className}|${t.title}'))
+    final totalTerlambat = availableTasks
+        .where((t) => !kelas.isCompleted('${t.className}|${t.title}') && kelas.isLate('${t.className}|${t.title}'))
         .length;
-
-    final totalSelesai =
-        activeSelesaiCount + userCompletedSegeraCount;
-
-    final lateFromSegera = allSegeraTasks
-        .where((t) => kelas.isLate('${t.className}|${t.title}'))
+    final totalSegera = availableTasks
+        .where((t) => !kelas.isCompleted('${t.className}|${t.title}') && !kelas.isLate('${t.className}|${t.title}'))
         .length;
-
-    final lateFromSelesai = allSelesaiTasks
-        .where((t) =>
-            !kelas.isCompleted('${t.className}|${t.title}') &&
-            kelas.isLate('${t.className}|${t.title}'))
-        .length;
-
-    final totalTerlambat = lateFromSegera + lateFromSelesai;
-
-    final totalSegera = allSegeraTasks
-            .where((t) =>
-                !kelas.isCompleted('${t.className}|${t.title}') &&
-                !kelas.isLate('${t.className}|${t.title}'))
-            .length +
-        allSelesaiTasks
-            .where((t) =>
-                !kelas.isCompleted('${t.className}|${t.title}') &&
-                !kelas.isLate('${t.className}|${t.title}'))
-            .length;
-
     if (type == 'segera') return totalSegera;
     if (type == 'terlambat') return totalTerlambat;
     if (type == 'selesai') return totalSelesai;

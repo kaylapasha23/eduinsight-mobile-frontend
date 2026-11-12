@@ -1,4 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+/// Notifikasi sistem (status bar HP)
+class SystemNotificationService {
+  static final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  // Inisialisasi awal (panggil di main.dart)
+  static Future<void> init() async {
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const initSettings = InitializationSettings(android: androidSettings);
+    await _notificationsPlugin.initialize(initSettings);
+
+    // Minta izin notifikasi untuk Android 13+
+    _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+  }
+
+  // Fungsi memicu notifikasi status bar HP
+  static Future<void> showSystemNotification({
+    required String title,
+    required String body,
+  }) async {
+    const androidDetails = AndroidNotificationDetails(
+      'eduinsight_channel',
+      'EduInsight Notifikasi',
+      channelDescription: 'Notifikasi Sinkronisasi & Evaluasi Akademik',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: true,
+    );
+    const details = NotificationDetails(android: androidDetails);
+    await _notificationsPlugin.show(
+      DateTime.now().millisecond,
+      title,
+      body,
+      details,
+    );
+  }
+}
 
 class EduNotification {
   final String id;
@@ -20,6 +62,7 @@ class EduNotification {
   });
 }
 
+/// Notifikasi in-app (banner overlay + riwayat)
 class NotificationService {
   static final List<EduNotification> _history = [];
   static final ValueNotifier<int> unreadCount = ValueNotifier<int>(0);

@@ -1,25 +1,121 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../providers/token_store.dart'; // flutter_secure_storage untuk token
+import '../providers/token_store.dart' as store;
 
 class AuthService {
-  // Gunakan 10.0.2.2 untuk Android emulator, localhost untuk Web/Desktop
-  // Ubah ke IP lokal jika testing di device fisik
-  static const String _baseUrl = 'http://10.0.2.2:3000/api/auth';
-  static const String _baseUrlWeb = 'http://localhost:3000/api/auth';
+  // Daftar URL backend dengan port 5001 (utama) dan 3000 (cadangan)
+  // Mendukung Android Emulator (10.0.2.2), Web/Desktop (localhost & 127.0.0.1), dan HP Fisik Wi-Fi (192.168.100.24)
+  static const List<String> _candidateBaseUrls = [
+    'http://10.0.2.2:5001/api/auth',
+    'http://localhost:5001/api/auth',
+    'http://127.0.0.1:5001/api/auth',
+    'http://192.168.100.24:5001/api/auth',
+    'http://10.0.2.2:3000/api/auth',
+    'http://localhost:3000/api/auth',
+    'http://192.168.100.24:3000/api/auth',
+  ];
+
+  static String? _cachedWorkingUrl;
 
   static const String _tokenKey = 'auth_token'; // hanya untuk membersihkan token lama
   static const String _userKey = 'auth_user';
 
-  /// Deteksi base URL berdasarkan platform
-  static String get baseUrl {
-    // Untuk Flutter Web, gunakan localhost
-    // Untuk Android emulator, gunakan 10.0.2.2
-    // Bisa diubah sesuai kebutuhan
-    return const bool.fromEnvironment('dart.library.js_util')
-        ? _baseUrlWeb
-        : _baseUrl;
+  // ─────────────────────────────────────────
+  // TOKEN (wrapper ke token_store.dart)
+  // ─────────────────────────────────────────
+  static Future<String?> getToken() => store.getToken();
+  static Future<void> saveToken(String token) => store.saveToken(token);
+  static Future<void> clearToken() => store.clearToken();
+
+  /// Helper untuk POST dengan mencoba semua kandidat URL otomatis
+  static Future<http.Response> _postWithFallback(
+    String endpoint, {
+    required Map<String, dynamic> body,
+    Map<String, String>? headers,
+  }) async {
+    final mergedHeaders = {
+      'Content-Type': 'application/json',
+      ...?headers,
+    };
+    final encodedBody = jsonEncode(body);
+
+    if (_cachedWorkingUrl != null) {
+      try {
+        final res = await http
+            .post(
+              Uri.parse('$_cachedWorkingUrl/$endpoint'),
+              headers: mergedHeaders,
+              body: encodedBody,
+            )
+            .timeout(const Duration(seconds: 4));
+        return res;
+      } catch (e) {
+        debugPrint('Gagal di $_cachedWorkingUrl: $e');
+        _cachedWorkingUrl = null;
+      }
+    }
+
+    for (final base in _candidateBaseUrls) {
+      try {
+        final res = await http
+            .post(
+              Uri.parse('$base/$endpoint'),
+              headers: mergedHeaders,
+              body: encodedBody,
+            )
+            .timeout(const Duration(seconds: 3));
+        _cachedWorkingUrl = base;
+        return res;
+      } catch (e) {
+        debugPrint('Gagal di $base: $e');
+        // coba kandidat berikutnya
+      }
+    }
+
+    throw Exception(
+      'Tidak dapat terhubung ke server backend di port 5001 maupun 3000. Pastikan node server.js sedang berjalan.',
+    );
+  }
+
+  /// Helper untuk GET dengan mencoba semua kandidat URL otomatis
+  static Future<http.Response> _getWithFallback(
+    String endpoint, {
+    Map<String, String>? headers,
+  }) async {
+    if (_cachedWorkingUrl != null) {
+      try {
+        final res = await http
+            .get(
+              Uri.parse('$_cachedWorkingUrl/$endpoint'),
+              headers: headers,
+            )
+            .timeout(const Duration(seconds: 4));
+        return res;
+      } catch (e) {
+        debugPrint('Gagal di $_cachedWorkingUrl: $e');
+        _cachedWorkingUrl = null;
+      }
+    }
+
+    for (final base in _candidateBaseUrls) {
+      try {
+        final res = await http
+            .get(
+              Uri.parse('$base/$endpoint'),
+              headers: headers,
+            )
+            .timeout(const Duration(seconds: 3));
+        _cachedWorkingUrl = base;
+        return res;
+      } catch (e) {
+        debugPrint('Gagal di $base: $e');
+        // coba kandidat berikutnya
+      }
+    }
+
+    throw Exception('Tidak dapat terhubung ke backend.');
   }
 
   // ─────────────────────────────────────────
@@ -30,24 +126,50 @@ class AuthService {
     required String password,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+      final response = await _postWithFallback(
+        'login',
+        body: {
           'email': email.trim(),
           'password': password,
-        }),
+        },
       );
 
-      final data = jsonDecode(response.body);
+      final decoded = jsonDecode(response.body);
+      final Map<String, dynamic> data =
+          decoded is Map<String, dynamic> ? decoded : {};
 
       if (response.statusCode == 200 && data['success'] == true) {
-        // Token -> secure storage, data user -> SharedPreferences
-        await _saveToken(data['data']['token']);
-        await _saveUser(data['data']['user']);
+        // Dukung 2 bentuk: {data:{token,user}} atau {token,user} di level atas
+        final payload = (data['data'] is Map<String, dynamic>)
+            ? data['data'] as Map<String, dynamic>
+            : data;
+
+        final token = payload['token']?.toString();
+        final user = payload['user'];
+
+        if (token == null || token.isEmpty) {
+          return {
+            'success': false,
+            'message': 'Server tidak mengirim token. Respons: ${response.body}',
+          };
+        }
+
+        await _saveToken(token);
+        if (user is Map<String, dynamic>) {
+          await _saveUser(user);
+        }
+
+        // Seragamkan bentuk supaya AuthProvider tetap membaca result['data']
+        return {
+          'success': true,
+          'message': data['message'],
+          'data': {'token': token, 'user': user},
+        };
       }
 
-      return data;
+      return data.isNotEmpty
+          ? data
+          : {'success': false, 'message': 'Respons server tidak valid.'};
     } catch (e) {
       return {
         'success': false,
@@ -65,14 +187,13 @@ class AuthService {
     required String confirmPassword,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/reset-password'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+      final response = await _postWithFallback(
+        'reset-password',
+        body: {
           'email': email.trim(),
           'newPassword': newPassword,
           'confirmPassword': confirmPassword,
-        }),
+        },
       );
 
       final data = jsonDecode(response.body);
@@ -96,10 +217,10 @@ class AuthService {
         return {'success': true, 'message': 'Sesi sudah berakhir.'};
       }
 
-      final response = await http.post(
-        Uri.parse('$baseUrl/logout'),
+      final response = await _postWithFallback(
+        'logout',
+        body: {},
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
@@ -129,8 +250,8 @@ class AuthService {
         return {'success': false, 'message': 'Token tidak ditemukan.'};
       }
 
-      final response = await http.get(
-        Uri.parse('$baseUrl/profile'),
+      final response = await _getWithFallback(
+        'profile',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -150,7 +271,7 @@ class AuthService {
   // LOCAL TOKEN & USER MANAGEMENT
   // ─────────────────────────────────────────
 
-  /// Simpan JWT token ke SECURE STORAGE (terenkripsi), bukan SharedPreferences
+  /// Simpan JWT token lewat token_store (SharedPreferences)
   static Future<void> _saveToken(String token) async {
     await saveToken(token);
   }
@@ -161,30 +282,32 @@ class AuthService {
     await prefs.setString(_userKey, jsonEncode(user));
   }
 
-  /// Ambil JWT token dari secure storage
-  static Future<String?> getToken() async {
-    return await readToken();
-  }
-
-  /// Ambil user data yang tersimpan
-  static Future<Map<String, dynamic>?> getSavedUser() async {
+  /// Ambil user data dari SharedPreferences
+  static Future<Map<String, dynamic>?> getUser() async {
     final prefs = await SharedPreferences.getInstance();
-    final userStr = prefs.getString(_userKey);
-    if (userStr == null) return null;
-    return jsonDecode(userStr);
+    final userString = prefs.getString(_userKey);
+    if (userString == null) return null;
+    try {
+      return jsonDecode(userString);
+    } catch (_) {
+      return null;
+    }
   }
 
-  /// Cek apakah user sudah login (ada token tersimpan)
+  /// Alias dari getUser (dipakai oleh AuthProvider)
+  static Future<Map<String, dynamic>?> getSavedUser() => getUser();
+
+  /// Bersihkan session (logout)
+  static Future<void> _clearSession() async {
+    await clearToken();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userKey);
+    await prefs.remove(_tokenKey); // bersihkan jika ada token lama
+  }
+
+  /// Cek apakah user sedang login
   static Future<bool> isLoggedIn() async {
     final token = await getToken();
     return token != null && token.isNotEmpty;
-  }
-
-  /// Hapus session lokal (token + user data)
-  static Future<void> _clearSession() async {
-    await clearToken(); // hapus token di secure storage
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey); // bersihkan sisa token lama (versi sebelumnya)
-    await prefs.remove(_userKey);
   }
 }

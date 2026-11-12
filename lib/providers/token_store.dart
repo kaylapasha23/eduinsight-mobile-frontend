@@ -14,6 +14,9 @@ Future<String?> readToken() async {
   return prefs.getString(_tokenKey);
 }
 
+// Alias dari readToken (dipakai oleh AuthService)
+Future<String?> getToken() => readToken();
+
 // Hapus token saat logout
 Future<void> clearToken() async {
   final prefs = await SharedPreferences.getInstance();
