@@ -15,13 +15,13 @@ class AuthProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   Map<String, dynamic>? get user => _user;
   String? get token => _token;
-  String get userName => _user?['name'] as String? ?? 'Pengguna';
-  String get userEmail => _user?['email'] as String? ?? '';
-  String get userRole => _user?['role'] as String? ?? '';
-  String get userNim => _user?['nim'] as String? ?? '-';
+  String get userName => _user?['name'] as String? ?? 'Brooke Everly';
+  String get userEmail => _user?['email'] as String? ?? 'brookeverly17@eduinsight.student.ac.id';
+  String get userRole => _user?['role'] as String? ?? 'mahasiswa';
+  String get userNim => _user?['nim'] as String? ?? '254076512225017';
   String get userProdi => _user?['prodi'] as String? ?? 'Teknik Informatika';
   String get userFakultas => _user?['fakultas'] as String? ?? 'Ilmu Komputer';
-  String get userAngkatan => _user?['angkatan'] as String? ?? '-';
+  String get userAngkatan => _user?['angkatan'] as String? ?? '2023';
 
   /// Inisialisasi — cek apakah sudah ada token tersimpan
   Future<void> init() async {
