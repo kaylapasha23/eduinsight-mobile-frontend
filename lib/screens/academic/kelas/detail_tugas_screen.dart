@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 import 'kelas_provider.dart';
 
 class _NoScrollbarBehavior extends ScrollBehavior {
@@ -117,6 +118,53 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
   double? _sheetHeight;
   bool _isDragging = false;
 
+  /// Buka pemilih file perangkat, lalu simpan nama file ke provider
+  Future<void> _pickAndUpload(KelasProvider kelas, String key) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final file = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: [
+          'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx',
+          'zip', 'png', 'jpg', 'jpeg', 'txt', 'sql',
+        ],
+      );
+
+      if (file == null) return; // user batal
+
+      const maxBytes = 10 * 1024 * 1024; // 10 MB
+      final fileSize = (await file.length()) ?? 0;
+      if (fileSize > maxBytes) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Ukuran file maksimal 10 MB.'),
+            backgroundColor: Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      kelas.uploadDocOnly(key, fileName: file.name);
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('${file.name} dipilih. Tekan Serahkan untuk mengumpulkan.'),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Gagal memilih file: $e'),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final key = '${widget.className}|${widget.taskTitle}';
@@ -134,7 +182,7 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
         final isCompleted = kelas.isCompleted(key);
         final isLate = kelas.isLate(key);
         final hasDoc = kelas.hasDoc(key);
-        final fileName = kelas.mockFileName(key);
+        final fileName = kelas.fileNameFor(key);
 
         final isDark =
             Theme.of(context).brightness == Brightness.dark;
@@ -627,10 +675,15 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                       CrossAxisAlignment.stretch,
                                   children: [
                                     if (isCompleted) ...[
-                                      _docChip(fileName, isDark),
+                                      if (kelas.isMarkedOnly(key))
+                                        _markedChip(isDark)
+                                      else
+                                        _docChip(fileName, isDark),
                                       const SizedBox(height: 18),
                                       _fullWidthButton(
-                                        'Batalkan Pengiriman',
+                                        kelas.isMarkedOnly(key)
+                                            ? 'Batalkan Tanda Selesai'
+                                            : 'Batalkan Pengiriman',
                                         color: const Color(0xFFEF4444),
                                         textColor: Colors.white,
                                         onTap: () {
@@ -695,7 +748,9 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                         _docChip(fileName, isDark),
                                       const SizedBox(height: 14),
                                       _fullWidthButton(
-                                        '+ Unggah Dokumen Di Sini',
+                                        hasDoc
+                                            ? '+ Ganti Dokumen'
+                                            : '+ Unggah Dokumen Di Sini',
                                         color: isDark
                                             ? const Color(0xFF354258)
                                             : const Color(0xFFEFF6FF),
@@ -704,16 +759,37 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                             : const Color(0xFF2563EB),
                                         borderColor:
                                             const Color(0xFF60A5FA),
-                                        onTap: () => kelas.uploadDoc(key),
+                                        onTap: () =>
+                                            _pickAndUpload(kelas, key),
                                       ),
                                       const SizedBox(height: 10),
-                                      _fullWidthButton(
-                                        'Tandai Selesai',
-                                        color: const Color(0xFF2563EB),
-                                        textColor: Colors.white,
-                                        onTap: () =>
-                                            kelas.markComplete(key),
-                                      ),
+                                      hasDoc
+                                          ? _fullWidthButton(
+                                              'Serahkan',
+                                              color: const Color(0xFF2563EB),
+                                              textColor: Colors.white,
+                                              onTap: () {
+                                                kelas.serahkanTugas(key);
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                        'Tugas berhasil diserahkan.'),
+                                                    backgroundColor:
+                                                        Color(0xFF10B981),
+                                                    behavior:
+                                                        SnackBarBehavior.floating,
+                                                  ),
+                                                );
+                                              },
+                                            )
+                                          : _fullWidthButton(
+                                              'Tandai Selesai',
+                                              color: const Color(0xFF2563EB),
+                                              textColor: Colors.white,
+                                              onTap: () =>
+                                                  kelas.markComplete(key),
+                                            ),
                                     ],
                                     const SizedBox(height: 24),
                                   ],
@@ -833,6 +909,46 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
             Icons.check_circle_rounded,
             color: Color(0xFF34D399),
             size: 18,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _markedChip(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF354258)
+            : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? const Color(0xFF64748B)
+              : const Color(0xFFE2E8F0),
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.task_alt_rounded,
+            color: Color(0xFF34D399),
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Ditandai selesai (tanpa dokumen)',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: isDark
+                    ? Colors.white
+                    : const Color(0xFF0F172A),
+              ),
+            ),
           ),
         ],
       ),

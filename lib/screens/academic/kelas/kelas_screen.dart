@@ -217,16 +217,16 @@ class KelasScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           Column(
-                            children: dataMatkulTugas
-                                .map(
-                                  (k) => _buildModernMatkulTugasCard(
-                                    context,
-                                    k,
-                                    isDark,
-                                    cardBg,
-                                  ),
-                                )
-                                .toList(),
+                            children: dataMatkulTugas.map((k) {
+                              final next = kelas.nextTaskFor(k.nama);
+                              final item = MatkulTugasItem(
+                                nama: k.nama,
+                                dosen: k.dosen,
+                                tugas: next?.title,
+                                tenggat: next?.status, // di TaskItem, field status berisi teks tenggat
+                              );
+                              return _buildModernMatkulTugasCard(context, item, isDark, cardBg);
+                            }).toList(),
                           ),
                         ],
                       ),

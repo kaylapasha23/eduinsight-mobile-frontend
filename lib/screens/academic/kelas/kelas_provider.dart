@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'kelas_screen.dart';
 import '../../../services/academic_api_service.dart';
+import '../../../database/app_database.dart';
+
+enum TaskStatus { segera, terlambat, selesai }
 
 /// Keys are formatted as "ClassName|TaskTitle"
 class KelasProvider extends ChangeNotifier {
   static const _prefUserCompleted = 'kelas_user_completed';
   static const _prefLateTasks = 'kelas_late_tasks';
+  static const _prefDocUploaded = 'kelas_doc_uploaded';
+  static const _prefCancelled = 'kelas_cancelled';
 
   // Dynamic backend tasks
   List<TaskItem> _dynamicTasks = [];
@@ -33,16 +38,63 @@ class KelasProvider extends ChangeNotifier {
   // Tasks that are unsubmitted and considered late (terlambat)
   final Set<String> _lateTasks = {};
 
+  // Tasks yang pernah dibatalkan user (supaya tidak "hidup lagi" dari data awal/backend)
+  final Set<String> _cancelled = {};
+
   // Tasks that have a document uploaded
   final Set<String> _docUploaded = {};
 
+  // Nama file asli yang dipilih user dari perangkat (key -> nama file)
+  final Map<String, String> _uploadedFileNames = {};
+
   KelasProvider() {
-    _loadPersistedState();
-    syncWithBackend();
+    _init();
+  }
+
+  /// Urutan penting: muat state lokal dulu, baru sinkron backend
+  Future<void> _init() async {
+    await _loadPersistedState();
+    await syncWithBackend();
   }
 
   bool get isLoading => _isLoading;
   List<TaskItem> get dynamicTasks => _dynamicTasks;
+
+  /// Daftar tugas yang dipakai SEMUA halaman (backend, atau data default)
+  List<TaskItem> get allTasks => _dynamicTasks.isNotEmpty
+      ? _dynamicTasks
+      : [...allSegeraTasks, ...allSelesaiTasks];
+
+  // ─────────────────────────────────────────
+  // STATUS TUNGGAL (dipakai semua halaman)
+  // ─────────────────────────────────────────
+
+  static String keyOf(TaskItem t) => '${t.className}|${t.title}';
+
+  TaskStatus statusOf(String key) {
+    if (isCompleted(key)) return TaskStatus.selesai;
+    if (isLate(key)) return TaskStatus.terlambat;
+    return TaskStatus.segera;
+  }
+
+  List<TaskItem> tasksByStatus(TaskStatus s) =>
+      allTasks.where((t) => statusOf(keyOf(t)) == s).toList();
+
+  int countByStatus(TaskStatus s) => tasksByStatus(s).length;
+
+  /// Tugas "Segera" berikutnya untuk satu mata kuliah (null kalau tidak ada)
+  TaskItem? nextTaskFor(String className) {
+    for (final t in allTasks) {
+      if (t.className == className && statusOf(keyOf(t)) == TaskStatus.segera) {
+        return t;
+      }
+    }
+    return null;
+  }
+
+  // ─────────────────────────────────────────
+  // LOAD / SYNC
+  // ─────────────────────────────────────────
 
   /// Load tasks from Backend API
   Future<void> syncWithBackend() async {
@@ -68,7 +120,8 @@ class KelasProvider extends ChangeNotifier {
 
         for (final item in list) {
           final key = '${item['class_name']}|${item['title']}';
-          if (item['category'] == 'selesai') {
+          // Jangan hidupkan lagi tugas yang sudah dibatalkan user
+          if (item['category'] == 'selesai' && !_cancelled.contains(key)) {
             _initiallyCompleted.add(key);
           }
         }
@@ -81,22 +134,49 @@ class KelasProvider extends ChangeNotifier {
     }
   }
 
-  /// Load persisted state dari SharedPreferences
+  /// Load persisted state dari SQLite Drift dan SharedPreferences
   Future<void> _loadPersistedState() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final savedCompleted = prefs.getStringList(_prefUserCompleted) ?? [];
-    _userCompleted.addAll(savedCompleted);
+    _userCompleted.addAll(prefs.getStringList(_prefUserCompleted) ?? []);
+    _lateTasks.addAll(prefs.getStringList(_prefLateTasks) ?? []);
+    _docUploaded.addAll(prefs.getStringList(_prefDocUploaded) ?? []);
+    _cancelled.addAll(prefs.getStringList(_prefCancelled) ?? []);
 
-    final savedLate = prefs.getStringList(_prefLateTasks) ?? [];
-    _lateTasks.addAll(savedLate);
+    // Muat data dari SQLite Drift (pengumpulan_tugas)
+    try {
+      final dbList = await AppDb.instance.getAllPengumpulan();
+      for (final row in dbList) {
+        final key = '${row['class_name']}|${row['task_title']}';
+        final status = row['status'];
+        final fileName = row['file_name'];
 
-    // Sync: hapus dari _initiallyCompleted kalau sudah diunsubmit
+        if (fileName != null && fileName.isNotEmpty) {
+          _uploadedFileNames[key] = fileName;
+          _docUploaded.add(key);
+        }
+
+        if (status == 'diserahkan') {
+          _userCompleted.add(key);
+          _lateTasks.remove(key);
+          _cancelled.remove(key);
+        } else if (status == 'terlambat') {
+          _lateTasks.add(key);
+        }
+      }
+    } catch (e) {
+      debugPrint('Drift belum siap (abaikan di web): $e');
+    }
+
+    // Sync: tugas yang dibatalkan / terlambat tidak boleh dianggap selesai awal
+    for (final key in _cancelled) {
+      _initiallyCompleted.remove(key);
+    }
     for (final key in _lateTasks) {
       _initiallyCompleted.remove(key);
     }
     for (final key in _userCompleted) {
-      _initiallyCompleted.remove(key); // user-completed override initial state jika ada unsubmit
+      _initiallyCompleted.remove(key);
     }
 
     notifyListeners();
@@ -104,10 +184,32 @@ class KelasProvider extends ChangeNotifier {
 
   /// Simpan state ke SharedPreferences
   Future<void> _persist() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_prefUserCompleted, _userCompleted.toList());
-    await prefs.setStringList(_prefLateTasks, _lateTasks.toList());
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_prefUserCompleted, _userCompleted.toList());
+      await prefs.setStringList(_prefLateTasks, _lateTasks.toList());
+      await prefs.setStringList(_prefDocUploaded, _docUploaded.toList());
+      await prefs.setStringList(_prefCancelled, _cancelled.toList());
+    } catch (e) {
+      debugPrint('Gagal menyimpan state: $e');
+    }
   }
+
+  /// Jalankan operasi database tanpa pernah merusak UI.
+  /// Kalau Drift error (mis. belum disetup di web), UI tetap sinkron.
+  void _db(Future<void> Function() action) {
+    try {
+      action().catchError((Object e) {
+        debugPrint('DB error: $e');
+      });
+    } catch (e) {
+      debugPrint('DB error: $e');
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // GETTER
+  // ─────────────────────────────────────────
 
   Set<String> get completedKeys => {..._initiallyCompleted, ..._userCompleted};
 
@@ -118,21 +220,82 @@ class KelasProvider extends ChangeNotifier {
       _initiallyCompleted.contains(key) ||
       _userCompleted.contains(key);
 
-  int get selesaiCount => completedKeys.length;
+  /// Ditandai selesai tanpa dokumen (bukan penyerahan dengan file)
+  bool isMarkedOnly(String key) =>
+      _userCompleted.contains(key) && !_docUploaded.contains(key);
 
-  void uploadDoc(String key) {
+  /// Jumlah tugas selesai (konsisten dengan daftar yang ditampilkan)
+  int get selesaiCount => countByStatus(TaskStatus.selesai);
+
+  /// Nama file untuk ditampilkan: file asli yang diunggah, atau nama mock
+  String fileNameFor(String key) => _uploadedFileNames[key] ?? mockFileName(key);
+
+  // ─────────────────────────────────────────
+  // AKSI
+  // ─────────────────────────────────────────
+
+  /// 1. UNGGAH DOKUMEN SAJA (Draft ke SQLite, belum diserahkan)
+  void uploadDocOnly(String key, {String? fileName}) {
+    if (fileName != null && fileName.isNotEmpty) {
+      _uploadedFileNames[key] = fileName;
+    }
     _docUploaded.add(key);
-    _userCompleted.add(key);
-    _lateTasks.remove(key);
+
+    notifyListeners(); // UI semua halaman langsung update
+
+    final parts = key.split('|');
+    if (parts.length >= 2) {
+      _db(() => AppDb.instance
+          .saveDraftDoc(parts[0], parts[1], fileName ?? 'Tugas.pdf'));
+    }
     _persist();
-    notifyListeners();
   }
 
+  /// 2. SERAHKAN TUGAS (Simpan status 'diserahkan' ke SQLite Drift)
+  void serahkanTugas(String key) {
+    _userCompleted.add(key);
+    _lateTasks.remove(key);
+    _cancelled.remove(key);
+
+    notifyListeners(); // UI semua halaman langsung update
+
+    final parts = key.split('|');
+    if (parts.length >= 2) {
+      final fileName = _uploadedFileNames[key];
+      _db(() => AppDb.instance.serahkanTugas(
+            parts[0],
+            parts[1],
+            fileName: fileName,
+            isLate: false,
+          ));
+    }
+    _persist();
+  }
+
+  /// Legacy helper uploadDoc (sekarang serahkan tugas langsung jika dipanggil)
+  void uploadDoc(String key, {String? fileName}) {
+    uploadDocOnly(key, fileName: fileName);
+    serahkanTugas(key);
+  }
+
+  /// TANDAI SELESAI (tanpa dokumen). Kalau sudah ada dokumen, pakai serahkanTugas.
   void markComplete(String key) {
     _userCompleted.add(key);
     _lateTasks.remove(key);
+    _cancelled.remove(key);
+
+    notifyListeners(); // UI semua halaman langsung update
+
+    final parts = key.split('|');
+    if (parts.length >= 2) {
+      _db(() => AppDb.instance.serahkanTugas(
+            parts[0],
+            parts[1],
+            fileName: null,
+            isLate: false,
+          ));
+    }
     _persist();
-    notifyListeners();
   }
 
   /// Saat unsubmit (Batalkan Pengiriman):
@@ -141,7 +304,8 @@ class KelasProvider extends ChangeNotifier {
   void cancelSubmission(String key, {bool isPastDeadline = false}) {
     _initiallyCompleted.remove(key);
     _userCompleted.remove(key);
-    _docUploaded.remove(key);
+    _cancelled.add(key);
+    // dokumen draft tetap ada jika user ingin menyerahkan kembali
 
     if (isPastDeadline || _isKeyPastDeadline(key)) {
       _lateTasks.add(key);
@@ -149,8 +313,13 @@ class KelasProvider extends ChangeNotifier {
       _lateTasks.remove(key);
     }
 
+    notifyListeners(); // UI semua halaman langsung update
+
+    final parts = key.split('|');
+    if (parts.length >= 2) {
+      _db(() => AppDb.instance.batalkanPengumpulan(parts[0], parts[1]));
+    }
     _persist();
-    notifyListeners();
   }
 
   bool _isKeyPastDeadline(String key) {

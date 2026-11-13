@@ -18,7 +18,16 @@ class CompletedTasks extends Table {
 
 @DriftDatabase(tables: [CompletedTasks])
 class AppDb extends _$AppDb {
-  AppDb() : super(driftDatabase(name: 'eduinsight'));
+  AppDb()
+    : super(
+        driftDatabase(
+          name: 'eduinsight',
+          web: DriftWebOptions(
+            sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+            driftWorker: Uri.parse('drift_worker.js'),
+          ),
+        ),
+      );
 
   static final AppDb instance = AppDb();
 
@@ -81,6 +90,102 @@ class AppDb extends _$AppDb {
         updated_at INTEGER NOT NULL
       );
     ''');
+
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS pengumpulan_tugas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        class_name TEXT NOT NULL,
+        task_title TEXT NOT NULL,
+        file_name TEXT,
+        file_path TEXT,
+        status TEXT NOT NULL, -- 'draft', 'diserahkan', 'terlambat'
+        submitted_at INTEGER,
+        created_at INTEGER NOT NULL,
+        UNIQUE(class_name, task_title)
+      );
+    ''');
+  }
+
+  // ─── PENGUMPULAN TUGAS SQLITE OPERATIONS ───
+
+  /// Simpan draft dokumen lampiran tugas (belum diserahkan)
+  Future<void> saveDraftDoc(String className, String taskTitle, String fileName, {String? filePath}) async {
+    await initAcademicTables();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await customStatement('''
+      INSERT INTO pengumpulan_tugas (class_name, task_title, file_name, file_path, status, submitted_at, created_at)
+      VALUES (?, ?, ?, ?, 'draft', NULL, ?)
+      ON CONFLICT(class_name, task_title) DO UPDATE SET
+        file_name = excluded.file_name,
+        file_path = excluded.file_path,
+        created_at = excluded.created_at;
+    ''', [className, taskTitle, fileName, filePath, now]);
+  }
+
+  /// Serahkan tugas (mengubah status menjadi 'diserahkan' atau 'terlambat')
+  Future<void> serahkanTugas(String className, String taskTitle, {String? fileName, bool isLate = false}) async {
+    await initAcademicTables();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final status = isLate ? 'terlambat' : 'diserahkan';
+    await customStatement('''
+      INSERT INTO pengumpulan_tugas (class_name, task_title, file_name, status, submitted_at, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(class_name, task_title) DO UPDATE SET
+        status = excluded.status,
+        submitted_at = excluded.submitted_at,
+        file_name = COALESCE(excluded.file_name, pengumpulan_tugas.file_name);
+    ''', [className, taskTitle, fileName, status, now, now]);
+  }
+
+  /// Batalkan penyerahan tugas (kembalikan ke status draft jika ada file, atau hapus)
+  Future<void> batalkanPengumpulan(String className, String taskTitle) async {
+    await initAcademicTables();
+    await customStatement('''
+      UPDATE pengumpulan_tugas
+      SET status = 'draft', submitted_at = NULL
+      WHERE class_name = ? AND task_title = ?;
+    ''', [className, taskTitle]);
+  }
+
+  /// Ambil riwayat pengumpulan tugas berdasarkan class_name dan task_title
+  Future<Map<String, dynamic>?> getPengumpulan(String className, String taskTitle) async {
+    await initAcademicTables();
+    final rows = await customSelect(
+      'SELECT * FROM pengumpulan_tugas WHERE class_name = ? AND task_title = ? LIMIT 1',
+      variables: [Variable.withString(className), Variable.withString(taskTitle)],
+    ).get();
+
+    if (rows.isEmpty) return null;
+    final r = rows.first;
+    return {
+      'id': r.read<int>('id'),
+      'class_name': r.read<String>('class_name'),
+      'task_title': r.read<String>('task_title'),
+      'file_name': r.readNullable<String>('file_name'),
+      'file_path': r.readNullable<String>('file_path'),
+      'status': r.read<String>('status'),
+      'submitted_at': r.readNullable<int>('submitted_at'),
+      'created_at': r.read<int>('created_at'),
+    };
+  }
+
+  /// Ambil semua tugas yang sudah diserahkan dari SQLite
+  Future<List<Map<String, dynamic>>> getAllPengumpulan() async {
+    await initAcademicTables();
+    final rows = await customSelect(
+      'SELECT * FROM pengumpulan_tugas ORDER BY id DESC',
+    ).get();
+
+    return rows.map((r) => {
+      'id': r.read<int>('id'),
+      'class_name': r.read<String>('class_name'),
+      'task_title': r.read<String>('task_title'),
+      'file_name': r.readNullable<String>('file_name'),
+      'file_path': r.readNullable<String>('file_path'),
+      'status': r.read<String>('status'),
+      'submitted_at': r.readNullable<int>('submitted_at'),
+      'created_at': r.read<int>('created_at'),
+    }).toList();
   }
 
   // ─── KEHADIRAN SQLITE OPERATIONS ───

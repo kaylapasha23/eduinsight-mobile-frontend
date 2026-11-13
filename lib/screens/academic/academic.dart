@@ -193,6 +193,7 @@ class _AcademicScreenState extends State<AcademicScreen> {
                           child: ChoiceChip(
                             label: Text(hari),
                             selected: isSelected,
+                            showCheckmark: false,
                             onSelected: (val) {
                               if (val) setState(() => _selectedHari = hari);
                             },
