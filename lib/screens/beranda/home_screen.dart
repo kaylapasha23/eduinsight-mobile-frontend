@@ -441,7 +441,7 @@ class _HomeScreenState extends State<HomeScreen> {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                '3,78',
+                '3,87',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
@@ -463,7 +463,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
-              value: 3.78 / 4.0,
+              value: 3.87 / 4.0,
               minHeight: 6,
               backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
               valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
@@ -526,7 +526,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '90%',
+                '91%',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
@@ -537,7 +537,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 32,
                 height: 32,
                 child: CircularProgressIndicator(
-                  value: 0.90,
+                  value: 0.91,
                   strokeWidth: 4,
                   strokeCap: StrokeCap.round,
                   backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),

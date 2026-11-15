@@ -69,6 +69,26 @@ class AcademicApiService {
     return false;
   }
 
+  /// Sinkronisasi Nilai Semester (KHS) dari backend lalu simpan ke SQLite Drift
+  static Future<bool> syncNilaiSemester() async {
+    try {
+      final res = await _getWithFallback('nilai-semester');
+      if (res != null) {
+        final body = jsonDecode(res.body);
+        if (body['success'] == true && body['data'] is List) {
+          final List list = body['data'];
+          final List<Map<String, dynamic>> converted =
+              list.map((e) => Map<String, dynamic>.from(e)).toList();
+          await AppDb.instance.saveNilaiToDrift(converted);
+          return true;
+        }
+      }
+    } catch (e) {
+      // Offline fallback
+    }
+    return false;
+  }
+
   /// Mengambil semua daftar tugas aktif/riwayat dari backend
   static Future<List<Map<String, dynamic>>?> fetchTugas() async {
     try {

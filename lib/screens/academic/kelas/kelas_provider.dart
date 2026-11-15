@@ -84,8 +84,13 @@ class KelasProvider extends ChangeNotifier {
 
   /// Tugas "Segera" berikutnya untuk satu mata kuliah (null kalau tidak ada)
   TaskItem? nextTaskFor(String className) {
+    final lower = className.toLowerCase();
     for (final t in allTasks) {
-      if (t.className == className && statusOf(keyOf(t)) == TaskStatus.segera) {
+      final tLower = t.className.toLowerCase();
+      final match = t.className == className ||
+          tLower.contains(lower) ||
+          lower.contains(tLower);
+      if (match && statusOf(keyOf(t)) == TaskStatus.segera) {
         return t;
       }
     }
