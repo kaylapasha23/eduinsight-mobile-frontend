@@ -6,6 +6,7 @@ import 'gabung_kelas_screen.dart';
 import 'kelas_provider.dart';
 import 'tugas_list_screen.dart';
 import 'detail_tugas_screen.dart';
+import 'ruang_kelas_screen.dart';
 import 'package:provider/provider.dart';
 
 class TaskItem {
@@ -94,6 +95,30 @@ const List<MatkulTugasItem> dataMatkulTugas = [
     tugas: 'Pertemuan Pertama',
     tenggat: 'Rabu, 23.59',
   ),
+  MatkulTugasItem(
+    nama: 'Kecerdasan Buatan',
+    dosen: 'Dr. Ahmad Sahroni, M.Kom.',
+  ),
+  MatkulTugasItem(
+    nama: 'Pemrograman Web',
+    dosen: 'Ir. Tri Astuti, M.T.',
+  ),
+  MatkulTugasItem(
+    nama: 'Basis Data Terdistribusi',
+    dosen: 'Teddy Indra Wijaya, M.Kom.',
+  ),
+  MatkulTugasItem(
+    nama: 'Keamanan Siber & Jaringan',
+    dosen: 'Prof. Bambang Hariyanto, Ph.D.',
+  ),
+  MatkulTugasItem(
+    nama: 'Rekayasa Perangkat Lunak',
+    dosen: 'Ivan Gunawan, M.Ds.',
+  ),
+  MatkulTugasItem(
+    nama: 'Statistika Komputasi',
+    dosen: 'Dra. Endang Sulistyo, M.Stat.',
+  ),
 ];
 
 class KelasScreen extends StatelessWidget {
@@ -125,6 +150,35 @@ class KelasScreen extends StatelessWidget {
     return 0;
   }
 
+  MatkulTugasItem _resolveMatkulTask(MatkulTugasItem item, KelasProvider kelas) {
+    final availableTasks = kelas.dynamicTasks.isNotEmpty
+        ? kelas.dynamicTasks
+        : [...allSegeraTasks, ...allSelesaiTasks];
+
+    final active = availableTasks.where((t) {
+      final match = t.className.toLowerCase().contains(item.nama.toLowerCase()) ||
+          item.nama.toLowerCase().contains(t.className.toLowerCase());
+      final key = '${t.className}|${t.title}';
+      return match && !kelas.isCompleted(key);
+    }).toList();
+
+    if (active.isNotEmpty) {
+      return MatkulTugasItem(
+        nama: item.nama,
+        dosen: item.dosen,
+        tugas: active.first.title,
+        tenggat: active.first.status,
+      );
+    }
+
+    return MatkulTugasItem(
+      nama: item.nama,
+      dosen: item.dosen,
+      tugas: null,
+      tenggat: null,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -136,10 +190,6 @@ class KelasScreen extends StatelessWidget {
     final cardBg = isDark
         ? const Color(0xFF282D37)
         : Colors.white;
-
-    final titleColor = isDark
-        ? Colors.white
-        : const Color(0xFF1E293B);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -191,37 +241,13 @@ class KelasScreen extends StatelessWidget {
                             isDark,
                             cardBg,
                           ),
-                          const SizedBox(height: 22),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Daftar Tugas per Mata Kuliah',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: titleColor,
-                                ),
-                              ),
-                              Text(
-                                '${dataMatkulTugas.length} Matkul',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? const Color(0xFF9AA4B8)
-                                      : const Color(0xFF64748B),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 18),
                           Column(
                             children: dataMatkulTugas
                                 .map(
                                   (k) => _buildModernMatkulTugasCard(
                                     context,
-                                    k,
+                                    _resolveMatkulTask(k, kelas),
                                     isDark,
                                     cardBg,
                                   ),
@@ -428,57 +454,80 @@ class KelasScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF323B4C)
-                        : const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.school_rounded,
-                    color: isDark
-                        ? const Color(0xFF93C5FD)
-                        : const Color(0xFF2563EB),
-                    size: 22,
+          InkWell(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(18),
+              topRight: Radius.circular(18),
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => RuangKelasScreen(
+                    namaMatkul: item.nama,
+                    dosenPengampu: item.dosen,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.nama,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: isDark
-                              ? Colors.white
-                              : const Color(0xFF1E293B),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        item.dosen,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark
-                              ? const Color(0xFF9AA4B8)
-                              : const Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF323B4C)
+                          : const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.school_rounded,
+                      color: isDark
+                          ? const Color(0xFF93C5FD)
+                          : const Color(0xFF2563EB),
+                      size: 22,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.nama,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1E293B),
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          item.dosen,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark
+                                ? const Color(0xFF9AA4B8)
+                                : const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: isDark ? const Color(0xFF9AA4B8) : const Color(0xFF94A3B8),
+                  ),
+                ],
+              ),
             ),
           ),
           InkWell(

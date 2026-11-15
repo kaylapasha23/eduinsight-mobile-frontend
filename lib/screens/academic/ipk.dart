@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../common_widgets.dart';
@@ -168,7 +167,7 @@ class IpkScreen extends StatelessWidget {
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
-                    '3.78',
+                    '3.87',
                     style: TextStyle(
                       fontSize: 34,
                       fontWeight: FontWeight.w900,
