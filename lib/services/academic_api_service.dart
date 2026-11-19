@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../database/app_database.dart';
+import '../providers/token_store.dart' as store;
 
 class AcademicApiService {
   // Mendukung Android Emulator (10.0.2.2), Windows / Desktop / Web (localhost & 127.0.0.1)
@@ -13,18 +14,47 @@ class AcademicApiService {
     'http://localhost:3000/api',
   ];
 
-  static Future<http.Response?> _getWithFallback(String endpoint) async {
+  static Future<http.Response?> _getWithFallback(
+    String endpoint, {
+    Map<String, String>? headers,
+  }) async {
     for (final base in _baseUrls) {
       try {
         final res = await http
-            .get(Uri.parse('$base/$endpoint'))
-            .timeout(const Duration(seconds: 2));
+            .get(Uri.parse('$base/$endpoint'), headers: headers)
+            .timeout(const Duration(seconds: 3));
         if (res.statusCode == 200) {
           return res;
         }
       } catch (_) {
         // Coba port/host berikutnya
       }
+    }
+    return null;
+  }
+
+  /// Mengambil data evaluasi AI & catatan feedback dosen dari backend
+  static Future<List<Map<String, dynamic>>?> fetchEvaluasi() async {
+    try {
+      final token = await store.getToken();
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      };
+
+      final res = await _getWithFallback('evaluasi', headers: headers);
+      if (res != null) {
+        final dynamic body = jsonDecode(res.body);
+        if (body is Map && body['success'] == true && body['data'] is List) {
+          return (body['data'] as List)
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList();
+        } else if (body is List) {
+          return body.map((e) => Map<String, dynamic>.from(e)).toList();
+        }
+      }
+    } catch (e) {
+      // Fallback silent
     }
     return null;
   }
