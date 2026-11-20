@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/academic_api_service.dart';
+import '../../database/app_database.dart';
 import '../academic/academic.dart';
 import '../academic/kelas/kelas_provider.dart';
 import '../academic/kelas/kelas_screen.dart';
@@ -101,18 +103,54 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Timer? _timer;
   DateTime _now = DateTime.now();
+  double _kehadiranPersen = 85.0;
 
   @override
   void initState() {
     super.initState();
+    _loadKehadiranRealtime();
     // Update setiap 10 detik agar countdown & status selalu akurat real-time
     _timer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (mounted) {
         setState(() {
           _now = DateTime.now();
         });
+        _loadKehadiranRealtime();
       }
     });
+  }
+
+  Future<void> _loadKehadiranRealtime() async {
+    try {
+      // 1. Ambil dari backend jika online
+      final onlineRate = await AcademicApiService.fetchOverallAttendanceRate();
+      if (onlineRate != null && mounted) {
+        setState(() {
+          _kehadiranPersen = onlineRate;
+        });
+        return;
+      }
+      // 2. Ambil dari Drift cache jika backend offline
+      final cached = await AppDb.instance.getKehadiranFromDrift();
+      if (cached.isNotEmpty) {
+        int hadirCount = 0;
+        int totalCount = 0;
+        for (final item in cached) {
+          final riwayat = item['riwayat'] as List? ?? [];
+          for (final p in riwayat) {
+            totalCount++;
+            if (p['status']?.toString().toLowerCase() == 'hadir') {
+              hadirCount++;
+            }
+          }
+        }
+        if (totalCount > 0 && mounted) {
+          setState(() {
+            _kehadiranPersen = (hadirCount / totalCount) * 100.0;
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   @override
@@ -697,7 +735,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '91%',
+                '${_kehadiranPersen.toStringAsFixed(0)}%',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
@@ -708,7 +746,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 32,
                 height: 32,
                 child: CircularProgressIndicator(
-                  value: 0.91,
+                  value: (_kehadiranPersen / 100.0).clamp(0.0, 1.0),
                   strokeWidth: 4,
                   strokeCap: StrokeCap.round,
                   backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),

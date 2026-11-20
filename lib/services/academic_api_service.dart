@@ -59,6 +59,33 @@ class AcademicApiService {
     return null;
   }
 
+  /// Mengambil persentase total kehadiran secara garis besar yang diinput dosen
+  static Future<double?> fetchOverallAttendanceRate() async {
+    try {
+      final res = await _getWithFallback('kehadiran?view=courses');
+      if (res != null) {
+        final body = jsonDecode(res.body);
+        final list = body['data'] ?? body['courses'];
+        if (list is List && list.isNotEmpty) {
+          int totalHadir = 0;
+          int totalPertemuan = 0;
+          for (final c in list) {
+            final riwayat = c['riwayat'] as List? ?? [];
+            for (final p in riwayat) {
+              totalPertemuan++;
+              final st = p['status']?.toString().toLowerCase();
+              if (st == 'hadir') totalHadir++;
+            }
+          }
+          if (totalPertemuan > 0) {
+            return (totalHadir / totalPertemuan) * 100.0;
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   /// Sinkronisasi Kehadiran dari Express.js lalu simpan ke SQLite Drift
   static Future<bool> syncKehadiran() async {
     try {

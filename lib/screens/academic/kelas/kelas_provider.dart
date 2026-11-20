@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -48,6 +49,8 @@ class KelasProvider extends ChangeNotifier {
   // Dokumen yang dipilih user per tugas (key -> daftar nama file)
   final Map<String, List<String>> _files = {};
 
+  Timer? _pollingTimer;
+
   KelasProvider() {
     _init();
   }
@@ -56,6 +59,16 @@ class KelasProvider extends ChangeNotifier {
   Future<void> _init() async {
     await _loadPersistedState();
     await syncWithBackend();
+    // Real-time polling setiap 5 detik agar pembaruan dosen (tugas dibuat, diedit, dinilai, dihapus) langsung sinkron ke mobile
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      syncWithBackend(isSilent: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
   }
 
   bool get isLoading => _isLoading;
@@ -98,24 +111,32 @@ class KelasProvider extends ChangeNotifier {
   // ─────────────────────────────────────────
 
   /// Load tasks from Backend API
-  Future<void> syncWithBackend() async {
-    _isLoading = true;
-    notifyListeners();
+  Future<void> syncWithBackend({bool isSilent = false}) async {
+    if (!isSilent) {
+      _isLoading = true;
+      notifyListeners();
+    }
 
     try {
       final list = await AcademicApiService.fetchTugas();
-      if (list != null && list.isNotEmpty) {
+      if (list != null) {
         _dynamicTasks = list.map((item) {
           final title = item['title']?.toString() ?? 'Tugas';
           final className = item['class_name']?.toString() ?? 'Mata Kuliah';
           final deadline = item['deadline_text']?.toString() ?? 'Hari ini, 23.59';
           final category = item['category']?.toString() ?? 'segera';
+          final bool isGraded = item['is_graded'] == true || item['isGraded'] == true;
+          final num? score = item['score'] ?? item['nilai'];
+          final String? id = item['id']?.toString();
           return TaskItem(
             title,
             className,
             deadline,
             className,
             isDefaultPastDeadline: category == 'selesai' || category == 'terlambat',
+            isGraded: isGraded,
+            score: score,
+            id: id,
           );
         }).toList();
 

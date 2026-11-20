@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../services/academic_api_service.dart';
@@ -172,29 +173,46 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
   List<AiDateGroup> _evaluations = [];
   bool _isLoading = true;
   bool _isOfflineFallback = false;
+  Timer? _realtimeTimer;
 
   @override
   void initState() {
     super.initState();
     _loadEvaluations();
+    // Real-time polling setiap 4 detik agar data evaluasi AI & catatan dosen selalu up-to-date
+    _realtimeTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      _loadEvaluations(isSilent: true);
+    });
   }
 
-  Future<void> _loadEvaluations() async {
-    setState(() {
-      _isLoading = true;
-    });
+  @override
+  void dispose() {
+    _realtimeTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadEvaluations({bool isSilent = false}) async {
+    if (!isSilent) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     try {
       final data = await AcademicApiService.fetchEvaluasi();
       if (mounted) {
         if (data != null) {
           // Berhasil terhubung ke backend
+          final parsed = data.map((json) => AiDateGroup.fromJson(json)).toList();
+          // Urutkan evaluasi dari yang paling baru
+          parsed.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+
           setState(() {
-            _evaluations = data.map((json) => AiDateGroup.fromJson(json)).toList();
+            _evaluations = parsed;
             _isOfflineFallback = false;
             _isLoading = false;
           });
-        } else {
+        } else if (!isSilent) {
           // Gagal koneksi backend -> gunakan sampel data agar tidak crash
           setState(() {
             _evaluations = List.from(dataEvaluasiSampel);
@@ -204,7 +222,7 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
         }
       }
     } catch (_) {
-      if (mounted) {
+      if (mounted && !isSilent) {
         setState(() {
           _evaluations = List.from(dataEvaluasiSampel);
           _isOfflineFallback = true;
@@ -371,7 +389,7 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
                   Text(
                     _selectedDate != null
                         ? _formatDate(_selectedDate!)
-                        : 'Semua Tanggal',
+                        : 'Semua Tanggal (7 Hari Terakhir)',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -417,11 +435,26 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
   List<Widget> _buildGroups() {
     final List<Widget> hasil = [];
 
-    final filteredData = _evaluations.where((g) {
-      if (_selectedDate == null) return true;
-      return g.dateTime.year == _selectedDate!.year &&
-          g.dateTime.month == _selectedDate!.month &&
-          g.dateTime.day == _selectedDate!.day;
+    // Batas seminggu terakhir (7 hari yang lalu dari hari ini pukul 00:00)
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final oneWeekAgo = todayStart.subtract(const Duration(days: 7));
+
+    // Urutkan selalu dari yang terbaru ke yang terlama
+    final sortedData = List<AiDateGroup>.from(_evaluations)
+      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+
+    final filteredData = sortedData.where((g) {
+      if (_selectedDate != null) {
+        return g.dateTime.year == _selectedDate!.year &&
+            g.dateTime.month == _selectedDate!.month &&
+            g.dateTime.day == _selectedDate!.day;
+      }
+      // Pada pilihan 'Semua Tanggal', tampilkan hanya sampai seminggu terakhir
+      return g.dateTime.isAfter(oneWeekAgo) ||
+          (g.dateTime.year == oneWeekAgo.year &&
+              g.dateTime.month == oneWeekAgo.month &&
+              g.dateTime.day == oneWeekAgo.day);
     }).toList();
 
     for (var g in filteredData) {

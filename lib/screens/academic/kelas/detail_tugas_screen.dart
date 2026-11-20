@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'kelas_provider.dart';
+import 'kelas_screen.dart' show TaskItem;
 
 class _NoScrollbarBehavior extends ScrollBehavior {
   const _NoScrollbarBehavior();
@@ -253,15 +254,24 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
     final key = '${widget.className}|${widget.taskTitle}';
     final detail = _taskDetails[key];
 
-    final classLabel = detail?.classLabel ?? widget.className;
-    final taskName = detail?.taskName ?? widget.taskTitle;
-    final description = detail?.description ??
-        'Tugas perkuliahan semester berjalan. Silakan pelajari instruksi dan kumpulkan dokumen pekerjaan Anda.';
-    final deadline = detail?.deadline ?? 'Rabu, 23.59';
-    final lecturerDocs = detail?.lecturerDocs ?? const <String>[];
-
     return Consumer<KelasProvider>(
       builder: (context, kelas, _) {
+        // Cari tugas di dynamicTasks jika ada
+        TaskItem? dynamicMatch;
+        try {
+          dynamicMatch = kelas.dynamicTasks.firstWhere(
+            (t) => t.className == widget.className && t.title == widget.taskTitle,
+          );
+        } catch (_) {}
+
+        final classLabel = detail?.classLabel ?? dynamicMatch?.className ?? widget.className;
+        final taskName = detail?.taskName ?? dynamicMatch?.title ?? widget.taskTitle;
+        final description = detail?.description ??
+            'Tugas perkuliahan semester berjalan. Silakan pelajari instruksi dan kumpulkan dokumen pekerjaan Anda.';
+        final deadline = dynamicMatch?.status ?? detail?.deadline ?? 'Rabu, 23.59';
+        final lecturerDocs = detail?.lecturerDocs ?? const <String>[];
+        final isGraded = dynamicMatch?.isGraded ?? false;
+        final score = dynamicMatch?.score;
         final isCompleted = kelas.isCompleted(key);
         final isLate = kelas.isLate(key);
         final fileList = kelas.filesFor(key);
@@ -493,50 +503,93 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                 crossAxisAlignment:
                                     CrossAxisAlignment.start,
                                 children: [
-                                  Container(
-                                    padding:
-                                        const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? const Color(0xFF7F1D1D)
-                                              .withValues(alpha: 0.45)
-                                          : const Color(0xFFEF4444)
-                                              .withValues(alpha: 0.1),
-                                      borderRadius:
-                                          BorderRadius.circular(12),
-                                      border: isDark
-                                          ? Border.all(
-                                              color: const Color(
-                                                  0xFFF87171),
-                                            )
-                                          : null,
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.access_time_rounded,
-                                          size: 14,
-                                          color: isDark
-                                              ? const Color(0xFFFCA5A5)
-                                              : const Color(0xFFDC2626),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
                                         ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          'Tenggat: $deadline',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: isDark
-                                                ? const Color(0xFFFECACA)
-                                                : const Color(0xFFDC2626),
-                                            fontWeight: FontWeight.w800,
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? const Color(0xFF7F1D1D).withValues(alpha: 0.45)
+                                              : const Color(0xFFEF4444).withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: isDark
+                                              ? Border.all(color: const Color(0xFFF87171))
+                                              : null,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.access_time_rounded,
+                                              size: 14,
+                                              color: isDark
+                                                  ? const Color(0xFFFCA5A5)
+                                                  : const Color(0xFFDC2626),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'Tenggat: $deadline',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: isDark
+                                                    ? const Color(0xFFFECACA)
+                                                    : const Color(0xFFDC2626),
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isGraded
+                                              ? (isDark
+                                                  ? const Color(0xFF1E3A8A).withValues(alpha: 0.4)
+                                                  : const Color(0xFF2563EB).withValues(alpha: 0.1))
+                                              : (isDark
+                                                  ? const Color(0xFF334155).withValues(alpha: 0.4)
+                                                  : const Color(0xFFF1F5F9)),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: isGraded
+                                                ? (isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB))
+                                                : (isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1)),
                                           ),
                                         ),
-                                      ],
-                                    ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              isGraded ? Icons.grade_rounded : Icons.pending_actions_rounded,
+                                              size: 14,
+                                              color: isGraded
+                                                  ? (isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB))
+                                                  : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              isGraded ? 'Sudah Dinilai (${score?.toStringAsFixed(0) ?? score ?? 85})' : 'Belum Dinilai',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: isGraded
+                                                    ? (isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB))
+                                                    : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 16),
                                   Text(

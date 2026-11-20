@@ -60,8 +60,11 @@ class _TugasListScreenState extends State<TugasListScreen> {
               (t) => TaskItem(
                 t.title,
                 t.subtitle,
-                'Diserahkan',
+                t.isGraded ? 'Dinilai: ${t.score?.toStringAsFixed(0) ?? t.score ?? 85}' : 'Diserahkan',
                 t.className,
+                isGraded: t.isGraded,
+                score: t.score,
+                id: t.id,
               ),
             )
             .toList();
@@ -78,6 +81,9 @@ class _TugasListScreenState extends State<TugasListScreen> {
                 t.subtitle,
                 'Terlambat',
                 t.className,
+                isGraded: t.isGraded,
+                score: t.score,
+                id: t.id,
               ),
             )
             .toList();
@@ -92,8 +98,11 @@ class _TugasListScreenState extends State<TugasListScreen> {
               (t) => TaskItem(
                 t.title,
                 t.subtitle,
-                'Segera',
+                t.isGraded ? 'Sudah Dinilai' : 'Belum Dinilai',
                 t.className,
+                isGraded: t.isGraded,
+                score: t.score,
+                id: t.id,
               ),
             )
             .toList();
@@ -371,39 +380,48 @@ class _TugasListScreenState extends State<TugasListScreen> {
     Color cardBg,
     Color borderColor,
   ) {
-    final bool isDone = task.status == 'Diserahkan';
+    final bool isDone = task.status.startsWith('Diserahkan') || task.status.startsWith('Dinilai');
     final bool isLate = task.status == 'Terlambat';
+    final bool isGraded = task.isGraded || task.status.startsWith('Dinilai');
 
     // Warna status dibuat lebih lembut
-    final Color badgeText = isDone
+    final Color badgeText = isGraded
+        ? (isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB))
+        : isDone
+            ? (isDark
+                ? const Color(0xFF86CDB2)
+                : const Color(0xFF10B981))
+            : isLate
+                ? (isDark
+                    ? const Color(0xFFE59A9A)
+                    : const Color(0xFFEF4444))
+                : (isDark
+                    ? const Color(0xFFE4C27A)
+                    : const Color(0xFFD97706));
+
+    final Color badgeBg = isGraded
         ? (isDark
+            ? const Color(0xFF1E3A8A).withValues(alpha: 0.3)
+            : const Color(0xFF2563EB).withValues(alpha: 0.1))
+        : isDone
+            ? (isDark
+                ? const Color(0xFF315044)
+                : const Color(0xFF10B981).withValues(alpha: 0.1))
+            : isLate
+                ? (isDark
+                    ? const Color(0xFF50383F)
+                    : const Color(0xFFEF4444).withValues(alpha: 0.1))
+                : (isDark
+                    ? const Color(0xFF504735)
+                    : const Color(0xFFF59E0B).withValues(alpha: 0.1));
+
+    final Color iconColor = isGraded
+        ? (isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB))
+        : isDone
             ? const Color(0xFF86CDB2)
-            : const Color(0xFF10B981))
-        : isLate
-            ? (isDark
+            : isLate
                 ? const Color(0xFFE59A9A)
-                : const Color(0xFFEF4444))
-            : (isDark
-                ? const Color(0xFFE4C27A)
-                : const Color(0xFFD97706));
-
-    final Color badgeBg = isDone
-        ? (isDark
-            ? const Color(0xFF315044)
-            : const Color(0xFF10B981).withValues(alpha: 0.1))
-        : isLate
-            ? (isDark
-                ? const Color(0xFF50383F)
-                : const Color(0xFFEF4444).withValues(alpha: 0.1))
-            : (isDark
-                ? const Color(0xFF504735)
-                : const Color(0xFFF59E0B).withValues(alpha: 0.1));
-
-    final Color iconColor = isDone
-        ? const Color(0xFF86CDB2)
-        : isLate
-            ? const Color(0xFFE59A9A)
-            : const Color(0xFFE4C27A);
+                : const Color(0xFFE4C27A);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

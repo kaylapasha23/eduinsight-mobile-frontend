@@ -15,6 +15,9 @@ class TaskItem {
   final String status;
   final String className;
   final bool isDefaultPastDeadline;
+  final bool isGraded;
+  final num? score;
+  final String? id;
 
   const TaskItem(
     this.title,
@@ -22,6 +25,9 @@ class TaskItem {
     this.status,
     this.className, {
     this.isDefaultPastDeadline = false,
+    this.isGraded = false,
+    this.score,
+    this.id,
   });
 }
 
