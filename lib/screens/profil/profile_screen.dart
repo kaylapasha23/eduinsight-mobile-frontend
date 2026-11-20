@@ -188,7 +188,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '4 Semester Selesai',
+                    'Semester 1 Berjalan',
                     style: TextStyle(
                       fontSize: 11,
                       color: isDark ? Colors.white60 : const Color(0xFF64748B),
@@ -196,7 +196,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '3.87',
+                    '0.00',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
@@ -272,7 +272,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Semester 4 • 7 Matkul',
+                    'Semester 1 Aktif • 9 Matkul',
                     style: TextStyle(
                       fontSize: 11,
                       color: isDark ? Colors.white60 : const Color(0xFF64748B),
@@ -412,14 +412,14 @@ class ModernProfileCard extends StatelessWidget {
           _buildInfoRow(
             icon: Icons.calendar_today_rounded,
             label: 'Angkatan',
-            value: angkatan != '-' ? '$angkatan (Genap)' : '—',
+            value: angkatan != '-' ? '$angkatan (Ganjil)' : '—',
             isDark: isDark,
           ),
           const SizedBox(height: 10),
           _buildInfoRow(
             icon: Icons.school_rounded,
             label: 'Semester',
-            value: 'Semester ${auth.userSemester} (Genap 2024/2025)',
+            value: 'Semester ${auth.userSemester} (Aktif 2026/2027)',
             isDark: isDark,
           ),
         ],

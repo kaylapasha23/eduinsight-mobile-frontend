@@ -118,11 +118,11 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
   double? _sheetHeight;
   bool _isDragging = false;
 
-  /// Buka pemilih file perangkat, lalu simpan nama file ke provider
+  /// Buka pemilih file perangkat, bisa multi-file (file_picker v13)
   Future<void> _pickAndUpload(KelasProvider kelas, String key) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final file = await FilePicker.pickFile(
+      final files = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: [
           'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx',
@@ -130,27 +130,40 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
         ],
       );
 
-      if (file == null) return; // user batal
+      if (files.isEmpty) return; // user batal
 
-      const maxBytes = 10 * 1024 * 1024; // 10 MB
-      final fileSize = (await file.length()) ?? 0;
-      if (fileSize > maxBytes) {
-        messenger.showSnackBar(
-          const SnackBar(
-            content: Text('Ukuran file maksimal 10 MB.'),
-            backgroundColor: Color(0xFFDC2626),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        return;
+      const maxBytes = 10 * 1024 * 1024; // 10 MB per file
+      final List<String> validFileNames = [];
+
+      for (final file in files) {
+        final size = file.lengthSync() ?? await file.length() ?? 0;
+        if (size > maxBytes) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                  'File "${file.name}" melebihi batas 10 MB dan dilewati.'),
+              backgroundColor: const Color(0xFFDC2626),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else if (file.name.isNotEmpty) {
+          validFileNames.add(file.name);
+        }
       }
 
-      kelas.uploadDocOnly(key, fileName: file.name);
+      if (validFileNames.isEmpty) return;
 
+      final added = kelas.addFiles(key, validFileNames);
       messenger.showSnackBar(
         SnackBar(
-          content: Text('${file.name} dipilih. Tekan Serahkan untuk mengumpulkan.'),
-          backgroundColor: const Color(0xFF10B981),
+          content: Text(added == 0
+              ? 'File tersebut sudah ditambahkan sebelumnya.'
+              : added == 1
+                  ? '1 file berhasil ditambahkan.'
+                  : '$added file berhasil ditambahkan.'),
+          backgroundColor: added == 0
+              ? const Color(0xFFF59E0B)
+              : const Color(0xFF10B981),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -163,6 +176,76 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
         ),
       );
     }
+  }
+
+  /// Dialog konfirmasi sebelum menghapus file dari draft tugas
+  Future<void> _confirmDeleteFile(
+    KelasProvider kelas,
+    String key,
+    String fileName,
+  ) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF252D3A) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Text(
+          'Hapus file?',
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+          ),
+        ),
+        content: Text(
+          'Yakin ingin menghapus "$fileName" dari tugas ini?',
+          style: TextStyle(
+            fontSize: 13,
+            height: 1.5,
+            color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Batal',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: isDark
+                    ? const Color(0xFFCBD5E1)
+                    : const Color(0xFF475569),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Hapus',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: Color(0xFFEF4444),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    kelas.removeFile(key, fileName);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('File "$fileName" dihapus.'),
+        backgroundColor: const Color(0xFFDC2626),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -181,8 +264,8 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
       builder: (context, kelas, _) {
         final isCompleted = kelas.isCompleted(key);
         final isLate = kelas.isLate(key);
-        final hasDoc = kelas.hasDoc(key);
-        final fileName = kelas.fileNameFor(key);
+        final fileList = kelas.filesFor(key);
+        final hasDoc = fileList.isNotEmpty;
 
         final isDark =
             Theme.of(context).brightness == Brightness.dark;
@@ -678,7 +761,11 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                       if (kelas.isMarkedOnly(key))
                                         _markedChip(isDark)
                                       else
-                                        _docChip(fileName, isDark),
+                                        ...fileList.map((fn) => _docChip(
+                                              fn,
+                                              isDark,
+                                              onDelete: null,
+                                            )),
                                       const SizedBox(height: 18),
                                       _fullWidthButton(
                                         kelas.isMarkedOnly(key)
@@ -732,7 +819,7 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                                 ),
                                                 const SizedBox(height: 6),
                                                 Text(
-                                                  'Belum ada dokumen yang diunggah',
+                                                  'Belum ada dokumen yang dilampirkan',
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     color: isDark
@@ -745,12 +832,17 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                           ),
                                         )
                                       else
-                                        _docChip(fileName, isDark),
+                                        ...fileList.map((fn) => _docChip(
+                                              fn,
+                                              isDark,
+                                              onDelete: () =>
+                                                  _confirmDeleteFile(
+                                                      kelas, key, fn),
+                                            )),
                                       const SizedBox(height: 14),
                                       _fullWidthButton(
-                                        hasDoc
-                                            ? '+ Ganti Dokumen'
-                                            : '+ Unggah Dokumen Di Sini',
+                                        'Tambah Dokumen',
+                                        icon: Icons.add_rounded,
                                         color: isDark
                                             ? const Color(0xFF354258)
                                             : const Color(0xFFEFF6FF),
@@ -784,11 +876,23 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                               },
                                             )
                                           : _fullWidthButton(
-                                              'Tandai Selesai',
+                                              'Tandai Sebagai Selesai',
                                               color: const Color(0xFF2563EB),
                                               textColor: Colors.white,
-                                              onTap: () =>
-                                                  kelas.markComplete(key),
+                                              onTap: () {
+                                                kelas.markComplete(key);
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                        'Tugas ditandai selesai tanpa lampiran.'),
+                                                    backgroundColor:
+                                                        Color(0xFF10B981),
+                                                    behavior:
+                                                        SnackBarBehavior.floating,
+                                                  ),
+                                                );
+                                              },
                                             ),
                                     ],
                                     const SizedBox(height: 24),
@@ -854,8 +958,9 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
     );
   }
 
-  Widget _docChip(String fileName, bool isDark) {
+  Widget _docChip(String fileName, bool isDark, {VoidCallback? onDelete}) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isDark
@@ -905,11 +1010,24 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
               ],
             ),
           ),
-          const Icon(
-            Icons.check_circle_rounded,
-            color: Color(0xFF34D399),
-            size: 18,
-          ),
+          if (onDelete != null)
+            IconButton(
+              tooltip: 'Hapus lampiran',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Icon(
+                Icons.close_rounded,
+                color: isDark ? const Color(0xFFF87171) : const Color(0xFFEF4444),
+                size: 20,
+              ),
+              onPressed: onDelete,
+            )
+          else
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Color(0xFF34D399),
+              size: 18,
+            ),
         ],
       ),
     );
@@ -958,6 +1076,7 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
   Widget _fullWidthButton(
     String text, {
     required VoidCallback onTap,
+    IconData? icon,
     Color color = Colors.white,
     Color textColor = Colors.black54,
     Color? borderColor,
@@ -984,15 +1103,22 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
             ),
           ],
         ),
-        child: Center(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: textColor,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 18, color: textColor),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              text,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

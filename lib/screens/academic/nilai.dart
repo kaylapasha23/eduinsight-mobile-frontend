@@ -37,61 +37,25 @@ class NilaiSemester {
 }
 
 const List<ListItem> pilihanSemester = [
-  ListItem(value: 0, name: 'Semester Empat - Genap 2024/2025'),
-  ListItem(value: 1, name: 'Semester Tiga - Ganjil 2024/2025'),
-  ListItem(value: 2, name: 'Semester Dua - Genap 2023/2024'),
-  ListItem(value: 3, name: 'Semester Satu - Ganjil 2023/2024'),
+  ListItem(value: 0, name: 'Semester Satu - Ganjil 2026/2027 (Aktif)'),
 ];
 
 const List<NilaiSemester> dataNilai = [
   NilaiSemester(
-    judul: 'Semester Empat',
-    tahunAjaran: 'Genap Tahun Ajaran 2024/2025',
-    ips: 3.78,
-    totalSks: 24,
-    matkul: [
-      NilaiMatkul(nomor: 7, nama: 'Kewirausahaan', kode: 'VTI51310', sks: 2, grade: 'A'),
-      NilaiMatkul(nomor: 6, nama: 'UI/UX Design', kode: 'VTI51315', sks: 3, grade: 'A+'),
-      NilaiMatkul(nomor: 5, nama: 'Internet of Things (IoT)', kode: 'VTI51340', sks: 3, grade: 'B+'),
-      NilaiMatkul(nomor: 4, nama: 'Statistika Komputasi', kode: 'VTI51389', sks: 3, grade: 'B+'),
-      NilaiMatkul(nomor: 3, nama: 'Rekayasa Perangkat Lunak', kode: 'VTI51375', sks: 4, grade: 'A'),
-      NilaiMatkul(nomor: 2, nama: 'Keamanan Siber & Jaringan', kode: 'VTI51322', sks: 4, grade: 'A'),
-      NilaiMatkul(nomor: 1, nama: 'Kecerdasan Buatan', kode: 'VTI51366', sks: 3, grade: 'A+'),
-    ],
-  ),
-  NilaiSemester(
-    judul: 'Semester Tiga',
-    tahunAjaran: 'Ganjil Tahun Ajaran 2024/2025',
-    ips: 3.90,
-    totalSks: 20,
-    matkul: [
-      NilaiMatkul(nomor: 4, nama: 'Pemrograman Web', kode: 'VTI51329', sks: 4, grade: 'A+'),
-      NilaiMatkul(nomor: 3, nama: 'Basis Data Terdistribusi', kode: 'VTI51250', sks: 4, grade: 'A'),
-      NilaiMatkul(nomor: 2, nama: 'Jaringan Komputer', kode: 'VTI51261', sks: 3, grade: 'B+'),
-      NilaiMatkul(nomor: 1, nama: 'Interaksi Manusia & Komputer', kode: 'VTI51270', sks: 3, grade: 'A'),
-    ],
-  ),
-  NilaiSemester(
-    judul: 'Semester Dua',
-    tahunAjaran: 'Genap Tahun Ajaran 2023/2024',
-    ips: 4.00,
-    totalSks: 21,
-    matkul: [
-      NilaiMatkul(nomor: 3, nama: 'Struktur Data & Algoritma', kode: 'VTI51180', sks: 4, grade: 'A'),
-      NilaiMatkul(nomor: 2, nama: 'Sistem Operasi', kode: 'VTI51191', sks: 3, grade: 'A'),
-      NilaiMatkul(nomor: 1, nama: 'Pemrograman Mobile', kode: 'VTI51203', sks: 3, grade: 'A+'),
-    ],
-  ),
-  NilaiSemester(
     judul: 'Semester Satu',
-    tahunAjaran: 'Ganjil Tahun Ajaran 2023/2024',
-    ips: 3.80,
-    totalSks: 20,
+    tahunAjaran: 'Ganjil Tahun Ajaran 2026/2027',
+    ips: 0.00,
+    totalSks: 22,
     matkul: [
-      NilaiMatkul(nomor: 4, nama: 'Algoritma & Pemrograman', kode: 'VTI51101', sks: 4, grade: 'A'),
-      NilaiMatkul(nomor: 3, nama: 'Matematika Dasar', kode: 'VTI51102', sks: 3, grade: 'A'),
-      NilaiMatkul(nomor: 2, nama: 'Logika & Pemrograman', kode: 'VTI51103', sks: 3, grade: 'B+'),
-      NilaiMatkul(nomor: 1, nama: 'Pengantar Teknologi Informasi', kode: 'VTI51104', sks: 3, grade: 'A+'),
+      NilaiMatkul(nomor: 1, nama: 'Kecerdasan Buatan', kode: 'VTI51366', sks: 3, grade: 'A'),
+      NilaiMatkul(nomor: 2, nama: 'Pemrograman Web', kode: 'VTI51329', sks: 4, grade: 'A'),
+      NilaiMatkul(nomor: 3, nama: 'Basis Data Terdistribusi', kode: 'VTI51250', sks: 4, grade: 'A'),
+      NilaiMatkul(nomor: 4, nama: 'Keamanan Siber & Jaringan', kode: 'VTI51322', sks: 4, grade: 'A'),
+      NilaiMatkul(nomor: 5, nama: 'Rekayasa Perangkat Lunak', kode: 'VTI51375', sks: 4, grade: 'A'),
+      NilaiMatkul(nomor: 6, nama: 'Statistika Komputasi', kode: 'VTI51389', sks: 3, grade: 'B+'),
+      NilaiMatkul(nomor: 7, nama: 'Kewirausahaan', kode: 'VTI51310', sks: 2, grade: 'A'),
+      NilaiMatkul(nomor: 8, nama: 'UI/UX Design', kode: 'VTI51315', sks: 3, grade: 'A+'),
+      NilaiMatkul(nomor: 9, nama: 'Internet of Things (IoT)', kode: 'VTI51340', sks: 3, grade: 'B+'),
     ],
   ),
 ];
@@ -418,7 +382,7 @@ class _NilaiScreenState extends State<NilaiScreen> {
                 height: 24,
                 color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
               ),
-              _buildStatMini('Status', 'Lulus Penuh', isDark),
+              _buildStatMini('Status', 'Semester Aktif', isDark),
             ],
           ),
         ],

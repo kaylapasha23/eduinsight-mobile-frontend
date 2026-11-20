@@ -18,10 +18,10 @@ class SemesterIpk {
 }
 
 const List<SemesterIpk> dataIpk = [
-  SemesterIpk(semester: 'Semester 1', label: 'Smt 1', ipk: '3.80', value: 3.80),
-  SemesterIpk(semester: 'Semester 2', label: 'Smt 2', ipk: '4.00', value: 4.00),
-  SemesterIpk(semester: 'Semester 3', label: 'Smt 3', ipk: '3.90', value: 3.90),
-  SemesterIpk(semester: 'Semester 4', label: 'Smt 4', ipk: '3.78', value: 3.78),
+  SemesterIpk(semester: 'Semester 1', label: 'Smt 1', ipk: '0.00', value: 0.00),
+  SemesterIpk(semester: 'Semester 2', label: 'Smt 2', ipk: '-', value: null),
+  SemesterIpk(semester: 'Semester 3', label: 'Smt 3', ipk: '-', value: null),
+  SemesterIpk(semester: 'Semester 4', label: 'Smt 4', ipk: '-', value: null),
   SemesterIpk(semester: 'Semester 5', label: 'Smt 5', ipk: '-', value: null),
   SemesterIpk(semester: 'Semester 6', label: 'Smt 6', ipk: '-', value: null),
   SemesterIpk(semester: 'Semester 7', label: 'Smt 7', ipk: '-', value: null),
@@ -29,10 +29,7 @@ const List<SemesterIpk> dataIpk = [
 ];
 
 const List<FlSpot> titikIpkSemester = [
-  FlSpot(1, 3.80),
-  FlSpot(2, 4.00),
-  FlSpot(3, 3.90),
-  FlSpot(4, 3.78),
+  FlSpot(1, 0.00),
 ];
 
 class IpkScreen extends StatelessWidget {
@@ -88,7 +85,7 @@ class IpkScreen extends StatelessWidget {
                               : null,
                         ),
                         child: Text(
-                          'Smt 1 - 4',
+                          'Smt 1 (Aktif)',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
@@ -167,7 +164,7 @@ class IpkScreen extends StatelessWidget {
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
-                    '3.87',
+                    '0.00',
                     style: TextStyle(
                       fontSize: 34,
                       fontWeight: FontWeight.w900,
@@ -188,7 +185,7 @@ class IpkScreen extends StatelessWidget {
               ),
               SizedBox(height: 6),
               Text(
-                'Predikat: Sangat Memuaskan',
+                'Status: Menjalani Semester 1',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,

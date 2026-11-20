@@ -21,8 +21,8 @@ class AuthProvider extends ChangeNotifier {
   String get userNim => _user?['nim'] as String? ?? '254076512225017';
   String get userProdi => _user?['prodi'] as String? ?? 'Teknik Informatika';
   String get userFakultas => _user?['fakultas'] as String? ?? 'Ilmu Komputer';
-  String get userAngkatan => _user?['angkatan'] as String? ?? '2023';
-  int get userSemester => _user?['semester'] as int? ?? 4;
+  String get userAngkatan => _user?['angkatan'] as String? ?? '2026';
+  int get userSemester => _user?['semester'] as int? ?? 1;
 
   /// Inisialisasi — cek apakah sudah ada token tersimpan
   Future<void> init() async {

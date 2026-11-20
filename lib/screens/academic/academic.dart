@@ -82,6 +82,33 @@ const List<JadwalKelasSemester> daftarJadwalSemester = [
     ruang: 'Lantai 2, Ruang 201',
     dosen: 'Dra. Endang Sulistyo, M.Stat.',
   ),
+  JadwalKelasSemester(
+    kode: 'VTI51310',
+    nama: 'Kewirausahaan',
+    sks: 2,
+    hari: 'Senin',
+    jam: '08.00 - 09.40 WIB',
+    ruang: 'Lantai 4, Ruang 401',
+    dosen: 'Dr. Rini Handayani, M.M.',
+  ),
+  JadwalKelasSemester(
+    kode: 'VTI51315',
+    nama: 'UI/UX Design',
+    sks: 3,
+    hari: 'Selasa',
+    jam: '13.00 - 15.30 WIB',
+    ruang: 'Lab Multimedia, Lantai 3',
+    dosen: 'Ivan Gunawan, M.Ds.',
+  ),
+  JadwalKelasSemester(
+    kode: 'VTI51340',
+    nama: 'Internet of Things (IoT)',
+    sks: 3,
+    hari: 'Rabu',
+    jam: '15.00 - 17.30 WIB',
+    ruang: 'Lab Hardware & IoT, Lantai 5',
+    dosen: 'Teddy Indra Wijaya, M.Kom.',
+  ),
 ];
 
 class AcademicScreen extends StatefulWidget {
@@ -147,7 +174,7 @@ class _AcademicScreenState extends State<AcademicScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Semester 4 • 22 SKS Terdaftar',
+                            'Semester 1 • 22 SKS Terdaftar',
                             style: TextStyle(
                               fontSize: 12,
                               color: isDark ? Colors.white60 : const Color(0xFF64748B),

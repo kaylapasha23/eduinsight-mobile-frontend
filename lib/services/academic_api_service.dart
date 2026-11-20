@@ -65,12 +65,14 @@ class AcademicApiService {
       final res = await _getWithFallback('kehadiran');
       if (res != null) {
         final body = jsonDecode(res.body);
-        if (body['success'] == true && body['data'] is List) {
-          final List list = body['data'];
-          final List<Map<String, dynamic>> converted =
-              list.map((e) => Map<String, dynamic>.from(e)).toList();
-          await AppDb.instance.saveKehadiranToDrift(converted);
-          return true;
+        if (body['success'] == true) {
+          final courses = body['courses'] ?? body['data'];
+          if (courses is List) {
+            final List<Map<String, dynamic>> converted =
+                courses.map((e) => Map<String, dynamic>.from(e)).toList();
+            await AppDb.instance.saveKehadiranToDrift(converted);
+            return true;
+          }
         }
       }
     } catch (e) {

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'kelas_screen.dart';
@@ -10,8 +11,11 @@ enum TaskStatus { segera, terlambat, selesai }
 class KelasProvider extends ChangeNotifier {
   static const _prefUserCompleted = 'kelas_user_completed';
   static const _prefLateTasks = 'kelas_late_tasks';
-  static const _prefDocUploaded = 'kelas_doc_uploaded';
+  static const _prefFiles = 'kelas_files_json';
   static const _prefCancelled = 'kelas_cancelled';
+
+  /// Pemisah beberapa nama file saat disimpan ke kolom file_name SQLite
+  static const _sep = '||';
 
   // Dynamic backend tasks
   List<TaskItem> _dynamicTasks = [];
@@ -41,11 +45,8 @@ class KelasProvider extends ChangeNotifier {
   // Tasks yang pernah dibatalkan user (supaya tidak "hidup lagi" dari data awal/backend)
   final Set<String> _cancelled = {};
 
-  // Tasks that have a document uploaded
-  final Set<String> _docUploaded = {};
-
-  // Nama file asli yang dipilih user dari perangkat (key -> nama file)
-  final Map<String, String> _uploadedFileNames = {};
+  // Dokumen yang dipilih user per tugas (key -> daftar nama file)
+  final Map<String, List<String>> _files = {};
 
   KelasProvider() {
     _init();
@@ -84,13 +85,8 @@ class KelasProvider extends ChangeNotifier {
 
   /// Tugas "Segera" berikutnya untuk satu mata kuliah (null kalau tidak ada)
   TaskItem? nextTaskFor(String className) {
-    final lower = className.toLowerCase();
     for (final t in allTasks) {
-      final tLower = t.className.toLowerCase();
-      final match = t.className == className ||
-          tLower.contains(lower) ||
-          lower.contains(tLower);
-      if (match && statusOf(keyOf(t)) == TaskStatus.segera) {
+      if (t.className == className && statusOf(keyOf(t)) == TaskStatus.segera) {
         return t;
       }
     }
@@ -145,8 +141,25 @@ class KelasProvider extends ChangeNotifier {
 
     _userCompleted.addAll(prefs.getStringList(_prefUserCompleted) ?? []);
     _lateTasks.addAll(prefs.getStringList(_prefLateTasks) ?? []);
-    _docUploaded.addAll(prefs.getStringList(_prefDocUploaded) ?? []);
     _cancelled.addAll(prefs.getStringList(_prefCancelled) ?? []);
+
+    // Daftar dokumen per tugas (JSON)
+    final rawFiles = prefs.getString(_prefFiles);
+    if (rawFiles != null && rawFiles.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(rawFiles);
+        if (decoded is Map) {
+          decoded.forEach((k, v) {
+            if (v is List) {
+              final names = v.map((e) => e.toString()).toList();
+              if (names.isNotEmpty) _files[k.toString()] = names;
+            }
+          });
+        }
+      } catch (_) {
+        // abaikan data rusak
+      }
+    }
 
     // Muat data dari SQLite Drift (pengumpulan_tugas)
     try {
@@ -156,9 +169,14 @@ class KelasProvider extends ChangeNotifier {
         final status = row['status'];
         final fileName = row['file_name'];
 
-        if (fileName != null && fileName.isNotEmpty) {
-          _uploadedFileNames[key] = fileName;
-          _docUploaded.add(key);
+        // Cadangan: kalau daftar dokumen belum ada, ambil dari SQLite
+        if (fileName != null &&
+            fileName.isNotEmpty &&
+            (_files[key] == null || _files[key]!.isEmpty)) {
+          _files[key] = fileName
+              .split(_sep)
+              .where((e) => e.trim().isNotEmpty)
+              .toList();
         }
 
         if (status == 'diserahkan') {
@@ -193,8 +211,8 @@ class KelasProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(_prefUserCompleted, _userCompleted.toList());
       await prefs.setStringList(_prefLateTasks, _lateTasks.toList());
-      await prefs.setStringList(_prefDocUploaded, _docUploaded.toList());
       await prefs.setStringList(_prefCancelled, _cancelled.toList());
+      await prefs.setString(_prefFiles, jsonEncode(_files));
     } catch (e) {
       debugPrint('Gagal menyimpan state: $e');
     }
@@ -220,44 +238,101 @@ class KelasProvider extends ChangeNotifier {
 
   bool isCompleted(String key) => completedKeys.contains(key);
   bool isLate(String key) => _lateTasks.contains(key);
-  bool hasDoc(String key) =>
-      _docUploaded.contains(key) ||
-      _initiallyCompleted.contains(key) ||
-      _userCompleted.contains(key);
+
+  /// Daftar dokumen untuk ditampilkan.
+  /// Tugas bawaan yang sudah selesai memakai nama contoh.
+  List<String> filesFor(String key) {
+    final list = _files[key];
+    if (list != null && list.isNotEmpty) return List.unmodifiable(list);
+    if (_initiallyCompleted.contains(key)) return [mockFileName(key)];
+    return const [];
+  }
+
+  bool hasDoc(String key) => filesFor(key).isNotEmpty;
 
   /// Ditandai selesai tanpa dokumen (bukan penyerahan dengan file)
   bool isMarkedOnly(String key) =>
-      _userCompleted.contains(key) && !_docUploaded.contains(key);
+      _userCompleted.contains(key) && (_files[key]?.isEmpty ?? true);
 
   /// Jumlah tugas selesai (konsisten dengan daftar yang ditampilkan)
   int get selesaiCount => countByStatus(TaskStatus.selesai);
 
-  /// Nama file untuk ditampilkan: file asli yang diunggah, atau nama mock
-  String fileNameFor(String key) => _uploadedFileNames[key] ?? mockFileName(key);
-
   // ─────────────────────────────────────────
-  // AKSI
+  // AKSI DOKUMEN
   // ─────────────────────────────────────────
 
-  /// 1. UNGGAH DOKUMEN SAJA (Draft ke SQLite, belum diserahkan)
-  void uploadDocOnly(String key, {String? fileName}) {
-    if (fileName != null && fileName.isNotEmpty) {
-      _uploadedFileNames[key] = fileName;
-    }
-    _docUploaded.add(key);
+  /// Tambah satu dokumen ke draft tugas. false kalau nama sudah ada.
+  bool addDoc(String key, String fileName) {
+    final list = _files.putIfAbsent(key, () => []);
+    if (list.contains(fileName)) return false;
+    list.add(fileName);
 
     notifyListeners(); // UI semua halaman langsung update
+    _syncDraftToDb(key);
+    _persist();
+    return true;
+  }
 
-    final parts = key.split('|');
-    if (parts.length >= 2) {
-      _db(() => AppDb.instance
-          .saveDraftDoc(parts[0], parts[1], fileName ?? 'Tugas.pdf'));
-    }
+  /// Hapus satu dokumen dari draft tugas (tombol silang)
+  void removeDoc(String key, String fileName) {
+    final list = _files[key];
+    if (list == null) return;
+    list.remove(fileName);
+    if (list.isEmpty) _files.remove(key);
+
+    notifyListeners();
+    _syncDraftToDb(key);
     _persist();
   }
 
-  /// 2. SERAHKAN TUGAS (Simpan status 'diserahkan' ke SQLite Drift)
+  /// Tambah banyak dokumen sekaligus. Mengembalikan jumlah yang benar-benar baru.
+  int addFiles(String key, List<String> names) {
+    final list = _files.putIfAbsent(key, () => []);
+    var added = 0;
+    for (final n in names) {
+      if (n.isNotEmpty && !list.contains(n)) {
+        list.add(n);
+        added++;
+      }
+    }
+    if (list.isEmpty) _files.remove(key);
+
+    if (added > 0) {
+      notifyListeners(); // UI semua halaman langsung update
+      _syncDraftToDb(key);
+      _persist();
+    }
+    return added;
+  }
+
+  /// Nama lain dari removeDoc (dipakai tombol silang di Detail Tugas)
+  void removeFile(String key, String fileName) => removeDoc(key, fileName);
+
+  void _syncDraftToDb(String key) {
+    final parts = key.split('|');
+    if (parts.length < 2) return;
+    final joined = (_files[key] ?? const <String>[]).join(_sep);
+    // joined kosong = tidak ada dokumen lagi
+    _db(() => AppDb.instance.saveDraftDoc(parts[0], parts[1], joined));
+  }
+
+  /// Kompatibilitas nama lama: menambah dokumen
+  void uploadDocOnly(String key, {String? fileName}) {
+    if (fileName != null && fileName.isNotEmpty) addDoc(key, fileName);
+  }
+
+  // ─────────────────────────────────────────
+  // AKSI PENYERAHAN
+  // ─────────────────────────────────────────
+
+  /// SERAHKAN TUGAS (butuh minimal satu dokumen)
   void serahkanTugas(String key) {
+    final files = _files[key];
+    if (files == null || files.isEmpty) {
+      markComplete(key); // tanpa dokumen = tandai selesai
+      return;
+    }
+
     _userCompleted.add(key);
     _lateTasks.remove(key);
     _cancelled.remove(key);
@@ -266,24 +341,23 @@ class KelasProvider extends ChangeNotifier {
 
     final parts = key.split('|');
     if (parts.length >= 2) {
-      final fileName = _uploadedFileNames[key];
       _db(() => AppDb.instance.serahkanTugas(
             parts[0],
             parts[1],
-            fileName: fileName,
+            fileName: files.join(_sep),
             isLate: false,
           ));
     }
     _persist();
   }
 
-  /// Legacy helper uploadDoc (sekarang serahkan tugas langsung jika dipanggil)
+  /// Legacy helper: tambah dokumen lalu langsung serahkan
   void uploadDoc(String key, {String? fileName}) {
     uploadDocOnly(key, fileName: fileName);
     serahkanTugas(key);
   }
 
-  /// TANDAI SELESAI (tanpa dokumen). Kalau sudah ada dokumen, pakai serahkanTugas.
+  /// TANDAI SELESAI (tanpa dokumen)
   void markComplete(String key) {
     _userCompleted.add(key);
     _lateTasks.remove(key);

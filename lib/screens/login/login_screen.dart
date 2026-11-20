@@ -144,6 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                   style: const TextStyle(color: Colors.black87),
                   decoration: InputDecoration(
                     hintText: 'Masukkan email',
@@ -179,6 +180,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _login(),
                   style: const TextStyle(color: Colors.black87),
                   decoration: InputDecoration(
                     hintText: 'Masukkan password',

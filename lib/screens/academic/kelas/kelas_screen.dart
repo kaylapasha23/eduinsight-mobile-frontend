@@ -294,7 +294,7 @@ class KelasScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  'Semester 4',
+                  'Semester 1',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,

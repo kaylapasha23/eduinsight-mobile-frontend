@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../academic/academic.dart';
 import '../academic/kelas/kelas_provider.dart';
 import '../academic/kelas/kelas_screen.dart';
 import '../common_widgets.dart';
@@ -15,6 +17,7 @@ class ClassScheduleItem {
   final String room;
   final String countdown;
   final String lecturer;
+  final bool isOngoing;
 
   const ClassScheduleItem({
     required this.title,
@@ -22,6 +25,7 @@ class ClassScheduleItem {
     required this.room,
     required this.countdown,
     this.lecturer = 'Dosen Pengampu',
+    this.isOngoing = false,
   });
 }
 
@@ -82,12 +86,9 @@ const List<UpcomingTaskItem> daftarTugasMendatang = [
   ),
 ];
 
-// Titik grafik IPS per semester (Semester 1 = 3.80, Semester 2 = 4.00, Semester 3 = 3.90, Semester 4 = 3.78)
+// Titik grafik IPS per semester (Mahasiswa Semester 1 berjalan)
 const List<FlSpot> titikNilaiSemester = [
-  FlSpot(1, 3.80),
-  FlSpot(2, 4.00),
-  FlSpot(3, 3.90),
-  FlSpot(4, 3.78),
+  FlSpot(1, 0.00),
 ];
 
 class HomeScreen extends StatefulWidget {
@@ -98,12 +99,124 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Timer? _timer;
+  DateTime _now = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    // Update setiap 10 detik agar countdown & status selalu akurat real-time
+    _timer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) {
+        setState(() {
+          _now = DateTime.now();
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
   String _greeting() {
-    final hour = DateTime.now().hour;
+    final hour = _now.hour;
     if (hour < 11) return 'Selamat Pagi 🌤️';
     if (hour < 15) return 'Selamat Siang ☀️';
     if (hour < 18) return 'Selamat Sore 🌆';
     return 'Selamat Malam 🌙';
+  }
+
+  /// Menghitung jadwal kelas hari ini yang belum selesai secara real-time
+  List<ClassScheduleItem> _getTodayActiveClasses() {
+    // 1 = Senin, 2 = Selasa, 3 = Rabu, 4 = Kamis, 5 = Jumat, 6 = Sabtu, 7 = Minggu
+    const dayNames = {
+      1: 'Senin',
+      2: 'Selasa',
+      3: 'Rabu',
+      4: 'Kamis',
+      5: 'Jumat',
+      6: 'Sabtu',
+      7: 'Minggu',
+    };
+
+    final currentDayName = dayNames[_now.weekday] ?? '';
+
+    // Ambil semua jadwal untuk hari ini dari master daftarJadwalSemester
+    final todaySchedule = daftarJadwalSemester
+        .where((j) => j.hari.toLowerCase() == currentDayName.toLowerCase())
+        .toList();
+
+    final List<ClassScheduleItem> activeClasses = [];
+
+    for (final item in todaySchedule) {
+      // Format jam di data: "08.00 - 09.40 WIB" atau "14.00 - 15.20 WIB"
+      final parts = item.jam.replaceAll('WIB', '').trim().split('-');
+      if (parts.length < 2) continue;
+
+      final startPart = parts[0].trim().replaceAll('.', ':');
+      final endPart = parts[1].trim().replaceAll('.', ':');
+
+      final startSplit = startPart.split(':');
+      final endSplit = endPart.split(':');
+
+      if (startSplit.length < 2 || endSplit.length < 2) continue;
+
+      final startHour = int.tryParse(startSplit[0]) ?? 0;
+      final startMinute = int.tryParse(startSplit[1]) ?? 0;
+      final endHour = int.tryParse(endSplit[0]) ?? 0;
+      final endMinute = int.tryParse(endSplit[1]) ?? 0;
+
+      final startTime = DateTime(_now.year, _now.month, _now.day, startHour, startMinute);
+      final endTime = DateTime(_now.year, _now.month, _now.day, endHour, endMinute);
+
+      // Jika waktu sekarang sudah melewati jam selesai kelas, hilangkan jadwal itu
+      if (_now.isAfter(endTime)) {
+        continue;
+      }
+
+      String countdownText;
+      bool isOngoing = false;
+
+      if (_now.isAfter(startTime) || _now.isAtSameMomentAs(startTime)) {
+        // Sedang berlangsung sampai endTime
+        isOngoing = true;
+        countdownText = 'Sedang Berlangsung';
+      } else {
+        // Belum mulai: hitung selisih durasi
+        final diff = startTime.difference(_now);
+        final totalMinutes = diff.inMinutes;
+
+        if (totalMinutes < 1) {
+          countdownText = 'Segera dimulai';
+        } else if (totalMinutes < 60) {
+          countdownText = 'Dalam $totalMinutes Menit';
+        } else {
+          final hours = diff.inHours;
+          final remainingMinutes = totalMinutes % 60;
+          if (remainingMinutes == 0) {
+            countdownText = 'Dalam $hours Jam';
+          } else {
+            countdownText = 'Dalam $hours Jam $remainingMinutes Menit';
+          }
+        }
+      }
+
+      activeClasses.add(
+        ClassScheduleItem(
+          title: item.nama,
+          time: item.jam,
+          room: item.ruang,
+          countdown: countdownText,
+          lecturer: item.dosen,
+          isOngoing: isOngoing,
+        ),
+      );
+    }
+
+    return activeClasses;
   }
 
   @override
@@ -188,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Semester 4',
+                              'Semester ${authProvider.userSemester}',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -214,19 +327,68 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 24),
 
                   // ================= SECTION 1: KELAS TERDEKAT =================
-                  _buildSectionHeader(
-                    title: 'Jadwal Kelas Hari Ini',
-                    badgeText: '${daftarKelasTerdekat.length} Kelas',
-                    badgeColor: const Color(0xFF2563EB),
-                    titleColor: titleColor,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: 12),
-                  Column(
-                    children: daftarKelasTerdekat
-                        .map((item) => _buildClassScheduleCard(item, isDark, cardBg))
-                        .toList(),
-                  ),
+                  () {
+                    final todayClasses = _getTodayActiveClasses();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionHeader(
+                          title: 'Jadwal Kelas Hari Ini',
+                          badgeText: todayClasses.isEmpty ? 'Selesai' : '${todayClasses.length} Kelas',
+                          badgeColor: todayClasses.isEmpty ? const Color(0xFF10B981) : const Color(0xFF2563EB),
+                          titleColor: titleColor,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(height: 12),
+                        if (todayClasses.isEmpty)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: cardBg,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.event_available_rounded,
+                                  size: 38,
+                                  color: isDark ? const Color(0xFF34D399) : const Color(0xFF10B981),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Tidak Ada Kelas Lagi Hari Ini',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: titleColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Semua sesi perkuliahan hari ini telah selesai atau sedang libur.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: subtitleColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          Column(
+                            children: todayClasses
+                                .map((item) => _buildClassScheduleCard(item, isDark, cardBg))
+                                .toList(),
+                          ),
+                      ],
+                    );
+                  }(),
 
                   const SizedBox(height: 22),
 
@@ -441,7 +603,7 @@ class _HomeScreenState extends State<HomeScreen> {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                '3,87',
+                '0,00',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
@@ -459,11 +621,20 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
+          Text(
+            'Semester 1 Berjalan',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB),
+            ),
+          ),
+          const SizedBox(height: 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
-              value: 3.87 / 4.0,
+              value: 0.0,
               minHeight: 6,
               backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
               valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
@@ -562,6 +733,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Card Kelas Terdekat (Modern Education Tile)
   Widget _buildClassScheduleCard(ClassScheduleItem item, bool isDark, Color cardBg) {
+    final bool isOngoing = item.isOngoing;
+    final Color badgeBg = isOngoing
+        ? (isDark ? const Color(0xFF10B981).withValues(alpha: 0.25) : const Color(0xFF10B981).withValues(alpha: 0.12))
+        : (isDark ? const Color(0xFF60A5FA).withValues(alpha: 0.25) : const Color(0xFF3B82F6).withValues(alpha: 0.12));
+    final Color badgeText = isOngoing
+        ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
+        : (isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB));
+    final Color iconGradStart = isOngoing ? const Color(0xFF10B981) : const Color(0xFF3B82F6);
+    final Color iconGradEnd = isOngoing ? const Color(0xFF047857) : const Color(0xFF1D4ED8);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -569,7 +750,10 @@ class _HomeScreenState extends State<HomeScreen> {
         color: cardBg,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          color: isOngoing
+              ? (isDark ? const Color(0xFF059669).withValues(alpha: 0.5) : const Color(0xFF34D399).withValues(alpha: 0.7))
+              : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+          width: isOngoing ? 1.5 : 1,
         ),
         boxShadow: [
           BoxShadow(
@@ -586,15 +770,15 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+              gradient: LinearGradient(
+                colors: [iconGradStart, iconGradEnd],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(
-              Icons.menu_book_rounded,
+            child: Icon(
+              isOngoing ? Icons.play_circle_fill_rounded : Icons.menu_book_rounded,
               color: Colors.white,
               size: 22,
             ),
@@ -622,17 +806,33 @@ class _HomeScreenState extends State<HomeScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF60A5FA).withValues(alpha: 0.25) : const Color(0xFF3B82F6).withValues(alpha: 0.12),
+                        color: badgeBg,
                         borderRadius: BorderRadius.circular(8),
-                        border: isDark ? Border.all(color: const Color(0xFF60A5FA).withValues(alpha: 0.6), width: 1) : null,
+                        border: isDark ? Border.all(color: badgeText.withValues(alpha: 0.6), width: 1) : null,
                       ),
-                      child: Text(
-                        item.countdown,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB),
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isOngoing) ...[
+                            Container(
+                              width: 6,
+                              height: 6,
+                              margin: const EdgeInsets.only(right: 5),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF10B981),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ],
+                          Text(
+                            item.countdown,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: badgeText,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -824,10 +1024,10 @@ class _HomeScreenState extends State<HomeScreen> {
         height: 190,
         child: LineChart(
           LineChartData(
-            minX: 0.6,
-            maxX: 4.4,
-            minY: 3.0,
-            maxY: 4.15,
+            minX: 0.8,
+            maxX: 1.2,
+            minY: 0.0,
+            maxY: 4.0,
             lineTouchData: LineTouchData(
               handleBuiltInTouches: true,
               touchTooltipData: LineTouchTooltipData(
@@ -865,7 +1065,7 @@ class _HomeScreenState extends State<HomeScreen> {
             gridData: FlGridData(
               show: true,
               drawVerticalLine: false,
-              horizontalInterval: 0.2,
+              horizontalInterval: 1.0,
               getDrawingHorizontalLine: (val) {
                 return FlLine(
                   color: gridLineColor,
@@ -880,9 +1080,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 sideTitles: SideTitles(
                   showTitles: true,
                   reservedSize: 40,
-                  interval: 0.2,
+                  interval: 1.0,
                   getTitlesWidget: (val, meta) {
-                    if (val < 3.19 || val > 4.01) return const SizedBox.shrink();
+                    if (val < 0.0 || val > 4.0) return const SizedBox.shrink();
                     return Text(
                       val.toStringAsFixed(1),
                       style: TextStyle(
@@ -901,7 +1101,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   interval: 1,
                   getTitlesWidget: (val, meta) {
                     final int index = val.toInt();
-                    if (val == index.toDouble() && index >= 1 && index <= 4) {
+                    if (val == 1.0) {
                       return Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
