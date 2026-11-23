@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/notification_service.dart';
+import 'notifications/notification_screen.dart';
 import 'beranda/home_screen.dart';
 import 'academic/academic.dart';
 import 'profil/profile_screen.dart';
@@ -71,9 +73,12 @@ class HeaderBar extends StatelessWidget {
                   ],
                 ),
                 const Spacer(),
-                if (trailing != null)
-                  trailing!
-                else if (showLogout)
+                const NotificationBell(),
+                if (trailing != null) ...[
+                  const SizedBox(width: 4),
+                  trailing!,
+                ] else if (showLogout) ...[
+                  const SizedBox(width: 4),
                   IconButton(
                     onPressed: () async {
                       final authProvider =
@@ -86,6 +91,7 @@ class HeaderBar extends StatelessWidget {
                     },
                     icon: const Icon(Icons.logout, size: 26, color: kLogout),
                   ),
+                ],
               ],
             ),
           ),
@@ -100,6 +106,69 @@ class HeaderBar extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------- Widget Ikon Lonceng Notifikasi dengan Titik Merah ----------
+class NotificationBell extends StatelessWidget {
+  final Color? color;
+  const NotificationBell({super.key, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = color ?? (isDark ? Colors.white : Colors.black87);
+
+    return ValueListenableBuilder<int>(
+      valueListenable: NotificationService.unreadCount,
+      builder: (context, unread, _) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(
+              icon: Icon(
+                Icons.notifications_rounded,
+                size: 26,
+                color: iconColor,
+              ),
+              tooltip: 'Notifikasi',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                );
+              },
+            ),
+            if (unread > 0)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEF4444),
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Center(
+                    child: Text(
+                      unread > 9 ? '9+' : '$unread',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

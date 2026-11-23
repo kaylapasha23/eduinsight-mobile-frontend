@@ -137,28 +137,8 @@ class AiDateGroup {
   }
 }
 
-// Data sampel cadangan jika backend belum terhubung/offline
-final List<AiDateGroup> dataEvaluasiSampel = [
-  AiDateGroup(
-    dateText: 'Senin, 24 Januari 2026',
-    lecturerName: 'Dr. Ahmad Sahroni, M.Kom.',
-    messages: const [
-      AiMessage(
-        text:
-            'Kehadiranmu mengalami penurunan dalam beberapa pertemuan terakhir. Usahakan hadir pada pertemuan berikutnya agar tetap memenuhi batas minimum kehadiran.',
-        isPositive: false,
-      ),
-      AiMessage(
-        text:
-            'Nilai kuis terakhir masih rendah. Coba pelajari kembali materi yang berkaitan dan kerjakan latihan tambahan.',
-        isPositive: false,
-      ),
-    ],
-    lecturerNote:
-        'Mohon temui saya di ruang dosen pada hari Rabu jam 10.00 untuk membahas remedial kuis dan perbaikan presensi sebelum UTS.',
-    dateTime: DateTime(2026, 1, 24),
-  ),
-];
+// Data sampel cadangan jika backend belum terhubung/offline (dikosongkan agar murni menampilkan inputan real-time dosen)
+final List<AiDateGroup> dataEvaluasiSampel = [];
 
 // ---------- Halaman ----------
 class AiEvalutionScreen extends StatefulWidget {
@@ -389,7 +369,7 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
                   Text(
                     _selectedDate != null
                         ? _formatDate(_selectedDate!)
-                        : 'Semua Tanggal (7 Hari Terakhir)',
+                        : 'Semua Tanggal',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -435,12 +415,7 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
   List<Widget> _buildGroups() {
     final List<Widget> hasil = [];
 
-    // Batas seminggu terakhir (7 hari yang lalu dari hari ini pukul 00:00)
-    final now = DateTime.now();
-    final todayStart = DateTime(now.year, now.month, now.day);
-    final oneWeekAgo = todayStart.subtract(const Duration(days: 7));
-
-    // Urutkan selalu dari yang terbaru ke yang terlama
+    // Urutkan selalu dari yang terbaru (paling atas) ke yang terlama (paling bawah)
     final sortedData = List<AiDateGroup>.from(_evaluations)
       ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
 
@@ -450,11 +425,8 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
             g.dateTime.month == _selectedDate!.month &&
             g.dateTime.day == _selectedDate!.day;
       }
-      // Pada pilihan 'Semua Tanggal', tampilkan hanya sampai seminggu terakhir
-      return g.dateTime.isAfter(oneWeekAgo) ||
-          (g.dateTime.year == oneWeekAgo.year &&
-              g.dateTime.month == oneWeekAgo.month &&
-              g.dateTime.day == oneWeekAgo.day);
+      // Pada pilihan default 'Semua Tanggal', tampilkan seluruh riwayat evaluasi
+      return true;
     }).toList();
 
     for (var g in filteredData) {

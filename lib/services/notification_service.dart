@@ -1,29 +1,34 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:http/http.dart' as http;
+import '../providers/token_store.dart' as store;
 
-/// Notifikasi sistem (status bar HP)
+/// Notifikasi lokal di status bar HP
 class SystemNotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  // Inisialisasi awal (panggil di main.dart)
   static Future<void> init() async {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const initSettings = InitializationSettings(android: androidSettings);
     await _notificationsPlugin.initialize(initSettings);
 
-    // Minta izin notifikasi untuk Android 13+
     _notificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
   }
 
-  // Fungsi memicu notifikasi status bar HP
   static Future<void> showSystemNotification({
     required String title,
     required String body,
   }) async {
+    if (kIsWeb) return;
     const androidDetails = AndroidNotificationDetails(
       'eduinsight_channel',
       'EduInsight Notifikasi',
@@ -44,30 +49,250 @@ class SystemNotificationService {
 
 class EduNotification {
   final String id;
+  final String type; // tugas, kehadiran, penilaian, evaluasi
   final String title;
   final String body;
   final DateTime timestamp;
   final IconData icon;
   final Color iconColor;
+  final String? targetId;
+  final String? targetType;
+  final Map<String, dynamic>? payload;
   bool isRead;
 
   EduNotification({
     required this.id,
+    this.type = 'tugas',
     required this.title,
     required this.body,
     required this.timestamp,
     this.icon = Icons.notifications_active_rounded,
     this.iconColor = const Color(0xFF2563EB),
+    this.targetId,
+    this.targetType,
+    this.payload,
     this.isRead = false,
   });
+
+  factory EduNotification.fromJson(Map<String, dynamic> json) {
+    final type = (json['type'] ?? 'tugas').toString().toLowerCase();
+    IconData icon = Icons.notifications_active_rounded;
+    Color iconColor = const Color(0xFF2563EB);
+
+    if (type.contains('tugas')) {
+      icon = Icons.assignment_rounded;
+      iconColor = const Color(0xFF2563EB);
+    } else if (type.contains('kehadiran')) {
+      icon = Icons.how_to_reg_rounded;
+      iconColor = const Color(0xFF10B981);
+    } else if (type.contains('penilaian') || type.contains('nilai')) {
+      icon = Icons.military_tech_rounded;
+      iconColor = const Color(0xFFF59E0B);
+    } else if (type.contains('evaluasi') || type.contains('ai')) {
+      icon = Icons.auto_awesome_rounded;
+      iconColor = const Color(0xFF8B5CF6);
+    }
+
+    DateTime time;
+    try {
+      time = json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'].toString())
+          : DateTime.now();
+    } catch (_) {
+      time = DateTime.now();
+    }
+
+    Map<String, dynamic>? payloadMap;
+    if (json['payload'] is Map) {
+      payloadMap = Map<String, dynamic>.from(json['payload']);
+    } else if (json['payload'] is String) {
+      try {
+        payloadMap = jsonDecode(json['payload']);
+      } catch (_) {}
+    }
+
+    return EduNotification(
+      id: json['id']?.toString() ?? 'notif-${DateTime.now().millisecondsSinceEpoch}',
+      type: type,
+      title: json['title'] ?? 'Pemberitahuan Baru',
+      body: json['body'] ?? '',
+      timestamp: time,
+      icon: icon,
+      iconColor: iconColor,
+      targetId: json['targetId']?.toString(),
+      targetType: json['targetType']?.toString(),
+      payload: payloadMap,
+      isRead: json['isRead'] == true,
+    );
+  }
 }
 
-/// Notifikasi in-app (banner overlay + riwayat)
+/// Notifikasi in-app & Sinkronisasi dengan Backend
 class NotificationService {
   static final List<EduNotification> _history = [];
   static final ValueNotifier<int> unreadCount = ValueNotifier<int>(0);
+  static Timer? _pollingTimer;
 
   static List<EduNotification> get history => List.unmodifiable(_history);
+
+  static const List<String> _baseUrls = [
+    'http://localhost:3000/api',
+    'http://127.0.0.1:3000/api',
+    'http://10.0.2.2:3000/api',
+    'http://localhost:5001/api',
+    'http://10.0.2.2:5001/api',
+  ];
+
+  /// Inisialisasi Firebase & polling sinkronisasi notifikasi
+  static Future<void> init() async {
+    if (!kIsWeb) {
+      await SystemNotificationService.init();
+    }
+
+    try {
+      if (kIsWeb) {
+        await Firebase.initializeApp(
+          options: const FirebaseOptions(
+            apiKey: 'AIzaSyAAeAZot4U2_b3qRUspcBTZJx55fMstNG0',
+            appId: '1:503511522205:web:a3d6d6f5e9daf9f875ad74',
+            messagingSenderId: '503511522205',
+            projectId: 'eduinsight-storage',
+            storageBucket: 'eduinsight-storage.firebasestorage.app',
+          ),
+        );
+      } else {
+        await Firebase.initializeApp();
+      }
+      final messaging = FirebaseMessaging.instance;
+
+      await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      final token = await messaging.getToken();
+      if (token != null) {
+        debugPrint('[FCM] Device Token: $token');
+        await sendFcmTokenToBackend(token);
+      }
+
+      // Handler ketika push notification diterima saat app aktif (foreground)
+      FirebaseMessaging.onMessage.listen((RemoteMessage msg) {
+        debugPrint('[FCM] Foreground notification: ${msg.notification?.title}');
+        final title = msg.notification?.title ?? 'Notifikasi Baru';
+        final body = msg.notification?.body ?? '';
+
+        SystemNotificationService.showSystemNotification(
+          title: title,
+          body: body,
+        );
+
+        fetchNotificationsFromBackend();
+      });
+    } catch (e) {
+      debugPrint('[Firebase/FCM Init Exception]: $e');
+    }
+
+    // Ambil notifikasi awal dari backend
+    await fetchNotificationsFromBackend();
+
+    // Polling periodik setiap 10 detik agar tetap sinkron jika dosen update via web
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      fetchNotificationsFromBackend();
+    });
+  }
+
+  /// Kirim token FCM ke backend
+  static Future<void> sendFcmTokenToBackend(String token) async {
+    for (final base in _baseUrls) {
+      try {
+        final authToken = await store.getToken();
+        final res = await http.post(
+          Uri.parse('$base/notifications/fcm-token'),
+          headers: {
+            'Content-Type': 'application/json',
+            if (authToken != null && authToken.isNotEmpty)
+              'Authorization': 'Bearer $authToken',
+          },
+          body: jsonEncode({'token': token}),
+        ).timeout(const Duration(seconds: 3));
+
+        if (res.statusCode == 200) {
+          debugPrint('[FCM] Token synced to backend $base');
+          break;
+        }
+      } catch (_) {}
+    }
+  }
+
+  /// Ambil notifikasi dari database backend
+  static Future<void> fetchNotificationsFromBackend() async {
+    for (final base in _baseUrls) {
+      try {
+        final authToken = await store.getToken();
+        final res = await http.get(
+          Uri.parse('$base/notifications'),
+          headers: {
+            'Content-Type': 'application/json',
+            if (authToken != null && authToken.isNotEmpty)
+              'Authorization': 'Bearer $authToken',
+          },
+        ).timeout(const Duration(seconds: 4));
+
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body);
+          if (data['success'] == true && data['data'] is List) {
+            final List items = data['data'];
+            _history.clear();
+            for (final item in items) {
+              _history.add(EduNotification.fromJson(item));
+            }
+            unreadCount.value = _history.where((n) => !n.isRead).length;
+            break;
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  /// Tandai notifikasi sebagai dibaca
+  static Future<void> markAsRead(String notifId) async {
+    final idx = _history.indexWhere((n) => n.id == notifId);
+    if (idx != -1) {
+      _history[idx].isRead = true;
+      unreadCount.value = _history.where((n) => !n.isRead).length;
+    }
+
+    for (final base in _baseUrls) {
+      try {
+        await http.patch(
+          Uri.parse('$base/notifications/$notifId/read'),
+          headers: {'Content-Type': 'application/json'},
+        ).timeout(const Duration(seconds: 3));
+        break;
+      } catch (_) {}
+    }
+  }
+
+  /// Tandai semua sebagai dibaca
+  static Future<void> markAllAsRead() async {
+    for (final n in _history) {
+      n.isRead = true;
+    }
+    unreadCount.value = 0;
+
+    for (final base in _baseUrls) {
+      try {
+        await http.post(
+          Uri.parse('$base/notifications/read-all'),
+          headers: {'Content-Type': 'application/json'},
+        ).timeout(const Duration(seconds: 3));
+        break;
+      } catch (_) {}
+    }
+  }
 
   /// Menampilkan push notification overlay yang meluncur dari atas layar
   static void showPushNotification(
@@ -79,7 +304,6 @@ class NotificationService {
     Duration duration = const Duration(seconds: 4),
     VoidCallback? onTap,
   }) {
-    // 1. Simpan ke riwayat notifikasi
     final notif = EduNotification(
       id: 'notif-${DateTime.now().millisecondsSinceEpoch}',
       title: title,
@@ -91,7 +315,6 @@ class NotificationService {
     _history.insert(0, notif);
     unreadCount.value = _history.where((n) => !n.isRead).length;
 
-    // 2. Render Overlay Banner Push Notification
     final overlay = Overlay.of(context);
     late OverlayEntry entry;
 
@@ -153,7 +376,6 @@ class _PushNotificationBannerState extends State<_PushNotificationBanner>
 
     _controller.forward();
 
-    // Auto dismiss setelah durasi
     Future.delayed(widget.duration, () {
       if (mounted) {
         _dismissWithAnimation();

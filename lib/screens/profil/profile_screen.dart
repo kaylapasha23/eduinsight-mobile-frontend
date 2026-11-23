@@ -272,7 +272,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Semester 1 Aktif • 9 Matkul',
+                    'Semester 1 Aktif • 10 Matkul',
                     style: TextStyle(
                       fontSize: 11,
                       color: isDark ? Colors.white60 : const Color(0xFF64748B),

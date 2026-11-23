@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../database/app_database.dart';
 import '../../services/academic_api_service.dart';
-import '../../services/notification_service.dart';
 import '../common_widgets.dart';
 import 'academic_widgets.dart';
 class NilaiMatkul {
@@ -10,6 +9,7 @@ class NilaiMatkul {
   final String kode;
   final int sks;
   final String grade;
+  final num? score;
 
   const NilaiMatkul({
     required this.nomor,
@@ -17,6 +17,7 @@ class NilaiMatkul {
     required this.kode,
     required this.sks,
     required this.grade,
+    this.score,
   });
 }
 
@@ -45,17 +46,18 @@ const List<NilaiSemester> dataNilai = [
     judul: 'Semester Satu',
     tahunAjaran: 'Ganjil Tahun Ajaran 2026/2027',
     ips: 0.00,
-    totalSks: 22,
+    totalSks: 33,
     matkul: [
-      NilaiMatkul(nomor: 1, nama: 'Kecerdasan Buatan', kode: 'VTI51366', sks: 3, grade: 'A'),
-      NilaiMatkul(nomor: 2, nama: 'Pemrograman Web', kode: 'VTI51329', sks: 4, grade: 'A'),
-      NilaiMatkul(nomor: 3, nama: 'Basis Data Terdistribusi', kode: 'VTI51250', sks: 4, grade: 'A'),
-      NilaiMatkul(nomor: 4, nama: 'Keamanan Siber & Jaringan', kode: 'VTI51322', sks: 4, grade: 'A'),
-      NilaiMatkul(nomor: 5, nama: 'Rekayasa Perangkat Lunak', kode: 'VTI51375', sks: 4, grade: 'A'),
-      NilaiMatkul(nomor: 6, nama: 'Statistika Komputasi', kode: 'VTI51389', sks: 3, grade: 'B+'),
-      NilaiMatkul(nomor: 7, nama: 'Kewirausahaan', kode: 'VTI51310', sks: 2, grade: 'A'),
-      NilaiMatkul(nomor: 8, nama: 'UI/UX Design', kode: 'VTI51315', sks: 3, grade: 'A+'),
-      NilaiMatkul(nomor: 9, nama: 'Internet of Things (IoT)', kode: 'VTI51340', sks: 3, grade: 'B+'),
+      NilaiMatkul(nomor: 1, nama: 'Kecerdasan Buatan', kode: 'VTI51366', sks: 3, grade: '-'),
+      NilaiMatkul(nomor: 2, nama: 'Pemrograman Web', kode: 'VTI51329', sks: 4, grade: '-'),
+      NilaiMatkul(nomor: 3, nama: 'Basis Data Terdistribusi', kode: 'VTI51250', sks: 4, grade: '-'),
+      NilaiMatkul(nomor: 4, nama: 'Keamanan Siber & Jaringan', kode: 'VTI51322', sks: 4, grade: '-'),
+      NilaiMatkul(nomor: 5, nama: 'Rekayasa Perangkat Lunak', kode: 'VTI51375', sks: 4, grade: '-'),
+      NilaiMatkul(nomor: 6, nama: 'Pemrograman Framework', kode: 'PFA3', sks: 3, grade: '-'),
+      NilaiMatkul(nomor: 7, nama: 'Statistika Komputasi', kode: 'VTI51389', sks: 3, grade: '-'),
+      NilaiMatkul(nomor: 8, nama: 'Kewirausahaan', kode: 'VTI51310', sks: 2, grade: '-'),
+      NilaiMatkul(nomor: 9, nama: 'UI/UX Design', kode: 'VTI51315', sks: 3, grade: '-'),
+      NilaiMatkul(nomor: 10, nama: 'Internet of Things (IoT)', kode: 'VTI51340', sks: 3, grade: '-'),
     ],
   ),
 ];
@@ -77,6 +79,7 @@ class _NilaiScreenState extends State<NilaiScreen> {
     super.initState();
     _selected = _dropdownItems.first;
     _loadFromDriftOrSeed();
+    _refreshFromBackend();
   }
 
   Future<void> _loadFromDriftOrSeed() async {
@@ -111,7 +114,8 @@ class _NilaiScreenState extends State<NilaiScreen> {
           nama: m['nama'] ?? '',
           kode: m['kode'] ?? '',
           sks: m['sks'] ?? 0,
-          grade: m['grade'] ?? 'A',
+          grade: m['grade'] ?? '-',
+          score: m['score'] != null ? (m['score'] as num) : null,
         );
       }).toList();
 
@@ -144,33 +148,17 @@ class _NilaiScreenState extends State<NilaiScreen> {
   }
 
   Future<void> _refreshFromBackend() async {
-
-    final bool success = await AcademicApiService.syncNilaiSemester();
+    try {
+      final liveNilai = await AcademicApiService.fetchNilaiSemester();
+      if (liveNilai != null && liveNilai.isNotEmpty && mounted) {
+        _applyCachedData(liveNilai);
+        return;
+      }
+    } catch (_) {}
 
     final cached = await AppDb.instance.getNilaiFromDrift();
-    if (cached.isNotEmpty) {
+    if (cached.isNotEmpty && mounted) {
       _applyCachedData(cached);
-    }
-
-    if (mounted) {
-
-      if (success) {
-        NotificationService.showPushNotification(
-          context,
-          title: 'Nilai Akademik Disinkronkan!',
-          body: 'Data KHS & Nilai semester terbaru dari server Express.js berhasil disimpan ke SQLite Drift.',
-          icon: Icons.school_rounded,
-          iconColor: const Color(0xFF2563EB),
-        );
-      } else {
-        NotificationService.showPushNotification(
-          context,
-          title: 'Mode Offline (SQLite Drift)',
-          body: 'Server offline. Data rincian nilai tetap dimuat dari database lokal SQLite.',
-          icon: Icons.cloud_off_rounded,
-          iconColor: const Color(0xFFF59E0B),
-        );
-      }
     }
   }
 
@@ -425,16 +413,17 @@ class _NilaiTile extends StatelessWidget {
     required this.cardBg,
   });
 
-  Color _gradeBgColor(String grade) {
+  Color _gradeBgColor(String grade, bool isDark) {
     if (grade.startsWith('A')) return const Color(0xFF10B981);
     if (grade.startsWith('B')) return const Color(0xFF3B82F6);
     if (grade.startsWith('C')) return const Color(0xFFF59E0B);
+    if (grade == '-') return isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
     return const Color(0xFFEF4444);
   }
 
   @override
   Widget build(BuildContext context) {
-    final gradeColor = _gradeBgColor(matkul.grade);
+    final gradeColor = _gradeBgColor(matkul.grade, isDark);
 
     return Container(
       width: double.infinity,
@@ -515,6 +504,28 @@ class _NilaiTile extends StatelessWidget {
                         color: isDark ? Colors.white54 : const Color(0xFF94A3B8),
                       ),
                     ),
+                    if (matkul.score != null && matkul.score! > 0) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          'Nilai: ${matkul.score}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],

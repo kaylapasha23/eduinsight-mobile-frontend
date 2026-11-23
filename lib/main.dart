@@ -13,10 +13,14 @@ import 'screens/ai_evaluation/ai_evalution_card.dart';
 import 'screens/academic/ipk.dart';
 import 'screens/academic/kehadiran.dart';
 import 'screens/academic/nilai.dart';
-
+import 'screens/notifications/notification_screen.dart';
+import 'services/notification_service.dart';
 import 'screens/academic/kelas/kelas_provider.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.init();
+
   runApp(
     MultiProvider(
       providers: [
@@ -54,11 +58,12 @@ class MyApp extends StatelessWidget {
             '/forgot-password': (context) => const ForgotPasswordScreen(),
             '/home': (context) => const HomeScreen(),
             '/academic': (context) => const AcademicScreen(),
-            '/profile':(context) => const ProfileScreen(), 
-            '/ai':(context) => const AiEvalutionScreen(),
-            '/ipk' :(context) => const IpkScreen(),
-            '/kehadiran' :(context) => const KehadiranScreen(),
-            '/nilai' :(context) => const NilaiScreen(),
+            '/profile': (context) => const ProfileScreen(),
+            '/ai': (context) => const AiEvalutionScreen(),
+            '/ipk': (context) => const IpkScreen(),
+            '/kehadiran': (context) => const KehadiranScreen(),
+            '/nilai': (context) => const NilaiScreen(),
+            '/notifications': (context) => const NotificationScreen(),
           },
         );
       },

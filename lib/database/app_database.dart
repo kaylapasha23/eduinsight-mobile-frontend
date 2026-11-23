@@ -190,6 +190,11 @@ class AppDb extends _$AppDb {
 
   // ─── KEHADIRAN SQLITE OPERATIONS ───
 
+  Future<void> clearKehadiranCache() async {
+    await initAcademicTables();
+    await customStatement('DELETE FROM kehadiran_cache');
+  }
+
   Future<void> saveKehadiranToDrift(List<Map<String, dynamic>> matkulList) async {
     await initAcademicTables();
     await customStatement('DELETE FROM kehadiran_cache');

@@ -8,13 +8,12 @@ class AuthService {
   // Daftar URL backend dengan port 5001 (utama) dan 3000 (cadangan)
   // Mendukung Android Emulator (10.0.2.2), Web/Desktop (localhost & 127.0.0.1), dan HP Fisik Wi-Fi (192.168.100.24)
   static const List<String> _candidateBaseUrls = [
-    'http://10.0.2.2:5001/api/auth',
-    'http://localhost:5001/api/auth',
-    'http://127.0.0.1:5001/api/auth',
-    'http://192.168.100.24:5001/api/auth',
-    'http://10.0.2.2:3000/api/auth',
     'http://localhost:3000/api/auth',
+    'http://127.0.0.1:3000/api/auth',
+    'http://10.0.2.2:3000/api/auth',
     'http://192.168.100.24:3000/api/auth',
+    'http://localhost:5001/api/auth',
+    'http://10.0.2.2:5001/api/auth',
   ];
 
   static String? _cachedWorkingUrl;

@@ -7,11 +7,11 @@ class AcademicApiService {
   // Mendukung Android Emulator (10.0.2.2), Windows / Desktop / Web (localhost & 127.0.0.1)
   // serta port 5001 dan port 3000
   static const List<String> _baseUrls = [
-    'http://10.0.2.2:5001/api',
-    'http://localhost:5001/api',
-    'http://127.0.0.1:5001/api',
-    'http://10.0.2.2:3000/api',
     'http://localhost:3000/api',
+    'http://127.0.0.1:3000/api',
+    'http://10.0.2.2:3000/api',
+    'http://localhost:5001/api',
+    'http://10.0.2.2:5001/api',
   ];
 
   static Future<http.Response?> _getWithFallback(
@@ -86,18 +86,80 @@ class AcademicApiService {
     return null;
   }
 
-  /// Sinkronisasi Kehadiran dari Express.js lalu simpan ke SQLite Drift
-  static Future<bool> syncKehadiran() async {
+  /// Mengambil data Kehadiran per mata kuliah secara langsung dari backend
+  static Future<List<Map<String, dynamic>>?> fetchKehadiranCourses() async {
     try {
-      final res = await _getWithFallback('kehadiran');
+      final token = await store.getToken();
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      };
+
+      final res = await _getWithFallback('kehadiran?view=courses', headers: headers);
       if (res != null) {
         final body = jsonDecode(res.body);
         if (body['success'] == true) {
-          final courses = body['courses'] ?? body['data'];
+          final courses = body['data'] ?? body['courses'];
           if (courses is List) {
             final List<Map<String, dynamic>> converted =
                 courses.map((e) => Map<String, dynamic>.from(e)).toList();
-            await AppDb.instance.saveKehadiranToDrift(converted);
+            try {
+              await AppDb.instance.saveKehadiranToDrift(converted);
+            } catch (_) {}
+            return converted;
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Mengambil data Nilai Semester (KHS) secara langsung dari backend
+  static Future<List<Map<String, dynamic>>?> fetchNilaiSemester() async {
+    try {
+      final token = await store.getToken();
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      };
+
+      final res = await _getWithFallback('nilai-semester', headers: headers);
+      if (res != null) {
+        final body = jsonDecode(res.body);
+        if (body['success'] == true && body['data'] is List) {
+          final List list = body['data'];
+          final List<Map<String, dynamic>> converted =
+              list.map((e) => Map<String, dynamic>.from(e)).toList();
+          try {
+            await AppDb.instance.saveNilaiToDrift(converted);
+          } catch (_) {}
+          return converted;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Sinkronisasi Kehadiran dari Express.js lalu simpan ke SQLite Drift
+  static Future<bool> syncKehadiran() async {
+    try {
+      final token = await store.getToken();
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      };
+
+      final res = await _getWithFallback('kehadiran?view=courses', headers: headers);
+      if (res != null) {
+        final body = jsonDecode(res.body);
+        if (body['success'] == true) {
+          final courses = body['data'] ?? body['courses'];
+          if (courses is List) {
+            final List<Map<String, dynamic>> converted =
+                courses.map((e) => Map<String, dynamic>.from(e)).toList();
+            try {
+              await AppDb.instance.saveKehadiranToDrift(converted);
+            } catch (_) {}
             return true;
           }
         }
@@ -111,14 +173,22 @@ class AcademicApiService {
   /// Sinkronisasi Nilai dari Express.js lalu simpan ke SQLite Drift
   static Future<bool> syncNilai() async {
     try {
-      final res = await _getWithFallback('penilaian');
+      final token = await store.getToken();
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      };
+
+      final res = await _getWithFallback('penilaian', headers: headers);
       if (res != null) {
         final body = jsonDecode(res.body);
         if (body['success'] == true && body['data'] is List) {
           final List list = body['data'];
           final List<Map<String, dynamic>> converted =
               list.map((e) => Map<String, dynamic>.from(e)).toList();
-          await AppDb.instance.saveNilaiToDrift(converted);
+          try {
+            await AppDb.instance.saveNilaiToDrift(converted);
+          } catch (_) {}
           return true;
         }
       }
@@ -131,14 +201,22 @@ class AcademicApiService {
   /// Sinkronisasi Nilai Semester (KHS) dari backend lalu simpan ke SQLite Drift
   static Future<bool> syncNilaiSemester() async {
     try {
-      final res = await _getWithFallback('nilai-semester');
+      final token = await store.getToken();
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      };
+
+      final res = await _getWithFallback('nilai-semester', headers: headers);
       if (res != null) {
         final body = jsonDecode(res.body);
         if (body['success'] == true && body['data'] is List) {
           final List list = body['data'];
           final List<Map<String, dynamic>> converted =
               list.map((e) => Map<String, dynamic>.from(e)).toList();
-          await AppDb.instance.saveNilaiToDrift(converted);
+          try {
+            await AppDb.instance.saveNilaiToDrift(converted);
+          } catch (_) {}
           return true;
         }
       }

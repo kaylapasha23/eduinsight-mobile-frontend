@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import '../../database/app_database.dart';
 import '../../services/academic_api_service.dart';
-import '../../services/notification_service.dart';
 import '../common_widgets.dart';
 import 'academic_widgets.dart';
 class Pertemuan {
   final int nomor;
   final String topik;
   final String tanggal;
-  final String status;
+  final String? status; // null = belum ada absensi dari dosen
+  final bool hasData;
 
   const Pertemuan({
     required this.nomor,
     required this.topik,
     required this.tanggal,
-    required this.status,
+    this.status,
+    this.hasData = false,
   });
 }
 
@@ -38,125 +39,29 @@ const List<ListItem> pilihanMatkul = [
   ListItem(value: 2, name: 'Basis Data Terdistribusi'),
   ListItem(value: 3, name: 'Keamanan Siber & Jaringan'),
   ListItem(value: 4, name: 'Rekayasa Perangkat Lunak'),
-  ListItem(value: 5, name: 'Statistika Komputasi'),
-  ListItem(value: 6, name: 'Kewirausahaan'),
-  ListItem(value: 7, name: 'UI/UX Design'),
-  ListItem(value: 8, name: 'Internet of Things (IoT)'),
+  ListItem(value: 5, name: 'Pemrograman Framework'),
+  ListItem(value: 6, name: 'Statistika Komputasi'),
+  ListItem(value: 7, name: 'Kewirausahaan'),
+  ListItem(value: 8, name: 'UI/UX Design'),
+  ListItem(value: 9, name: 'Internet of Things (IoT)'),
 ];
 
 const List<MataKuliahHadir> dataKehadiran = [
-  MataKuliahHadir(
-    nama: 'Kecerdasan Buatan',
-    jadwal: '14.00-15.20 Lantai 7, Ruangan 701',
-    riwayat: [
-      Pertemuan(nomor: 6, topik: 'Machine Learning Dasar', tanggal: 'Senin, 3 November 2026', status: 'Hadir'),
-      Pertemuan(nomor: 5, topik: 'Logika Fuzzy', tanggal: 'Senin, 27 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 4, topik: 'Pencarian Heuristik', tanggal: 'Senin, 20 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 3, topik: 'Pencarian Buta', tanggal: 'Senin, 13 Oktober 2026', status: 'Izin'),
-      Pertemuan(nomor: 2, topik: 'Agen Cerdas', tanggal: 'Senin, 6 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 1, topik: 'Pengenalan AI', tanggal: 'Senin, 29 September 2026', status: 'Hadir'),
-    ],
-  ),
-  MataKuliahHadir(
-    nama: 'Pemrograman Web',
-    jadwal: '08.00-10.00 Lantai 5, Ruang 502',
-    riwayat: [
-      Pertemuan(nomor: 6, topik: 'State Management', tanggal: 'Selasa, 4 November 2026', status: 'Hadir'),
-      Pertemuan(nomor: 5, topik: 'API Integration', tanggal: 'Selasa, 28 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 4, topik: 'Routing & Navigasi', tanggal: 'Selasa, 21 Oktober 2026', status: 'Sakit'),
-      Pertemuan(nomor: 3, topik: 'React Hooks', tanggal: 'Selasa, 14 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 2, topik: 'Komponen & Props', tanggal: 'Selasa, 7 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 1, topik: 'Dasar HTML & CSS', tanggal: 'Selasa, 30 September 2026', status: 'Hadir'),
-    ],
-  ),
-  MataKuliahHadir(
-    nama: 'Basis Data Terdistribusi',
-    jadwal: '12.00-14.00 Lantai 6, Ruang 606',
-    riwayat: [
-      Pertemuan(nomor: 6, topik: 'Replikasi & Konsistensi', tanggal: 'Rabu, 5 November 2026', status: 'Hadir'),
-      Pertemuan(nomor: 5, topik: 'Transaksi Terdistribusi', tanggal: 'Rabu, 29 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 4, topik: 'Query Terdistribusi', tanggal: 'Rabu, 22 Oktober 2026', status: 'Alpa'),
-      Pertemuan(nomor: 3, topik: 'Fragmentasi Data', tanggal: 'Rabu, 15 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 2, topik: 'Arsitektur Terdistribusi', tanggal: 'Rabu, 8 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 1, topik: 'Pengantar Basis Data Terdistribusi', tanggal: 'Rabu, 1 Oktober 2026', status: 'Hadir'),
-    ],
-  ),
-  MataKuliahHadir(
-    nama: 'Keamanan Siber & Jaringan',
-    jadwal: '10.00-12.00 Lab Keamanan, Lantai 4',
-    riwayat: [
-      Pertemuan(nomor: 6, topik: 'Penetration Testing', tanggal: 'Kamis, 6 November 2026', status: 'Hadir'),
-      Pertemuan(nomor: 5, topik: 'Keamanan Aplikasi Web', tanggal: 'Kamis, 30 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 4, topik: 'Kriptografi Lanjutan', tanggal: 'Kamis, 23 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 3, topik: 'Firewall & VPN', tanggal: 'Kamis, 16 Oktober 2026', status: 'Izin'),
-      Pertemuan(nomor: 2, topik: 'Dasar Kriptografi', tanggal: 'Kamis, 9 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 1, topik: 'Pengenalan Keamanan Siber', tanggal: 'Kamis, 2 Oktober 2026', status: 'Hadir'),
-    ],
-  ),
-  MataKuliahHadir(
-    nama: 'Rekayasa Perangkat Lunak',
-    jadwal: '08.00-10.30 Lantai 3, Ruang 304',
-    riwayat: [
-      Pertemuan(nomor: 6, topik: 'Pengujian Perangkat Lunak', tanggal: 'Jumat, 7 November 2026', status: 'Hadir'),
-      Pertemuan(nomor: 5, topik: 'Implementasi & Coding', tanggal: 'Jumat, 31 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 4, topik: 'Desain Arsitektur', tanggal: 'Jumat, 24 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 3, topik: 'Perancangan UML', tanggal: 'Jumat, 17 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 2, topik: 'Analisis Kebutuhan', tanggal: 'Jumat, 10 Oktober 2026', status: 'Sakit'),
-      Pertemuan(nomor: 1, topik: 'SDLC & Metodologi Agile', tanggal: 'Jumat, 3 Oktober 2026', status: 'Hadir'),
-    ],
-  ),
-  MataKuliahHadir(
-    nama: 'Statistika Komputasi',
-    jadwal: '13.30-15.00 Lantai 2, Ruang 201',
-    riwayat: [
-      Pertemuan(nomor: 6, topik: 'Regresi Linear Berganda', tanggal: 'Jumat, 7 November 2026', status: 'Hadir'),
-      Pertemuan(nomor: 5, topik: 'Analisis Regresi', tanggal: 'Jumat, 31 Oktober 2026', status: 'Alpa'),
-      Pertemuan(nomor: 4, topik: 'Distribusi Probabilitas', tanggal: 'Jumat, 24 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 3, topik: 'Uji Hipotesis', tanggal: 'Jumat, 17 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 2, topik: 'Statistik Deskriptif', tanggal: 'Jumat, 10 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 1, topik: 'Pengantar Statistika Komputasi', tanggal: 'Jumat, 3 Oktober 2026', status: 'Hadir'),
-    ],
-  ),
-  MataKuliahHadir(
-    nama: 'Kewirausahaan',
-    jadwal: '08.00-09.40 Lantai 4, Ruang 401',
-    riwayat: [
-      Pertemuan(nomor: 6, topik: 'Pitching & Presentasi Bisnis', tanggal: 'Senin, 3 November 2026', status: 'Hadir'),
-      Pertemuan(nomor: 5, topik: 'Pemasaran Digital', tanggal: 'Senin, 27 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 4, topik: 'Rencana Bisnis', tanggal: 'Senin, 20 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 3, topik: 'Analisis Pasar', tanggal: 'Senin, 13 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 2, topik: 'Business Model Canvas', tanggal: 'Senin, 6 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 1, topik: 'Dasar-Dasar Kewirausahaan', tanggal: 'Senin, 29 September 2026', status: 'Hadir'),
-    ],
-  ),
-  MataKuliahHadir(
-    nama: 'UI/UX Design',
-    jadwal: '13.00-15.30 Lab Multimedia, Lantai 3',
-    riwayat: [
-      Pertemuan(nomor: 6, topik: 'Usability Testing', tanggal: 'Selasa, 4 November 2026', status: 'Hadir'),
-      Pertemuan(nomor: 5, topik: 'Prototyping & Wireframe', tanggal: 'Selasa, 28 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 4, topik: 'Design System', tanggal: 'Selasa, 21 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 3, topik: 'Color Theory & Typography', tanggal: 'Selasa, 14 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 2, topik: 'Prinsip Desain UI', tanggal: 'Selasa, 7 Oktober 2026', status: 'Izin'),
-      Pertemuan(nomor: 1, topik: 'Pengantar UI/UX', tanggal: 'Selasa, 30 September 2026', status: 'Hadir'),
-    ],
-  ),
-  MataKuliahHadir(
-    nama: 'Internet of Things (IoT)',
-    jadwal: '15.00-17.30 Lab Hardware & IoT, Lantai 5',
-    riwayat: [
-      Pertemuan(nomor: 6, topik: 'IoT Security', tanggal: 'Rabu, 5 November 2026', status: 'Hadir'),
-      Pertemuan(nomor: 5, topik: 'Cloud & IoT Integration', tanggal: 'Rabu, 29 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 4, topik: 'Pemrograman Mikrokontroler', tanggal: 'Rabu, 22 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 3, topik: 'Sensor & Aktuator', tanggal: 'Rabu, 15 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 2, topik: 'Protokol Komunikasi IoT', tanggal: 'Rabu, 8 Oktober 2026', status: 'Hadir'),
-      Pertemuan(nomor: 1, topik: 'Pengantar IoT & Ekosistem', tanggal: 'Rabu, 1 Oktober 2026', status: 'Sakit'),
-    ],
-  ),
+  MataKuliahHadir(nama: 'Kecerdasan Buatan', jadwal: '14.00-15.20 Lantai 7, Ruangan 701', riwayat: []),
+  MataKuliahHadir(nama: 'Pemrograman Web', jadwal: '08.00-10.00 Lantai 5, Ruang 502', riwayat: []),
+  MataKuliahHadir(nama: 'Basis Data Terdistribusi', jadwal: '12.00-14.00 Lantai 6, Ruang 606', riwayat: []),
+  MataKuliahHadir(nama: 'Keamanan Siber & Jaringan', jadwal: '10.00-12.00 Lab Keamanan, Lantai 4', riwayat: []),
+  MataKuliahHadir(nama: 'Rekayasa Perangkat Lunak', jadwal: '08.00-10.30 Lantai 3, Ruang 304', riwayat: []),
+  MataKuliahHadir(nama: 'Statistika Komputasi', jadwal: '13.30-15.00 Lantai 2, Ruang 201', riwayat: []),
+  MataKuliahHadir(nama: 'Kewirausahaan', jadwal: '08.00-09.40 Lantai 4, Ruang 401', riwayat: []),
+  MataKuliahHadir(nama: 'UI/UX Design', jadwal: '13.00-15.30 Lab Multimedia, Lantai 3', riwayat: []),
+  MataKuliahHadir(nama: 'Internet of Things (IoT)', jadwal: '15.00-17.30 Lab Hardware & IoT, Lantai 5', riwayat: []),
+  MataKuliahHadir(nama: 'Pemrograman Framework', jadwal: '10.20-13.00 Lantai 7, Ruangan 702', riwayat: []),
 ];
 
 class KehadiranScreen extends StatefulWidget {
-  const KehadiranScreen({super.key});
+  final String? initialCourse;
+  const KehadiranScreen({super.key, this.initialCourse});
 
   @override
   State<KehadiranScreen> createState() => _KehadiranScreenState();
@@ -170,8 +75,16 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
   @override
   void initState() {
     super.initState();
-    _selected = _dropdownItems.first;
+    if (widget.initialCourse != null && widget.initialCourse!.isNotEmpty) {
+      final idx = _dropdownItems.indexWhere((it) =>
+          it.name.toLowerCase().contains(widget.initialCourse!.toLowerCase()) ||
+          widget.initialCourse!.toLowerCase().contains(it.name.toLowerCase()));
+      _selected = idx != -1 ? _dropdownItems[idx] : _dropdownItems.first;
+    } else {
+      _selected = _dropdownItems.first;
+    }
     _loadFromDriftOrSeed();
+    _refreshFromBackend();
   }
 
   Future<void> _loadFromDriftOrSeed() async {
@@ -198,11 +111,13 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
   void _applyCachedData(List<Map<String, dynamic>> cached) {
     final List<MataKuliahHadir> parsed = cached.map((c) {
       final riwayatList = (c['riwayat'] as List? ?? []).map((r) {
+        final hasData = r['hasData'] == true || (r['status'] != null && r['status'].toString().isNotEmpty);
         return Pertemuan(
           nomor: r['nomor'] ?? 0,
-          topik: r['topik'] ?? '',
+          topik: 'Pertemuan ${r['nomor'] ?? 0}',
           tanggal: r['tanggal'] ?? '',
-          status: r['status'] ?? 'Hadir',
+          status: hasData ? (r['status']?.toString()) : null,
+          hasData: hasData,
         );
       }).toList();
 
@@ -220,7 +135,18 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
           parsed.length,
           (i) => ListItem(value: i, name: parsed[i].nama),
         );
-        if (_selected.value >= parsed.length) {
+        if (widget.initialCourse != null && widget.initialCourse!.isNotEmpty) {
+          final idx = _dropdownItems.indexWhere((it) =>
+              it.name.toLowerCase().contains(widget.initialCourse!.toLowerCase()) ||
+              widget.initialCourse!.toLowerCase().contains(it.name.toLowerCase()));
+          if (idx != -1) {
+            _selected = _dropdownItems[idx];
+          } else if (_selected.value >= parsed.length) {
+            _selected = _dropdownItems.first;
+          } else {
+            _selected = _dropdownItems[_selected.value];
+          }
+        } else if (_selected.value >= parsed.length) {
           _selected = _dropdownItems.first;
         } else {
           _selected = _dropdownItems[_selected.value];
@@ -230,45 +156,27 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
   }
 
   Future<void> _refreshFromBackend() async {
-
-    final bool success = await AcademicApiService.syncKehadiran();
+    try {
+      final liveCourses = await AcademicApiService.fetchKehadiranCourses();
+      if (liveCourses != null && liveCourses.isNotEmpty && mounted) {
+        _applyCachedData(liveCourses);
+        return;
+      }
+    } catch (_) {}
 
     final cached = await AppDb.instance.getKehadiranFromDrift();
-    if (cached.isNotEmpty) {
+    if (cached.isNotEmpty && mounted) {
       _applyCachedData(cached);
-    }
-
-    if (mounted) {
-
-      if (success) {
-        NotificationService.showPushNotification(
-          context,
-          title: 'Presensi Disinkronkan!',
-          body: 'Data kehadiran terbaru dari server Express.js berhasil disimpan ke SQLite Drift.',
-          icon: Icons.check_circle_rounded,
-          iconColor: const Color(0xFF10B981),
-        );
-      } else {
-        NotificationService.showPushNotification(
-          context,
-          title: 'Mode Offline (SQLite Drift)',
-          body: 'Server offline. Data presensi tetap dimuat dari database lokal SQLite.',
-          icon: Icons.cloud_off_rounded,
-          iconColor: const Color(0xFFF59E0B),
-        );
-      }
     }
   }
 
   int _hitung(MataKuliahHadir mk, String status) {
     int jumlah = 0;
-
     for (Pertemuan p in mk.riwayat) {
-      if (p.status == status) {
+      if (p.hasData && p.status == status) {
         jumlah++;
       }
     }
-
     return jumlah;
   }
 
@@ -421,7 +329,7 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  '${mk.riwayat.length} Pertemuan',
+                  '${mk.riwayat.where((p) => p.hasData).length} Pertemuan',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -487,16 +395,56 @@ class _KehadiranScreenState extends State<KehadiranScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        Column(
-          children: mk.riwayat
-              .map(
-                (p) => _RiwayatTile(
-                  pertemuan: p,
-                  isDark: isDark,
-                  cardBg: cardBg,
+        Builder(
+          builder: (_) {
+            final adaAbsensi = mk.riwayat.any((p) => p.hasData);
+            if (!adaAbsensi) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 36),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF3B4555) : const Color(0xFFE2E8F0),
+                  ),
                 ),
-              )
-              .toList(),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.event_busy_rounded,
+                      size: 40,
+                      color: isDark ? const Color(0xFF4B5563) : const Color(0xFFCBD5E1),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Belum ada absensi',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? const Color(0xFF6B7280) : const Color(0xFF94A3B8),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Dosen belum menginput kehadiran untuk matkul ini',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark ? const Color(0xFF4B5563) : const Color(0xFFCBD5E1),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              );
+            }
+            return Column(
+              children: mk.riwayat
+                  .where((p) => p.hasData)
+                  .map((p) => _RiwayatTile(pertemuan: p, isDark: isDark, cardBg: cardBg))
+                  .toList(),
+            );
+          },
         ),
       ],
     );
@@ -595,7 +543,7 @@ class _RiwayatTile extends StatelessWidget {
     required this.cardBg,
   });
 
-  Color _statusColor(String status) {
+  Color _statusColor(String? status) {
     switch (status) {
       case 'Hadir':
         return isDark
@@ -622,7 +570,8 @@ class _RiwayatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = _statusColor(pertemuan.status);
+    final statusColor = _statusColor(pertemuan.status ?? '-');
+    final statusLabel = pertemuan.status ?? '-';
 
     return Container(
       width: double.infinity,
@@ -722,7 +671,7 @@ class _RiwayatTile extends StatelessWidget {
               ),
             ),
             child: Text(
-              pertemuan.status,
+              statusLabel,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
