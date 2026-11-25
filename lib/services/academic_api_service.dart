@@ -7,6 +7,7 @@ class AcademicApiService {
   // Mendukung Android Emulator (10.0.2.2), Windows / Desktop / Web (localhost & 127.0.0.1)
   // serta port 5001 dan port 3000
   static const List<String> _baseUrls = [
+    'https://eduinsight-backend.vercel.app/api',
     'http://localhost:3000/api',
     'http://127.0.0.1:3000/api',
     'http://10.0.2.2:3000/api',
@@ -22,7 +23,7 @@ class AcademicApiService {
       try {
         final res = await http
             .get(Uri.parse('$base/$endpoint'), headers: headers)
-            .timeout(const Duration(seconds: 3));
+            .timeout(const Duration(seconds: 10));
         if (res.statusCode == 200) {
           return res;
         }

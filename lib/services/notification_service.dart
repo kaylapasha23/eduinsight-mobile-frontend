@@ -136,6 +136,7 @@ class NotificationService {
   static List<EduNotification> get history => List.unmodifiable(_history);
 
   static const List<String> _baseUrls = [
+    'https://eduinsight-backend.vercel.app/api',
     'http://localhost:3000/api',
     'http://127.0.0.1:3000/api',
     'http://10.0.2.2:3000/api',
