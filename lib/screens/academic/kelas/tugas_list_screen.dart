@@ -45,12 +45,7 @@ class _TugasListScreenState extends State<TugasListScreen> {
 
     return Consumer<KelasProvider>(
       builder: (context, kelas, _) {
-        final allAvailableTasks = kelas.dynamicTasks.isNotEmpty
-            ? kelas.dynamicTasks
-            : [
-                ...allSegeraTasks,
-                ...allSelesaiTasks,
-              ];
+        final allAvailableTasks = kelas.dynamicTasks;
 
         final selesaiTasks = allAvailableTasks
             .where(
@@ -343,7 +338,7 @@ class _TugasListScreenState extends State<TugasListScreen> {
             Text(
               isTerlambat
                   ? 'Bagus! Tidak ada tugas yang terlambat'
-                  : 'Tidak ada tugas dalam kategori ini',
+                  : 'Belum ada tugas dari dosen',
               style: TextStyle(
                 color: isDark
                     ? Colors.white
@@ -449,6 +444,7 @@ class _TugasListScreenState extends State<TugasListScreen> {
               builder: (context) => DetailTugasScreen(
                 taskTitle: task.title,
                 className: task.className,
+                taskId: task.id,
               ),
             ),
           ),

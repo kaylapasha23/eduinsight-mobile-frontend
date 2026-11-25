@@ -190,6 +190,15 @@ class AppDb extends _$AppDb {
 
   // ─── KEHADIRAN SQLITE OPERATIONS ───
 
+  Future<void> clearAllUserCaches() async {
+    try {
+      await initAcademicTables();
+      await customStatement('DELETE FROM kehadiran_cache');
+      await customStatement('DELETE FROM nilai_cache');
+      await customStatement('DELETE FROM pengumpulan_tugas');
+    } catch (_) {}
+  }
+
   Future<void> clearKehadiranCache() async {
     await initAcademicTables();
     await customStatement('DELETE FROM kehadiran_cache');

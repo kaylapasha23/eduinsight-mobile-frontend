@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../database/app_database.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import 'token_store.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -57,11 +60,15 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = false;
 
     if (result['success'] == true) {
+      // Bersihkan cache user sebelumnya agar tidak bocor ke akun baru
+      await _clearLocalUserCaches();
       _isLoggedIn = true;
       _user = result['data']['user'];
       _token = result['data']['token'];
       await saveToken(result['data']['token']);
       debugPrint('token tersimpan: ${await readToken()}');
+      // Segera muat ulang notifikasi milik user yang baru login
+      NotificationService.fetchNotificationsFromBackend();
       _errorMessage = null;
       notifyListeners();
       return true;
@@ -101,6 +108,19 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Bersihkan seluruh cache lokal per-user (Drift SQLite, SharedPreferences tugas, riwayat notifikasi)
+  Future<void> _clearLocalUserCaches() async {
+    NotificationService.clearHistory();
+    await AppDb.instance.clearAllUserCaches();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('kelas_user_completed');
+      await prefs.remove('kelas_late_tasks');
+      await prefs.remove('kelas_files_json');
+      await prefs.remove('kelas_cancelled');
+    } catch (_) {}
+  }
+
   /// Logout
   Future<void> logout() async {
     _isLoading = true;
@@ -108,6 +128,7 @@ class AuthProvider extends ChangeNotifier {
 
     await AuthService.logout();
     await clearToken();
+    await _clearLocalUserCaches();
 
     _isLoggedIn = false;
     _user = null;

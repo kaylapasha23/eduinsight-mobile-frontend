@@ -227,6 +227,12 @@ class NotificationService {
     }
   }
 
+  /// Bersihkan riwayat notifikasi di memori (saat logout / ganti akun)
+  static void clearHistory() {
+    _history.clear();
+    unreadCount.value = 0;
+  }
+
   /// Ambil notifikasi dari database backend
   static Future<void> fetchNotificationsFromBackend() async {
     for (final base in _baseUrls) {

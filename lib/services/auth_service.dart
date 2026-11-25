@@ -48,7 +48,7 @@ class AuthService {
               headers: mergedHeaders,
               body: encodedBody,
             )
-            .timeout(const Duration(seconds: 4));
+            .timeout(const Duration(seconds: 12));
         return res;
       } catch (e) {
         debugPrint('Gagal di $_cachedWorkingUrl: $e');
@@ -64,7 +64,7 @@ class AuthService {
               headers: mergedHeaders,
               body: encodedBody,
             )
-            .timeout(const Duration(seconds: 3));
+            .timeout(const Duration(seconds: 10));
         _cachedWorkingUrl = base;
         return res;
       } catch (e) {
@@ -90,7 +90,7 @@ class AuthService {
               Uri.parse('$_cachedWorkingUrl/$endpoint'),
               headers: headers,
             )
-            .timeout(const Duration(seconds: 4));
+            .timeout(const Duration(seconds: 12));
         return res;
       } catch (e) {
         debugPrint('Gagal di $_cachedWorkingUrl: $e');
@@ -105,7 +105,7 @@ class AuthService {
               Uri.parse('$base/$endpoint'),
               headers: headers,
             )
-            .timeout(const Duration(seconds: 3));
+            .timeout(const Duration(seconds: 10));
         _cachedWorkingUrl = base;
         return res;
       } catch (e) {

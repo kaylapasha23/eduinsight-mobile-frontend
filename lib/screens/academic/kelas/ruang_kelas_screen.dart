@@ -70,9 +70,7 @@ class _RuangKelasScreenState extends State<RuangKelasScreen> {
     final subColor = isDark ? const Color(0xFF9AA4B8) : const Color(0xFF64748B);
 
     final kelasProvider = context.watch<KelasProvider>();
-    final allTasks = kelasProvider.dynamicTasks.isNotEmpty
-        ? kelasProvider.dynamicTasks
-        : [...allSegeraTasks, ...allSelesaiTasks];
+    final allTasks = kelasProvider.dynamicTasks;
 
     // Filter tugas hanya untuk mata kuliah ini
     final tasksForThisClass = allTasks.where((t) {
@@ -320,6 +318,7 @@ class _RuangKelasScreenState extends State<RuangKelasScreen> {
                         builder: (context) => DetailTugasScreen(
                           taskTitle: t.title,
                           className: widget.namaMatkul,
+                          taskId: t.id,
                         ),
                       ),
                     );
@@ -470,6 +469,7 @@ class _RuangKelasScreenState extends State<RuangKelasScreen> {
               builder: (context) => DetailTugasScreen(
                 taskTitle: task.title,
                 className: widget.namaMatkul,
+                taskId: task.id,
               ),
             ),
           );

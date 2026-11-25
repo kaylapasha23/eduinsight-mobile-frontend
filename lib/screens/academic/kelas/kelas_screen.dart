@@ -31,29 +31,9 @@ class TaskItem {
   });
 }
 
-const List<TaskItem> allSegeraTasks = [
-  TaskItem('Tugas 1 - Quiziz', 'Kewirausahaan',
-      'Hari ini, 23.59', 'Kewirausahaan'),
-  TaskItem('Tugas 1 - Analisa Aplikasi', 'UI/UX Design',
-      'Hari ini, 23.59', 'UI/UX Design'),
-  TaskItem('Pertemuan Pertama', 'Internet of Things (IoT)',
-      'Rabu, 23.59', 'Internet of Things (IoT)'),
-];
+const List<TaskItem> allSegeraTasks = [];
 
-const List<TaskItem> allSelesaiTasks = [
-  TaskItem('Tugas Pengenalan AI', 'Kecerdasan Buatan',
-      'Diserahkan', 'Kecerdasan Buatan',
-      isDefaultPastDeadline: true),
-  TaskItem('Latihan SQL Dasar', 'Basis Data',
-      'Diserahkan', 'Basis Data',
-      isDefaultPastDeadline: true),
-  TaskItem('Tugas Array & Function', 'Pemrograman Web',
-      'Diserahkan', 'Pemrograman Web',
-      isDefaultPastDeadline: true),
-  TaskItem('Laporan Praktikum 1', 'Internet of Things (IoT)',
-      'Diserahkan', 'Internet of Things (IoT)',
-      isDefaultPastDeadline: true),
-];
+const List<TaskItem> allSelesaiTasks = [];
 
 class RingkasanTugas {
   final String label;
@@ -86,20 +66,14 @@ const List<MatkulTugasItem> dataMatkulTugas = [
   MatkulTugasItem(
     nama: 'Kewirausahaan',
     dosen: 'Dr. Rini Handayani, M.M.',
-    tugas: 'Tugas 1 - Quiziz',
-    tenggat: 'Hari ini, 23.59',
   ),
   MatkulTugasItem(
     nama: 'UI/UX Design',
     dosen: 'Ivan Gunawan, M.Ds.',
-    tugas: 'Tugas 1 - Analisa Aplikasi',
-    tenggat: 'Hari ini, 23.59',
   ),
   MatkulTugasItem(
     nama: 'Internet of Things (IoT)',
     dosen: 'Teddy Indra Wijaya, M.Kom.',
-    tugas: 'Pertemuan Pertama',
-    tenggat: 'Rabu, 23.59',
   ),
   MatkulTugasItem(
     nama: 'Kecerdasan Buatan',
@@ -138,9 +112,7 @@ class KelasScreen extends StatelessWidget {
   }
 
   int _hitungJumlah(String type, KelasProvider kelas) {
-    final availableTasks = kelas.dynamicTasks.isNotEmpty
-        ? kelas.dynamicTasks
-        : [...allSegeraTasks, ...allSelesaiTasks];
+    final availableTasks = kelas.dynamicTasks;
     final totalSelesai = availableTasks
         .where((t) => kelas.isCompleted('${t.className}|${t.title}'))
         .length;

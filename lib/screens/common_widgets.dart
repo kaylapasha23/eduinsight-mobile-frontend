@@ -5,6 +5,7 @@ import '../services/notification_service.dart';
 import 'notifications/notification_screen.dart';
 import 'beranda/home_screen.dart';
 import 'academic/academic.dart';
+import 'academic/kelas/kelas_provider.dart';
 import 'profil/profile_screen.dart';
 import 'ai_evaluation/ai_evalution_card.dart';
 
@@ -83,7 +84,10 @@ class HeaderBar extends StatelessWidget {
                     onPressed: () async {
                       final authProvider =
                           Provider.of<AuthProvider>(context, listen: false);
+                      final kelasProvider =
+                          Provider.of<KelasProvider>(context, listen: false);
                       await authProvider.logout();
+                      await kelasProvider.resetForUser(resync: false);
                       if (context.mounted) {
                         Navigator.pushNamedAndRemoveUntil(
                             context, '/login', (route) => false);

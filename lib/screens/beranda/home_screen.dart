@@ -8,7 +8,6 @@ import '../../services/academic_api_service.dart';
 import '../../database/app_database.dart';
 import '../academic/academic.dart';
 import '../academic/kelas/kelas_provider.dart';
-import '../academic/kelas/kelas_screen.dart';
 import '../common_widgets.dart';
 import '../academic/kelas/detail_tugas_screen.dart';
 
@@ -103,7 +102,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Timer? _timer;
   DateTime _now = DateTime.now();
-  double _kehadiranPersen = 85.0;
+  double _kehadiranPersen = 0.0;
 
   @override
   void initState() {
@@ -433,9 +432,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   // ================= SECTION 2: TUGAS MENDATANG =================
                   Consumer<KelasProvider>(
                     builder: (context, kelasProvider, _) {
-                      final availableTasks = kelasProvider.dynamicTasks.isNotEmpty
-                          ? kelasProvider.dynamicTasks
-                          : [...allSegeraTasks, ...allSelesaiTasks];
+                      final availableTasks = kelasProvider.dynamicTasks;
                       final segeraList = availableTasks
                           .where((t) => !kelasProvider.isCompleted('${t.className}|${t.title}') && !kelasProvider.isLate('${t.className}|${t.title}'))
                           .toList();
@@ -472,7 +469,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Tidak Ada Tugas Mendatang',
+                                    'Belum Ada Tugas dari Dosen',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
@@ -481,7 +478,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Semua tugas telah diselesaikan atau belum ada tugas baru.',
+                                    'Dosen belum memberikan tugas baru untuk mata kuliahmu.',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontSize: 12,

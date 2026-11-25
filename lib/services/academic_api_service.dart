@@ -62,11 +62,16 @@ class AcademicApiService {
   /// Mengambil persentase total kehadiran secara garis besar yang diinput dosen
   static Future<double?> fetchOverallAttendanceRate() async {
     try {
-      final res = await _getWithFallback('kehadiran?view=courses');
+      final token = await store.getToken();
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      };
+      final res = await _getWithFallback('kehadiran?view=courses', headers: headers);
       if (res != null) {
         final body = jsonDecode(res.body);
         final list = body['data'] ?? body['courses'];
-        if (list is List && list.isNotEmpty) {
+        if (list is List) {
           int totalHadir = 0;
           int totalPertemuan = 0;
           for (final c in list) {
@@ -80,6 +85,7 @@ class AcademicApiService {
           if (totalPertemuan > 0) {
             return (totalHadir / totalPertemuan) * 100.0;
           }
+          return 0.0;
         }
       }
     } catch (_) {}
@@ -226,10 +232,15 @@ class AcademicApiService {
     return false;
   }
 
-  /// Mengambil semua daftar tugas aktif/riwayat dari backend
+  /// Mengambil semua daftar tugas aktif/riwayat dari backend (mengirim token mahasiswa aktif)
   static Future<List<Map<String, dynamic>>?> fetchTugas() async {
     try {
-      final res = await _getWithFallback('tugas');
+      final token = await store.getToken();
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      };
+      final res = await _getWithFallback('tugas', headers: headers);
       if (res != null) {
         final dynamic body = jsonDecode(res.body);
         if (body is List) {
@@ -277,5 +288,117 @@ class AcademicApiService {
       // Fallback
     }
     return null;
+  }
+
+  /// Mengirim pengumpulan tugas mahasiswa ke backend (real-time ke database dosen & Cloudinary)
+  static Future<bool> submitPengumpulan({
+    required String taskId,
+    String? linkRepo,
+    String? fileName,
+    String? fileUrl,
+    List<int>? fileBytes,
+    String? filePath,
+  }) async {
+    try {
+      final token = await store.getToken();
+
+      for (final base in _baseUrls) {
+        try {
+          if (fileBytes != null && fileBytes.isNotEmpty && fileName != null) {
+            // Upload file biner langsung via Multipart (didukung di Web CanvasKit/HTML & Mobile)
+            final uri = Uri.parse('$base/tugas/$taskId/pengumpulan');
+            final req = http.MultipartRequest('POST', uri);
+            if (token != null && token.isNotEmpty) {
+              req.headers['Authorization'] = 'Bearer $token';
+            }
+            if (linkRepo != null && linkRepo.isNotEmpty) {
+              req.fields['linkRepo'] = linkRepo;
+            }
+            req.files.add(
+              http.MultipartFile.fromBytes(
+                'file',
+                fileBytes,
+                filename: fileName,
+              ),
+            );
+            final streamed = await req.send().timeout(const Duration(seconds: 25));
+            final res = await http.Response.fromStream(streamed);
+            if (res.statusCode == 200 || res.statusCode == 201) {
+              return true;
+            }
+          } else if (filePath != null && filePath.isNotEmpty && fileName != null) {
+            // Upload via path file fisik (Khusus Android/iOS/Desktop)
+            final uri = Uri.parse('$base/tugas/$taskId/pengumpulan');
+            final req = http.MultipartRequest('POST', uri);
+            if (token != null && token.isNotEmpty) {
+              req.headers['Authorization'] = 'Bearer $token';
+            }
+            if (linkRepo != null && linkRepo.isNotEmpty) {
+              req.fields['linkRepo'] = linkRepo;
+            }
+            req.files.add(
+              await http.MultipartFile.fromPath(
+                'file',
+                filePath,
+                filename: fileName,
+              ),
+            );
+            final streamed = await req.send().timeout(const Duration(seconds: 25));
+            final res = await http.Response.fromStream(streamed);
+            if (res.statusCode == 200 || res.statusCode == 201) {
+              return true;
+            }
+          } else {
+            // Pengumpulan berupa tautan link atau metadata JSON
+            final headers = <String, String>{
+              'Content-Type': 'application/json',
+              if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+            };
+            final res = await http
+                .post(
+                  Uri.parse('$base/tugas/$taskId/pengumpulan'),
+                  headers: headers,
+                  body: jsonEncode({
+                    if (linkRepo != null && linkRepo.isNotEmpty) 'linkRepo': linkRepo,
+                    if (fileName != null && fileName.isNotEmpty) 'fileName': fileName,
+                    if (fileUrl != null && fileUrl.isNotEmpty) 'fileUrl': fileUrl,
+                  }),
+                )
+                .timeout(const Duration(seconds: 10));
+
+            if (res.statusCode == 200 || res.statusCode == 201) {
+              return true;
+            }
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  /// Membatalkan pengumpulan tugas mahasiswa di backend
+  static Future<bool> deletePengumpulan({required String taskId}) async {
+    try {
+      final token = await store.getToken();
+      final headers = <String, String>{
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      };
+
+      for (final base in _baseUrls) {
+        try {
+          final res = await http
+              .delete(
+                Uri.parse('$base/tugas/$taskId/pengumpulan'),
+                headers: headers,
+              )
+              .timeout(const Duration(seconds: 8));
+
+          if (res.statusCode == 200 || res.statusCode == 204) {
+            return true;
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+    return false;
   }
 }

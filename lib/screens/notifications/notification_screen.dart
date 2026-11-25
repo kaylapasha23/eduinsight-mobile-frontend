@@ -44,8 +44,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     if (type.contains('tugas')) {
       final taskTitle = notif.payload?['taskTitle'] ??
-          notif.title.replaceFirst(RegExp(r'^Tugas Baru:\s*'), '').trim();
-      final className = notif.payload?['className'] ?? 'Pemrograman Web';
+          notif.title.replaceFirst(RegExp(r'^(Tugas Baru|Nilai Tugas|Nilai Baru):\s*', caseSensitive: false), '').trim();
+      final className = notif.payload?['className'] ?? notif.payload?['matkul'] ?? '';
+      final taskId = notif.payload?['taskId'] ?? notif.targetId;
 
       await Navigator.push(
         context,
@@ -53,6 +54,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           builder: (context) => DetailTugasScreen(
             taskTitle: taskTitle,
             className: className,
+            taskId: taskId,
           ),
         ),
       );

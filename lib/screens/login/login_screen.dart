@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../academic/kelas/kelas_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -50,7 +51,12 @@ class _LoginScreenState extends State<LoginScreen> {
         }
         return;
       }
-      Navigator.pushReplacementNamed(context, '/home');
+      // Reset state & sinkronkan ulang data tugas khusus mahasiswa yang baru login
+      final kelasProvider = Provider.of<KelasProvider>(context, listen: false);
+      await kelasProvider.resetForUser(resync: true);
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     } else if (mounted) {
       _showSnackbar(authProvider.errorMessage ?? 'Login gagal.', isError: true);
     }

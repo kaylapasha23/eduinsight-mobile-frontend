@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
 import 'kelas_screen.dart';
 import '../../../services/academic_api_service.dart';
 import '../../../database/app_database.dart';
@@ -22,20 +23,8 @@ class KelasProvider extends ChangeNotifier {
   List<TaskItem> _dynamicTasks = [];
   bool _isLoading = false;
 
-  // Tasks that are initially "selesai" (pre-submitted default tasks)
-  final Set<String> _initiallyCompleted = {
-    'Kecerdasan Buatan|Tugas Pengenalan AI',
-    'Basis Data|Latihan SQL Dasar',
-    'Pemrograman Web|Tugas Array & Function',
-    'Internet of Things (IoT)|Laporan Praktikum 1',
-    'UI/UX|CBL 2: Low-Fidelity',
-    'Statistika dan Data|Quizziz Matriks',
-    'Kecerdasan Buatan|AI Klasik dan Modern',
-    'Pemrograman Web|Tipe Data dan Method',
-    'Internet of Things (IoT)|Pertemuan Pertama IoT',
-    'Pemrograman Web|Pertemuan Pertama Pemweb',
-    'Sistem Informasi|Pertemuan Pertama Sistem Informasi',
-  };
+  // Tasks that are initially "selesai" - sekarang murni dari backend database
+  final Set<String> _initiallyCompleted = {};
 
   // Tasks the user manually marked as selesai
   final Set<String> _userCompleted = {};
@@ -48,6 +37,9 @@ class KelasProvider extends ChangeNotifier {
 
   // Dokumen yang dipilih user per tugas (key -> daftar nama file)
   final Map<String, List<String>> _files = {};
+
+  // Data biner PlatformFile untuk diunggah ke Cloudinary/backend
+  final Map<String, List<PlatformFile>> _platformFiles = {};
 
   Timer? _pollingTimer;
 
@@ -74,10 +66,8 @@ class KelasProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   List<TaskItem> get dynamicTasks => _dynamicTasks;
 
-  /// Daftar tugas yang dipakai SEMUA halaman (backend, atau data default)
-  List<TaskItem> get allTasks => _dynamicTasks.isNotEmpty
-      ? _dynamicTasks
-      : [...allSegeraTasks, ...allSelesaiTasks];
+  /// Daftar tugas yang dipakai SEMUA halaman (murni real-time dari backend dosen)
+  List<TaskItem> get allTasks => _dynamicTasks;
 
   // ─────────────────────────────────────────
   // STATUS TUNGGAL (dipakai semua halaman)
@@ -110,6 +100,32 @@ class KelasProvider extends ChangeNotifier {
   // LOAD / SYNC
   // ─────────────────────────────────────────
 
+  /// Reset seluruh state & cache tugas lokal saat ganti akun / logout agar data antar mahasiswa tidak tercampur
+  Future<void> resetForUser({bool resync = false}) async {
+    _dynamicTasks = [];
+    _initiallyCompleted.clear();
+    _userCompleted.clear();
+    _lateTasks.clear();
+    _cancelled.clear();
+    _files.clear();
+    _platformFiles.clear();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_prefUserCompleted);
+      await prefs.remove(_prefLateTasks);
+      await prefs.remove(_prefFiles);
+      await prefs.remove(_prefCancelled);
+    } catch (_) {}
+
+    await AppDb.instance.clearAllUserCaches();
+    notifyListeners();
+
+    if (resync) {
+      await syncWithBackend();
+    }
+  }
+
   /// Load tasks from Backend API
   Future<void> syncWithBackend({bool isSilent = false}) async {
     if (!isSilent) {
@@ -140,13 +156,29 @@ class KelasProvider extends ChangeNotifier {
           );
         }).toList();
 
+        // Sinkronisasi status pengumpulan murni milik mahasiswa yang sedang login dari backend
         for (final item in list) {
           final key = '${item['class_name']}|${item['title']}';
-          // Jangan hidupkan lagi tugas yang sudah dibatalkan user
-          if (item['category'] == 'selesai' && !_cancelled.contains(key)) {
-            _initiallyCompleted.add(key);
+          final mySub = item['mySubmission'];
+          if (mySub is Map) {
+            _userCompleted.add(key);
+            _lateTasks.remove(key);
+            _cancelled.remove(key);
+            final fn = mySub['fileName']?.toString();
+            if (fn != null && fn.isNotEmpty) {
+              _files[key] = [fn];
+            }
+          } else {
+            // Belum dikumpulkan oleh akun mahasiswa ini
+            _userCompleted.remove(key);
+            _initiallyCompleted.remove(key);
+            // Jangan hapus draft lokal jika mahasiswa baru saja memilih file sebelum klik serahkan
+            if (_platformFiles[key] == null || _platformFiles[key]!.isEmpty) {
+              _files.remove(key);
+            }
           }
         }
+        _persist();
       }
     } catch (_) {
       // offline fallback
@@ -301,12 +333,41 @@ class KelasProvider extends ChangeNotifier {
     list.remove(fileName);
     if (list.isEmpty) _files.remove(key);
 
+    final pList = _platformFiles[key];
+    if (pList != null) {
+      pList.removeWhere((f) => f.name == fileName);
+      if (pList.isEmpty) _platformFiles.remove(key);
+    }
+
     notifyListeners();
     _syncDraftToDb(key);
     _persist();
   }
 
-  /// Tambah banyak dokumen sekaligus. Mengembalikan jumlah yang benar-benar baru.
+  /// Tambah banyak dokumen PlatformFile sekaligus (menyimpan nama dan byte biner untuk upload)
+  int addPlatformFiles(String key, List<PlatformFile> files) {
+    final list = _files.putIfAbsent(key, () => []);
+    final pList = _platformFiles.putIfAbsent(key, () => []);
+    var added = 0;
+    for (final f in files) {
+      if (f.name.isNotEmpty && !list.contains(f.name)) {
+        list.add(f.name);
+        pList.add(f);
+        added++;
+      }
+    }
+    if (list.isEmpty) _files.remove(key);
+    if (pList.isEmpty) _platformFiles.remove(key);
+
+    if (added > 0) {
+      notifyListeners();
+      _syncDraftToDb(key);
+      _persist();
+    }
+    return added;
+  }
+
+  /// Tambah banyak dokumen sekaligus (nama file string)
   int addFiles(String key, List<String> names) {
     final list = _files.putIfAbsent(key, () => []);
     var added = 0;
@@ -346,12 +407,13 @@ class KelasProvider extends ChangeNotifier {
   // AKSI PENYERAHAN
   // ─────────────────────────────────────────
 
-  /// SERAHKAN TUGAS (butuh minimal satu dokumen)
-  void serahkanTugas(String key) {
+  /// SERAHKAN TUGAS (bisa berupa dokumen berkas, tautan link, atau keduanya)
+  Future<bool> serahkanTugas(String key, {String? taskId, String? linkRepo}) async {
     final files = _files[key];
-    if (files == null || files.isEmpty) {
-      markComplete(key); // tanpa dokumen = tandai selesai
-      return;
+    final pFiles = _platformFiles[key];
+
+    if ((files == null || files.isEmpty) && (linkRepo == null || linkRepo.trim().isEmpty)) {
+      return markComplete(key, taskId: taskId); // tanpa dokumen / link = tandai selesai
     }
 
     _userCompleted.add(key);
@@ -365,11 +427,53 @@ class KelasProvider extends ChangeNotifier {
       _db(() => AppDb.instance.serahkanTugas(
             parts[0],
             parts[1],
-            fileName: files.join(_sep),
+            fileName: files?.join(_sep),
             isLate: false,
           ));
     }
     _persist();
+
+    // Resolusi Task ID
+    String? resolvedId = taskId;
+    if (resolvedId == null || resolvedId.isEmpty) {
+      for (final t in _dynamicTasks) {
+        if ('${t.className}|${t.title}' == key && t.id != null) {
+          resolvedId = t.id;
+          break;
+        }
+      }
+      if (resolvedId == null && parts.length >= 2) {
+        for (final t in _dynamicTasks) {
+          if (t.title.toLowerCase() == parts[1].toLowerCase() && t.id != null) {
+            resolvedId = t.id;
+            break;
+          }
+        }
+      }
+    }
+
+    if (resolvedId != null && resolvedId.isNotEmpty) {
+      PlatformFile? primaryFile;
+      if (pFiles != null && pFiles.isNotEmpty) {
+        primaryFile = pFiles.first;
+      }
+
+      List<int>? fileBytes;
+      if (primaryFile != null) {
+        try {
+          fileBytes = await primaryFile.readAsBytes();
+        } catch (_) {}
+      }
+
+      return await AcademicApiService.submitPengumpulan(
+        taskId: resolvedId,
+        fileName: primaryFile?.name ?? files?.firstOrNull,
+        fileBytes: fileBytes,
+        filePath: primaryFile?.path,
+        linkRepo: linkRepo?.trim(),
+      );
+    }
+    return false;
   }
 
   /// Legacy helper: tambah dokumen lalu langsung serahkan
@@ -379,7 +483,7 @@ class KelasProvider extends ChangeNotifier {
   }
 
   /// TANDAI SELESAI (tanpa dokumen)
-  void markComplete(String key) {
+  Future<bool> markComplete(String key, {String? taskId}) async {
     _userCompleted.add(key);
     _lateTasks.remove(key);
     _cancelled.remove(key);
@@ -396,12 +500,38 @@ class KelasProvider extends ChangeNotifier {
           ));
     }
     _persist();
+
+    // Resolusi Task ID
+    String? resolvedId = taskId;
+    if (resolvedId == null || resolvedId.isEmpty) {
+      for (final t in _dynamicTasks) {
+        if ('${t.className}|${t.title}' == key && t.id != null) {
+          resolvedId = t.id;
+          break;
+        }
+      }
+      if (resolvedId == null && parts.length >= 2) {
+        for (final t in _dynamicTasks) {
+          if (t.title.toLowerCase() == parts[1].toLowerCase() && t.id != null) {
+            resolvedId = t.id;
+            break;
+          }
+        }
+      }
+    }
+
+    if (resolvedId != null && resolvedId.isNotEmpty) {
+      return await AcademicApiService.submitPengumpulan(
+        taskId: resolvedId,
+      );
+    }
+    return false;
   }
 
   /// Saat unsubmit (Batalkan Pengiriman):
   /// Jika tugas yang diunsub sudah lewat deadline → ditandai terlambat.
   /// Jika belum lewat deadline → kembali ke kategori segera.
-  void cancelSubmission(String key, {bool isPastDeadline = false}) {
+  void cancelSubmission(String key, {bool isPastDeadline = false, String? taskId}) {
     _initiallyCompleted.remove(key);
     _userCompleted.remove(key);
     _cancelled.add(key);
@@ -420,6 +550,20 @@ class KelasProvider extends ChangeNotifier {
       _db(() => AppDb.instance.batalkanPengumpulan(parts[0], parts[1]));
     }
     _persist();
+
+    // Hapus juga pengumpulan di database backend
+    String? resolvedId = taskId;
+    if (resolvedId == null || resolvedId.isEmpty) {
+      for (final t in _dynamicTasks) {
+        if ('${t.className}|${t.title}' == key && t.id != null) {
+          resolvedId = t.id;
+          break;
+        }
+      }
+    }
+    if (resolvedId != null && resolvedId.isNotEmpty) {
+      AcademicApiService.deletePengumpulan(taskId: resolvedId);
+    }
   }
 
   bool _isKeyPastDeadline(String key) {

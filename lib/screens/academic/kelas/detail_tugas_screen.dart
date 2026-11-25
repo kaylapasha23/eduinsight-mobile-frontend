@@ -32,83 +32,23 @@ class _TaskDetail {
     required this.taskName,
     required this.description,
     required this.deadline,
+    // ignore: unused_element_parameter
     this.lecturerDocs = const [],
   });
 }
 
-const Map<String, _TaskDetail> _taskDetails = {
-  'Kewirausahaan|Tugas 1 - Quiziz': _TaskDetail(
-    classLabel: 'Kewirausahaan',
-    taskName: 'Tugas 1 - Quiziz',
-    deadline: 'Hari ini, 23.59',
-    description:
-        'Kerjakan kuis Kewirausahaan melalui Quizizz materi BMC (Business Model Canvas).\n\n'
-        '• Kerjakan tepat waktu sebelum tenggat\n'
-        '• Screenshot nilai akhir kuis dan lampirkan sebagai bukti pengerjaan tugas.',
-    lecturerDocs: ['Panduan_Kuis_Kewirausahaan.pdf'],
-  ),
-  'UI/UX Design|Tugas 1 - Analisa Aplikasi': _TaskDetail(
-    classLabel: 'UI/UX Design',
-    taskName: 'Tugas 1 - Analisa Aplikasi',
-    deadline: 'Hari ini, 23.59',
-    description:
-        'Lakukan analisa heuristik pada aplikasi mobile EduTech pilihanmu.\n\n'
-        '• Identifikasi 5 masalah usability beserta rekomendasi perbaikannya\n'
-        '• Kumpulkan dalam format PDF rangkuman laporan.',
-    lecturerDocs: ['Template_Analisa_Heuristik.pdf'],
-  ),
-  'Internet of Things (IoT)|Pertemuan Pertama': _TaskDetail(
-    classLabel: 'Internet of Things (IoT)',
-    taskName: 'Pertemuan Pertama',
-    deadline: 'Rabu, 23.59',
-    description:
-        'Buat rangkuman singkat mengenai komponen mikrokontroler ESP32 dan protokol MQTT.\n\n'
-        '• Format: PDF (maksimal 2 halaman)\n'
-        '• Unggah dokumen hasil resume pada bagian Tugas Saya di bawah.',
-  ),
-  'Kecerdasan Buatan|Tugas Pengenalan AI': _TaskDetail(
-    classLabel: 'Kecerdasan Buatan',
-    taskName: 'Tugas Pengenalan AI',
-    deadline: 'Minggu Lalu, 23.59',
-    description:
-        'Rangkuman pengantar AI, perbedaan antara machine learning dan deep learning, serta implementasi agen cerdas.\n\n'
-        'Status: Sudah diserahkan tepat waktu.',
-    lecturerDocs: ['Modul_Pengenalan_AI.pdf'],
-  ),
-  'Basis Data|Latihan SQL Dasar': _TaskDetail(
-    classLabel: 'Basis Data Terdistribusi',
-    taskName: 'Latihan SQL Dasar',
-    deadline: 'Minggu Lalu, 23.59',
-    description:
-        'Latihan query DDL & DML, join relasi tabel, dan agregasi data pada MySQL / PostgreSQL.\n\n'
-        'Status: Sudah diserahkan tepat waktu.',
-  ),
-  'Pemrograman Web|Tugas Array & Function': _TaskDetail(
-    classLabel: 'Pemrograman Web',
-    taskName: 'Tugas Array & Function',
-    deadline: '2 Minggu Lalu, 23.59',
-    description:
-        'Implementasi logika manipulasi array dan closure function pada JavaScript ES6+.\n\n'
-        'Status: Sudah diserahkan tepat waktu.',
-  ),
-  'Internet of Things (IoT)|Laporan Praktikum 1': _TaskDetail(
-    classLabel: 'Internet of Things (IoT)',
-    taskName: 'Laporan Praktikum 1',
-    deadline: '2 Minggu Lalu, 23.59',
-    description:
-        'Laporan hasil pembacaan sensor DHT22 ke serial monitor dan simulasi Wokwi.\n\n'
-        'Status: Sudah diserahkan tepat waktu.',
-  ),
-};
+const Map<String, _TaskDetail> _taskDetails = {};
 
 class DetailTugasScreen extends StatefulWidget {
   final String taskTitle;
   final String className;
+  final String? taskId;
 
   const DetailTugasScreen({
     super.key,
     required this.taskTitle,
     required this.className,
+    this.taskId,
   });
 
   @override
@@ -118,23 +58,111 @@ class DetailTugasScreen extends StatefulWidget {
 class _DetailTugasScreenState extends State<DetailTugasScreen> {
   double? _sheetHeight;
   bool _isDragging = false;
+  bool _isSubmitting = false;
+  String? _submittedLink;
 
-  /// Buka pemilih file perangkat, bisa multi-file (file_picker v13)
+  /// Buka dialog tautkan link eksternal (Figma, Drive, GitHub, dll)
+  Future<void> _showAddLinkDialog() async {
+    final controller = TextEditingController(text: _submittedLink ?? '');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF252D3A) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Tautkan Link Tugas',
+          style: TextStyle(
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Masukkan tautan Google Drive, Figma (Board / Prototype), GitHub Repository, atau link tugas lainnya:',
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
+              decoration: InputDecoration(
+                hintText: 'https://...',
+                hintStyle: TextStyle(
+                  color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, null),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2563EB),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              final text = controller.text.trim();
+              Navigator.pop(ctx, text);
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _submittedLink = result.isEmpty ? null : result;
+      });
+    }
+  }
+
+  /// Buka pemilih file perangkat, mendukung dokumen, media, arsip, spreadsheet, dll
   Future<void> _pickAndUpload(KelasProvider kelas, String key) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
       final files = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: [
-          'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx',
-          'zip', 'png', 'jpg', 'jpeg', 'txt', 'sql',
+          // Dokumen, Spreadsheet, Presentasi
+          'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'txt', 'rtf',
+          // Arsip
+          'zip', 'rar', '7z', 'tar', 'gz',
+          // Gambar
+          'jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp',
+          // Video
+          'mp4', 'mov', 'mkv', 'avi', 'webm',
+          // Audio
+          'mp3', 'wav', 'm4a', 'aac', 'ogg',
+          // Kode / Basis Data
+          'sql', 'json', 'py', 'js', 'html', 'css',
         ],
       );
 
       if (files.isEmpty) return; // user batal
 
-      const maxBytes = 10 * 1024 * 1024; // 10 MB per file
-      final List<String> validFileNames = [];
+      const maxBytes = 25 * 1024 * 1024; // 25 MB per file
+      final List<PlatformFile> validFiles = [];
 
       for (final file in files) {
         final size = file.lengthSync() ?? await file.length() ?? 0;
@@ -142,26 +170,26 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
           messenger.showSnackBar(
             SnackBar(
               content: Text(
-                  'File "${file.name}" melebihi batas 10 MB dan dilewati.'),
+                  'File "${file.name}" melebihi batas 25 MB dan dilewati.'),
               backgroundColor: const Color(0xFFDC2626),
               behavior: SnackBarBehavior.floating,
             ),
           );
         } else if (file.name.isNotEmpty) {
-          validFileNames.add(file.name);
+          validFiles.add(file);
         }
       }
 
-      if (validFileNames.isEmpty) return;
+      if (validFiles.isEmpty) return;
 
-      final added = kelas.addFiles(key, validFileNames);
+      final added = kelas.addPlatformFiles(key, validFiles);
       messenger.showSnackBar(
         SnackBar(
           content: Text(added == 0
               ? 'File tersebut sudah ditambahkan sebelumnya.'
               : added == 1
-                  ? '1 file berhasil ditambahkan.'
-                  : '$added file berhasil ditambahkan.'),
+                  ? '1 file siap dikumpulkan.'
+                  : '$added file siap dikumpulkan.'),
           backgroundColor: added == 0
               ? const Color(0xFFF59E0B)
               : const Color(0xFF10B981),
@@ -259,10 +287,17 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
         // Cari tugas di dynamicTasks jika ada
         TaskItem? dynamicMatch;
         try {
-          dynamicMatch = kelas.dynamicTasks.firstWhere(
-            (t) => t.className == widget.className && t.title == widget.taskTitle,
-          );
+          if (widget.taskId != null && widget.taskId!.isNotEmpty) {
+            dynamicMatch = kelas.dynamicTasks.firstWhere((t) => t.id == widget.taskId);
+          } else {
+            dynamicMatch = kelas.dynamicTasks.firstWhere(
+              (t) => (t.className == widget.className && t.title == widget.taskTitle) ||
+                     t.title.toLowerCase() == widget.taskTitle.toLowerCase(),
+            );
+          }
         } catch (_) {}
+
+        final resolvedTaskId = widget.taskId ?? dynamicMatch?.id;
 
         final classLabel = detail?.classLabel ?? dynamicMatch?.className ?? widget.className;
         final taskName = detail?.taskName ?? dynamicMatch?.title ?? widget.taskTitle;
@@ -826,8 +861,8 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                             : 'Batalkan Pengiriman',
                                         color: const Color(0xFFEF4444),
                                         textColor: Colors.white,
-                                        onTap: () {
-                                          kelas.cancelSubmission(key);
+                                        onTap: () async {
+                                          kelas.cancelSubmission(key, taskId: resolvedTaskId);
 
                                           ScaffoldMessenger.of(context)
                                               .showSnackBar(
@@ -848,7 +883,7 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                         },
                                       ),
                                     ] else ...[
-                                      if (!hasDoc)
+                                      if (!hasDoc && _submittedLink == null)
                                         Container(
                                           height: 96,
                                           decoration: BoxDecoration(
@@ -872,7 +907,7 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                                 ),
                                                 const SizedBox(height: 6),
                                                 Text(
-                                                  'Belum ada dokumen yang dilampirkan',
+                                                  'Belum ada dokumen atau tautan link',
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     color: isDark
@@ -884,7 +919,7 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                             ),
                                           ),
                                         )
-                                      else
+                                      else ...[
                                         ...fileList.map((fn) => _docChip(
                                               fn,
                                               isDark,
@@ -892,61 +927,138 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                                   _confirmDeleteFile(
                                                       kelas, key, fn),
                                             )),
+                                        if (_submittedLink != null && _submittedLink!.isNotEmpty)
+                                          Container(
+                                            margin: const EdgeInsets.only(top: 8),
+                                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                            decoration: BoxDecoration(
+                                              color: isDark ? const Color(0xFF2E384D) : const Color(0xFFEFF6FF),
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: const Color(0xFF3B82F6),
+                                                width: 1.2,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.link_rounded, color: Color(0xFF2563EB), size: 20),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    _submittedLink!,
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(Icons.close_rounded, size: 18),
+                                                  color: const Color(0xFFEF4444),
+                                                  padding: EdgeInsets.zero,
+                                                  constraints: const BoxConstraints(),
+                                                  onPressed: () {
+                                                    setState(() => _submittedLink = null);
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                      ],
                                       const SizedBox(height: 14),
-                                      _fullWidthButton(
-                                        'Tambah Dokumen',
-                                        icon: Icons.add_rounded,
-                                        color: isDark
-                                            ? const Color(0xFF354258)
-                                            : const Color(0xFFEFF6FF),
-                                        textColor: isDark
-                                            ? const Color(0xFFBFDBFE)
-                                            : const Color(0xFF2563EB),
-                                        borderColor:
-                                            const Color(0xFF60A5FA),
-                                        onTap: () =>
-                                            _pickAndUpload(kelas, key),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: _fullWidthButton(
+                                              'Tambah File / Media',
+                                              icon: Icons.upload_file_rounded,
+                                              color: isDark
+                                                  ? const Color(0xFF354258)
+                                                  : const Color(0xFFEFF6FF),
+                                              textColor: isDark
+                                                  ? const Color(0xFFBFDBFE)
+                                                  : const Color(0xFF2563EB),
+                                              borderColor:
+                                                  const Color(0xFF60A5FA),
+                                              onTap: () =>
+                                                  _pickAndUpload(kelas, key),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: _fullWidthButton(
+                                              'Tautkan Link',
+                                              icon: Icons.link_rounded,
+                                              color: isDark
+                                                  ? const Color(0xFF354258)
+                                                  : const Color(0xFFF0FDF4),
+                                              textColor: isDark
+                                                  ? const Color(0xFF86EFAC)
+                                                  : const Color(0xFF16A34A),
+                                              borderColor:
+                                                  const Color(0xFF4ADE80),
+                                              onTap: _showAddLinkDialog,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                       const SizedBox(height: 10),
-                                      hasDoc
-                                          ? _fullWidthButton(
-                                              'Serahkan',
-                                              color: const Color(0xFF2563EB),
-                                              textColor: Colors.white,
-                                              onTap: () {
-                                                kelas.serahkanTugas(key);
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                        'Tugas berhasil diserahkan.'),
-                                                    backgroundColor:
-                                                        Color(0xFF10B981),
-                                                    behavior:
-                                                        SnackBarBehavior.floating,
-                                                  ),
-                                                );
-                                              },
+                                      _isSubmitting
+                                          ? const Padding(
+                                              padding: EdgeInsets.symmetric(vertical: 12),
+                                              child: Center(child: CircularProgressIndicator()),
                                             )
-                                          : _fullWidthButton(
-                                              'Tandai Sebagai Selesai',
-                                              color: const Color(0xFF2563EB),
-                                              textColor: Colors.white,
-                                              onTap: () {
-                                                kelas.markComplete(key);
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                        'Tugas ditandai selesai tanpa lampiran.'),
-                                                    backgroundColor:
-                                                        Color(0xFF10B981),
-                                                    behavior:
-                                                        SnackBarBehavior.floating,
-                                                  ),
-                                                );
-                                              },
-                                            ),
+                                          : ((hasDoc || (_submittedLink != null && _submittedLink!.isNotEmpty))
+                                              ? _fullWidthButton(
+                                                  'Serahkan',
+                                                  color: const Color(0xFF2563EB),
+                                                  textColor: Colors.white,
+                                                  onTap: () async {
+                                                    final messenger = ScaffoldMessenger.of(context);
+                                                    setState(() => _isSubmitting = true);
+                                                    final success = await kelas.serahkanTugas(
+                                                      key,
+                                                      taskId: resolvedTaskId,
+                                                      linkRepo: _submittedLink,
+                                                    );
+                                                    if (mounted) {
+                                                      setState(() => _isSubmitting = false);
+                                                      messenger.showSnackBar(
+                                                        SnackBar(
+                                                          content: Text(success
+                                                              ? 'Tugas berhasil diunggah dan diserahkan!'
+                                                              : 'Tugas diserahkan secara lokal.'),
+                                                          backgroundColor: const Color(0xFF10B981),
+                                                          behavior: SnackBarBehavior.floating,
+                                                        ),
+                                                      );
+                                                    }
+                                                  },
+                                                )
+                                              : _fullWidthButton(
+                                                  'Tandai Sebagai Selesai',
+                                                  color: const Color(0xFF2563EB),
+                                                  textColor: Colors.white,
+                                                  onTap: () async {
+                                                    final messenger = ScaffoldMessenger.of(context);
+                                                    setState(() => _isSubmitting = true);
+                                                    final success = await kelas.markComplete(key, taskId: resolvedTaskId);
+                                                    if (mounted) {
+                                                      setState(() => _isSubmitting = false);
+                                                      messenger.showSnackBar(
+                                                        SnackBar(
+                                                          content: Text(success
+                                                              ? 'Tugas berhasil ditandai selesai!'
+                                                              : 'Tugas ditandai selesai secara lokal.'),
+                                                          backgroundColor: const Color(0xFF10B981),
+                                                          behavior: SnackBarBehavior.floating,
+                                                        ),
+                                                      );
+                                                    }
+                                                  },
+                                                )),
                                     ],
                                     const SizedBox(height: 24),
                                   ],
