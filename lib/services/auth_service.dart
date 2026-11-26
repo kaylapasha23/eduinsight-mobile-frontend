@@ -7,15 +7,17 @@ import '../providers/token_store.dart' as store;
 class AuthService {
   // Daftar URL backend dengan port 5001 (utama) dan 3000 (cadangan)
   // Mendukung Android Emulator (10.0.2.2), Web/Desktop (localhost & 127.0.0.1), dan HP Fisik Wi-Fi (192.168.100.24)
-  static const List<String> _candidateBaseUrls = [
-    'https://eduinsight-backend.vercel.app/api/auth',
-    'http://localhost:3000/api/auth',
-    'http://127.0.0.1:3000/api/auth',
-    'http://10.0.2.2:3000/api/auth',
-    'http://192.168.100.24:3000/api/auth',
-    'http://localhost:5001/api/auth',
-    'http://10.0.2.2:5001/api/auth',
-  ];
+  static List<String> get _candidateBaseUrls => kReleaseMode
+      ? const ['https://eduinsight-backend.vercel.app/api/auth']
+      : const [
+          'https://eduinsight-backend.vercel.app/api/auth',
+          'http://localhost:3000/api/auth',
+          'http://127.0.0.1:3000/api/auth',
+          'http://10.0.2.2:3000/api/auth',
+          'http://192.168.100.24:3000/api/auth',
+          'http://localhost:5001/api/auth',
+          'http://10.0.2.2:5001/api/auth',
+        ];
 
   static String? _cachedWorkingUrl;
 
@@ -210,34 +212,32 @@ class AuthService {
   // LOGOUT
   // ─────────────────────────────────────────
   static Future<Map<String, dynamic>> logout() async {
-    try {
-      final token = await getToken();
-      if (token == null) {
-        await _clearSession();
-        return {'success': true, 'message': 'Sesi sudah berakhir.'};
-      }
+    final token = await getToken();
+    // Selalu hapus session lokal lebih dulu agar logout instan & tidak pernah nyangkut
+    await _clearSession();
 
-      final response = await _postWithFallback(
-        'logout',
-        body: {},
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      // Selalu hapus session lokal, apapun response server
-      await _clearSession();
-
-      final data = jsonDecode(response.body);
-      return data;
-    } catch (e) {
-      // Tetap hapus session lokal meskipun gagal hubungi server
-      await _clearSession();
-      return {
-        'success': true,
-        'message': 'Logout lokal berhasil (server tidak terjangkau).',
-      };
+    if (token == null || token.isEmpty) {
+      return {'success': true, 'message': 'Sesi sudah berakhir.'};
     }
+
+    try {
+      final base = _cachedWorkingUrl ?? _candidateBaseUrls.first;
+      final response = await http
+          .post(
+            Uri.parse('$base/logout'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({}),
+          )
+          .timeout(const Duration(seconds: 3));
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+    } catch (_) {
+      // Sesi lokal sudah bersih, abaikan error jaringan saat logout
+    }
+    return {'success': true, 'message': 'Logout berhasil.'};
   }
 
   // ─────────────────────────────────────────

@@ -87,9 +87,12 @@ const List<UpcomingTaskItem> daftarTugasMendatang = [
   ),
 ];
 
-// Titik grafik IPS per semester (Mahasiswa Semester 1 berjalan)
+// Titik default grafik IPS per semester (Smt 1 - Smt 4)
 const List<FlSpot> titikNilaiSemester = [
   FlSpot(1, 0.00),
+  FlSpot(2, 0.00),
+  FlSpot(3, 0.00),
+  FlSpot(4, 0.00),
 ];
 
 class HomeScreen extends StatefulWidget {
@@ -103,20 +106,48 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _timer;
   DateTime _now = DateTime.now();
   double _kehadiranPersen = 0.0;
+  double _ipkNilai = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _loadKehadiranRealtime();
-    // Update setiap 10 detik agar countdown & status selalu akurat real-time
-    _timer = Timer.periodic(const Duration(seconds: 10), (_) {
+    _loadMetricsRealtime();
+    // Update ringan setiap 30 detik agar HP tidak lemot & baterai tetap hemat
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) {
         setState(() {
           _now = DateTime.now();
         });
-        _loadKehadiranRealtime();
+        _loadMetricsRealtime();
       }
     });
+  }
+
+  Future<void> _loadMetricsRealtime() async {
+    await Future.wait([
+      _loadKehadiranRealtime(),
+      _loadIpkRealtime(),
+    ]);
+  }
+
+  Future<void> _loadIpkRealtime() async {
+    try {
+      final liveNilai = await AcademicApiService.fetchNilaiSemester();
+      if (liveNilai != null && liveNilai.isNotEmpty && mounted) {
+        final ips = (liveNilai.first['ips'] as num?)?.toDouble() ?? 0.0;
+        if (ips != _ipkNilai) {
+          setState(() => _ipkNilai = ips);
+        }
+        return;
+      }
+      final cached = await AppDb.instance.getNilaiFromDrift();
+      if (cached.isNotEmpty && mounted) {
+        final ips = (cached.first['ips'] as num?)?.toDouble() ?? 0.0;
+        if (ips != _ipkNilai) {
+          setState(() => _ipkNilai = ips);
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadKehadiranRealtime() async {
@@ -352,13 +383,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 18),
 
-                  // Container IPK dan Kehadiran Modern Metric Cards
-                  Row(
-                    children: [
-                      Expanded(child: _buildModernIpkCard(isDark, cardBg)),
-                      const SizedBox(width: 14),
-                      Expanded(child: _buildModernKehadiranCard(isDark, cardBg)),
-                    ],
+                  // Container IPK dan Kehadiran Modern Metric Cards (ukuran & tinggi sama persis)
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(child: _buildModernIpkCard(isDark, cardBg)),
+                        const SizedBox(width: 14),
+                        Expanded(child: _buildModernKehadiranCard(isDark, cardBg)),
+                      ],
+                    ),
                   ),
 
                   const SizedBox(height: 24),
@@ -605,6 +639,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -638,7 +673,7 @@ class _HomeScreenState extends State<HomeScreen> {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                '0,00',
+                _ipkNilai.toStringAsFixed(2).replaceAll('.', ','),
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
@@ -656,23 +691,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             'Semester 1 Berjalan',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w500,
               color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB),
-            ),
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: 0.0,
-              minHeight: 6,
-              backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
             ),
           ),
         ],
@@ -700,6 +725,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1059,8 +1085,8 @@ class _HomeScreenState extends State<HomeScreen> {
         height: 190,
         child: LineChart(
           LineChartData(
-            minX: 0.8,
-            maxX: 1.2,
+            minX: 0.75,
+            maxX: 4.25,
             minY: 0.0,
             maxY: 4.0,
             lineTouchData: LineTouchData(
@@ -1135,8 +1161,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   reservedSize: 32,
                   interval: 1,
                   getTitlesWidget: (val, meta) {
-                    final int index = val.toInt();
-                    if (val == 1.0) {
+                    if (val == 1.0 || val == 2.0 || val == 3.0 || val == 4.0) {
+                      final int index = val.toInt();
                       return Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
@@ -1157,7 +1183,12 @@ class _HomeScreenState extends State<HomeScreen> {
             borderData: FlBorderData(show: false),
             lineBarsData: [
               LineChartBarData(
-                spots: titikNilaiSemester,
+                spots: [
+                  FlSpot(1, _ipkNilai.clamp(0.0, 4.0)),
+                  const FlSpot(2, 0.00),
+                  const FlSpot(3, 0.00),
+                  const FlSpot(4, 0.00),
+                ],
                 isCurved: true,
                 curveSmoothness: 0.35,
                 color: const Color(0xFF2563EB),

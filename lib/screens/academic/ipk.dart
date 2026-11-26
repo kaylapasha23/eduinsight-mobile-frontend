@@ -30,6 +30,9 @@ const List<SemesterIpk> dataIpk = [
 
 const List<FlSpot> titikIpkSemester = [
   FlSpot(1, 0.00),
+  FlSpot(2, 0.00),
+  FlSpot(3, 0.00),
+  FlSpot(4, 0.00),
 ];
 
 class IpkScreen extends StatelessWidget {
@@ -240,8 +243,8 @@ class IpkScreen extends StatelessWidget {
           LineChartData(
             minX: 0.6,
             maxX: 4.4,
-            minY: 3.0,
-            maxY: 4.15,
+            minY: 0.0,
+            maxY: 4.0,
             lineTouchData: LineTouchData(
               handleBuiltInTouches: true,
               touchTooltipData: LineTouchTooltipData(

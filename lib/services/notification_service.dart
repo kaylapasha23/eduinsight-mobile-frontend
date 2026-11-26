@@ -8,20 +8,41 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import '../providers/token_store.dart' as store;
 
+/// Handler wajib top-level agar push notification FCM tetap masuk saat aplikasi ditutup/background
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {}
+  debugPrint('[FCM] Background message received: ${message.notification?.title ?? message.messageId}');
+}
+
 /// Notifikasi lokal di status bar HP
 class SystemNotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
+
+  static const AndroidNotificationChannel _highImportanceChannel =
+      AndroidNotificationChannel(
+    'eduinsight_channel',
+    'EduInsight Notifikasi',
+    description: 'Notifikasi Sinkronisasi & Evaluasi Akademik',
+    importance: Importance.max,
+    playSound: true,
+    enableVibration: true,
+  );
 
   static Future<void> init() async {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const initSettings = InitializationSettings(android: androidSettings);
     await _notificationsPlugin.initialize(initSettings);
 
-    _notificationsPlugin
+    final androidPlugin = _notificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+            AndroidFlutterLocalNotificationsPlugin>();
+    // Daftarkan channel high-importance secara eksplisit agar FCM background selalu muncul di status bar
+    await androidPlugin?.createNotificationChannel(_highImportanceChannel);
+    await androidPlugin?.requestNotificationsPermission();
   }
 
   static Future<void> showSystemNotification({
@@ -135,16 +156,20 @@ class NotificationService {
 
   static List<EduNotification> get history => List.unmodifiable(_history);
 
-  static const List<String> _baseUrls = [
-    'https://eduinsight-backend.vercel.app/api',
-    'http://localhost:3000/api',
-    'http://127.0.0.1:3000/api',
-    'http://10.0.2.2:3000/api',
-    'http://localhost:5001/api',
-    'http://10.0.2.2:5001/api',
-  ];
+  static List<String> get _baseUrls => kReleaseMode
+      ? const ['https://eduinsight-backend.vercel.app/api']
+      : const [
+          'https://eduinsight-backend.vercel.app/api',
+          'http://localhost:3000/api',
+          'http://127.0.0.1:3000/api',
+          'http://10.0.2.2:3000/api',
+          'http://localhost:5001/api',
+          'http://10.0.2.2:5001/api',
+        ];
 
-  /// Inisialisasi Firebase & polling sinkronisasi notifikasi
+  static String? _cachedFcmToken;
+
+  /// Inisialisasi Firebase & polling sinkronisasi notifikasi (non-blocking agar startup HP cepat)
   static Future<void> init() async {
     if (!kIsWeb) {
       await SystemNotificationService.init();
@@ -163,6 +188,7 @@ class NotificationService {
         );
       } else {
         await Firebase.initializeApp();
+        FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
       }
       final messaging = FirebaseMessaging.instance;
 
@@ -172,11 +198,25 @@ class NotificationService {
         sound: true,
       );
 
-      final token = await messaging.getToken();
-      if (token != null) {
-        debugPrint('[FCM] Device Token: $token');
-        await sendFcmTokenToBackend(token);
-      }
+      // Pastikan token FCM juga otomatis tersinkron jika diperbarui oleh Google Play Services
+      messaging.onTokenRefresh.listen((newToken) {
+        _cachedFcmToken = newToken;
+        sendFcmTokenToBackend(newToken);
+      });
+
+      // Jalankan pengambilan & sinkronisasi token di background agar tidak memperlambat splash screen
+      unawaited(() async {
+        try {
+          final token = await messaging.getToken();
+          if (token != null) {
+            _cachedFcmToken = token;
+            debugPrint('[FCM] Device Token: $token');
+            await sendFcmTokenToBackend(token);
+          }
+        } catch (e) {
+          debugPrint('[FCM] Get token warning: $e');
+        }
+      }());
 
       // Handler ketika push notification diterima saat app aktif (foreground)
       FirebaseMessaging.onMessage.listen((RemoteMessage msg) {
@@ -195,30 +235,48 @@ class NotificationService {
       debugPrint('[Firebase/FCM Init Exception]: $e');
     }
 
-    // Ambil notifikasi awal dari backend
-    await fetchNotificationsFromBackend();
+    // Ambil notifikasi awal secara non-blocking
+    unawaited(fetchNotificationsFromBackend());
 
-    // Polling periodik setiap 10 detik agar tetap sinkron jika dosen update via web
+    // Polling ringan setiap 25 detik (push notif FCM tetap memicu refresh instan)
     _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 25), (_) {
       fetchNotificationsFromBackend();
     });
   }
 
-  /// Kirim token FCM ke backend
+  /// Sinkronkan ulang token FCM perangkat ke akun mahasiswa yang baru login
+  static Future<void> syncFcmTokenForCurrentUser() async {
+    try {
+      String? token = _cachedFcmToken;
+      if (token == null || token.isEmpty) {
+        token = await FirebaseMessaging.instance.getToken();
+        _cachedFcmToken = token;
+      }
+      if (token != null && token.isNotEmpty) {
+        await sendFcmTokenToBackend(token);
+      }
+    } catch (_) {}
+  }
+
+  /// Kirim token FCM ke backend (hanya jika user sudah login agar token tidak nyasar ke akun lain)
   static Future<void> sendFcmTokenToBackend(String token) async {
+    final authToken = await store.getToken();
+    if (authToken == null || authToken.isEmpty) {
+      // Tunggu sampai user login, lalu syncFcmTokenForCurrentUser() akan mengirimkannya
+      return;
+    }
+
     for (final base in _baseUrls) {
       try {
-        final authToken = await store.getToken();
         final res = await http.post(
           Uri.parse('$base/notifications/fcm-token'),
           headers: {
             'Content-Type': 'application/json',
-            if (authToken != null && authToken.isNotEmpty)
-              'Authorization': 'Bearer $authToken',
+            'Authorization': 'Bearer $authToken',
           },
           body: jsonEncode({'token': token}),
-        ).timeout(const Duration(seconds: 3));
+        ).timeout(const Duration(seconds: 8));
 
         if (res.statusCode == 200) {
           debugPrint('[FCM] Token synced to backend $base');

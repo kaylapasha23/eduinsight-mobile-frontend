@@ -67,7 +67,8 @@ class AuthProvider extends ChangeNotifier {
       _token = result['data']['token'];
       await saveToken(result['data']['token']);
       debugPrint('token tersimpan: ${await readToken()}');
-      // Segera muat ulang notifikasi milik user yang baru login
+      // Segera sinkronkan token FCM perangkat ke akun yang baru login & muat notifikasi miliknya
+      NotificationService.syncFcmTokenForCurrentUser();
       NotificationService.fetchNotificationsFromBackend();
       _errorMessage = null;
       notifyListeners();
@@ -117,6 +118,7 @@ class AuthProvider extends ChangeNotifier {
       await prefs.remove('kelas_user_completed');
       await prefs.remove('kelas_late_tasks');
       await prefs.remove('kelas_files_json');
+      await prefs.remove('kelas_links_json');
       await prefs.remove('kelas_cancelled');
     } catch (_) {}
   }

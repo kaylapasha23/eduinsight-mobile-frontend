@@ -14,6 +14,7 @@ class KelasProvider extends ChangeNotifier {
   static const _prefUserCompleted = 'kelas_user_completed';
   static const _prefLateTasks = 'kelas_late_tasks';
   static const _prefFiles = 'kelas_files_json';
+  static const _prefLinks = 'kelas_links_json';
   static const _prefCancelled = 'kelas_cancelled';
 
   /// Pemisah beberapa nama file saat disimpan ke kolom file_name SQLite
@@ -38,7 +39,14 @@ class KelasProvider extends ChangeNotifier {
   // Dokumen yang dipilih user per tugas (key -> daftar nama file)
   final Map<String, List<String>> _files = {};
 
-  // Data biner PlatformFile untuk diunggah ke Cloudinary/backend
+  // Tautan link eksternal (Figma, Google Drive, GitHub, dll) per tugas
+  final Map<String, String> _links = {};
+
+  // URL file & ID pengumpulan yang sudah tersimpan di server/Cloudinary untuk pratinjau di HP
+  final Map<String, String> _submittedFileUrls = {};
+  final Map<String, String> _submissionIds = {};
+
+  // Data biner PlatformFile untuk diunggah ke Cloudinary/backend & preview lokal
   final Map<String, List<PlatformFile>> _platformFiles = {};
 
   Timer? _pollingTimer;
@@ -51,8 +59,8 @@ class KelasProvider extends ChangeNotifier {
   Future<void> _init() async {
     await _loadPersistedState();
     await syncWithBackend();
-    // Real-time polling setiap 5 detik agar pembaruan dosen (tugas dibuat, diedit, dinilai, dihapus) langsung sinkron ke mobile
-    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    // Polling ringan setiap 25 detik agar HP tetap lancar & hemat baterai
+    _pollingTimer = Timer.periodic(const Duration(seconds: 25), (_) {
       syncWithBackend(isSilent: true);
     });
   }
@@ -108,6 +116,9 @@ class KelasProvider extends ChangeNotifier {
     _lateTasks.clear();
     _cancelled.clear();
     _files.clear();
+    _links.clear();
+    _submittedFileUrls.clear();
+    _submissionIds.clear();
     _platformFiles.clear();
 
     try {
@@ -115,6 +126,7 @@ class KelasProvider extends ChangeNotifier {
       await prefs.remove(_prefUserCompleted);
       await prefs.remove(_prefLateTasks);
       await prefs.remove(_prefFiles);
+      await prefs.remove(_prefLinks);
       await prefs.remove(_prefCancelled);
     } catch (_) {}
 
@@ -167,11 +179,33 @@ class KelasProvider extends ChangeNotifier {
             final fn = mySub['fileName']?.toString();
             if (fn != null && fn.isNotEmpty) {
               _files[key] = [fn];
+            } else {
+              _files.remove(key);
+            }
+            final lr = mySub['linkRepo']?.toString().trim();
+            if (lr != null && lr.isNotEmpty) {
+              _links[key] = lr;
+            } else {
+              _links.remove(key);
+            }
+            final fu = mySub['fileUrl']?.toString().trim();
+            if (fu != null && fu.isNotEmpty) {
+              _submittedFileUrls[key] = fu;
+            } else {
+              _submittedFileUrls.remove(key);
+            }
+            final subId = mySub['id']?.toString().trim();
+            if (subId != null && subId.isNotEmpty) {
+              _submissionIds[key] = subId;
+            } else {
+              _submissionIds.remove(key);
             }
           } else {
             // Belum dikumpulkan oleh akun mahasiswa ini
             _userCompleted.remove(key);
             _initiallyCompleted.remove(key);
+            _submittedFileUrls.remove(key);
+            _submissionIds.remove(key);
             // Jangan hapus draft lokal jika mahasiswa baru saja memilih file sebelum klik serahkan
             if (_platformFiles[key] == null || _platformFiles[key]!.isEmpty) {
               _files.remove(key);
@@ -212,6 +246,20 @@ class KelasProvider extends ChangeNotifier {
       } catch (_) {
         // abaikan data rusak
       }
+    }
+
+    // Daftar tautan link per tugas (JSON)
+    final rawLinks = prefs.getString(_prefLinks);
+    if (rawLinks != null && rawLinks.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(rawLinks);
+        if (decoded is Map) {
+          decoded.forEach((k, v) {
+            final link = v?.toString().trim() ?? '';
+            if (link.isNotEmpty) _links[k.toString()] = link;
+          });
+        }
+      } catch (_) {}
     }
 
     // Muat data dari SQLite Drift (pengumpulan_tugas)
@@ -266,6 +314,7 @@ class KelasProvider extends ChangeNotifier {
       await prefs.setStringList(_prefLateTasks, _lateTasks.toList());
       await prefs.setStringList(_prefCancelled, _cancelled.toList());
       await prefs.setString(_prefFiles, jsonEncode(_files));
+      await prefs.setString(_prefLinks, jsonEncode(_links));
     } catch (e) {
       debugPrint('Gagal menyimpan state: $e');
     }
@@ -303,9 +352,37 @@ class KelasProvider extends ChangeNotifier {
 
   bool hasDoc(String key) => filesFor(key).isNotEmpty;
 
-  /// Ditandai selesai tanpa dokumen (bukan penyerahan dengan file)
+  String? linkFor(String key) => _links[key];
+  bool hasLink(String key) => (_links[key] ?? '').trim().isNotEmpty;
+  String? submittedFileUrlFor(String key) => _submittedFileUrls[key];
+  String? submissionIdFor(String key) => _submissionIds[key];
+
+  PlatformFile? platformFileFor(String key, String fileName) {
+    final pList = _platformFiles[key];
+    if (pList == null) return null;
+    for (final f in pList) {
+      if (f.name == fileName) return f;
+    }
+    return null;
+  }
+
+  /// Simpan atau hapus tautan link eksternal per tugas
+  void setLink(String key, String? url) {
+    final clean = url?.trim() ?? '';
+    if (clean.isEmpty) {
+      _links.remove(key);
+    } else {
+      _links[key] = clean;
+    }
+    notifyListeners();
+    _persist();
+  }
+
+  /// Ditandai selesai tanpa dokumen DAN tanpa tautan link
   bool isMarkedOnly(String key) =>
-      _userCompleted.contains(key) && (_files[key]?.isEmpty ?? true);
+      _userCompleted.contains(key) &&
+      (_files[key]?.isEmpty ?? true) &&
+      (_links[key]?.trim().isEmpty ?? true);
 
   /// Jumlah tugas selesai (konsisten dengan daftar yang ditampilkan)
   int get selesaiCount => countByStatus(TaskStatus.selesai);
@@ -411,9 +488,14 @@ class KelasProvider extends ChangeNotifier {
   Future<bool> serahkanTugas(String key, {String? taskId, String? linkRepo}) async {
     final files = _files[key];
     final pFiles = _platformFiles[key];
+    final effectiveLink = (linkRepo ?? _links[key])?.trim();
 
-    if ((files == null || files.isEmpty) && (linkRepo == null || linkRepo.trim().isEmpty)) {
+    if ((files == null || files.isEmpty) && (effectiveLink == null || effectiveLink.isEmpty)) {
       return markComplete(key, taskId: taskId); // tanpa dokumen / link = tandai selesai
+    }
+
+    if (effectiveLink != null && effectiveLink.isNotEmpty) {
+      _links[key] = effectiveLink;
     }
 
     _userCompleted.add(key);
@@ -465,13 +547,18 @@ class KelasProvider extends ChangeNotifier {
         } catch (_) {}
       }
 
-      return await AcademicApiService.submitPengumpulan(
+      final ok = await AcademicApiService.submitPengumpulan(
         taskId: resolvedId,
         fileName: primaryFile?.name ?? files?.firstOrNull,
         fileBytes: fileBytes,
         filePath: primaryFile?.path,
-        linkRepo: linkRepo?.trim(),
+        linkRepo: effectiveLink,
       );
+      if (ok) {
+        // Tarik ulang metadata fileUrl (Cloudinary) & submissionId agar preview langsung tersedia
+        unawaited(syncWithBackend(isSilent: true));
+      }
+      return ok;
     }
     return false;
   }

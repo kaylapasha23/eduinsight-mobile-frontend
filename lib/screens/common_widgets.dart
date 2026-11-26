@@ -82,16 +82,17 @@ class HeaderBar extends StatelessWidget {
                   const SizedBox(width: 4),
                   IconButton(
                     onPressed: () async {
+                      final navigator = Navigator.of(context);
                       final authProvider =
                           Provider.of<AuthProvider>(context, listen: false);
                       final kelasProvider =
                           Provider.of<KelasProvider>(context, listen: false);
-                      await authProvider.logout();
-                      await kelasProvider.resetForUser(resync: false);
-                      if (context.mounted) {
-                        Navigator.pushNamedAndRemoveUntil(
-                            context, '/login', (route) => false);
-                      }
+                      try {
+                        await authProvider.logout();
+                        await kelasProvider.resetForUser(resync: false);
+                      } catch (_) {}
+                      navigator.pushNamedAndRemoveUntil(
+                          '/login', (route) => false);
                     },
                     icon: const Icon(Icons.logout, size: 26, color: kLogout),
                   ),

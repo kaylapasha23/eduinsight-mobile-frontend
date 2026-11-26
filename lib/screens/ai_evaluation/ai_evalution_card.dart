@@ -159,8 +159,8 @@ class _AiEvalutionScreenState extends State<AiEvalutionScreen> {
   void initState() {
     super.initState();
     _loadEvaluations();
-    // Real-time polling setiap 4 detik agar data evaluasi AI & catatan dosen selalu up-to-date
-    _realtimeTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+    // Polling ringan setiap 25 detik agar HP tetap responsif dan tidak boros baterai
+    _realtimeTimer = Timer.periodic(const Duration(seconds: 25), (_) {
       _loadEvaluations(isSilent: true);
     });
   }

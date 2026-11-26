@@ -1,6 +1,11 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import '../../../services/academic_api_service.dart';
 import 'kelas_provider.dart';
 import 'kelas_screen.dart' show TaskItem;
 
@@ -59,11 +64,10 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
   double? _sheetHeight;
   bool _isDragging = false;
   bool _isSubmitting = false;
-  String? _submittedLink;
 
   /// Buka dialog tautkan link eksternal (Figma, Drive, GitHub, dll)
-  Future<void> _showAddLinkDialog() async {
-    final controller = TextEditingController(text: _submittedLink ?? '');
+  Future<void> _showAddLinkDialog(KelasProvider kelas, String key) async {
+    final controller = TextEditingController(text: kelas.linkFor(key) ?? '');
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final result = await showDialog<String>(
@@ -131,10 +135,372 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
     );
 
     if (result != null) {
-      setState(() {
-        _submittedLink = result.isEmpty ? null : result;
-      });
+      kelas.setLink(key, result.isEmpty ? null : result);
     }
+  }
+
+  /// Buka tautan eksternal (Figma / Google Drive / GitHub / URL berkas) di browser / viewer HP
+  Future<void> _launchExternalUrl(String rawUrl) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final normalized = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+        ? rawUrl
+        : 'https://$rawUrl';
+    final uri = Uri.tryParse(normalized);
+    if (uri == null) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Format tautan tidak valid.'),
+          backgroundColor: Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    try {
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && mounted) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Tidak dapat membuka tautan di perangkat ini.'),
+            backgroundColor: Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Gagal membuka tautan: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Resolusi URL publik berkas tugas yang sudah tersimpan di server/Cloudinary
+  String? _resolveRemoteFileUrl(KelasProvider kelas, String key) {
+    final raw = kelas.submittedFileUrlFor(key);
+    final subId = kelas.submissionIdFor(key);
+    final origin = AcademicApiService.productionBaseUrl.replaceAll(RegExp(r'/api/?$'), '');
+    if (raw != null && raw.isNotEmpty) {
+      if (raw.startsWith('http://') || raw.startsWith('https://')) {
+        return raw;
+      }
+      return '$origin${raw.startsWith('/') ? raw : '/$raw'}';
+    }
+    if (subId != null && subId.isNotEmpty) {
+      return '${AcademicApiService.productionBaseUrl}/pengumpulan-tugas/$subId/file';
+    }
+    return null;
+  }
+
+  /// Modal pratinjau untuk semua jenis media & dokumen (Gambar, Teks/Kode, PDF, Video, Audio, Office, Arsip)
+  Future<void> _openFilePreview(
+    KelasProvider kelas,
+    String key,
+    String fileName,
+  ) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ext = fileName.contains('.') ? fileName.split('.').last.toLowerCase() : '';
+    final localFile = kelas.platformFileFor(key, fileName);
+    final remoteUrl = _resolveRemoteFileUrl(kelas, key);
+
+    final isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].contains(ext);
+    final isText = ['txt', 'csv', 'json', 'sql', 'py', 'js', 'ts', 'html', 'css', 'dart', 'md', 'xml'].contains(ext);
+    final isPdf = ext == 'pdf';
+    final isVideo = ['mp4', 'mov', 'mkv', 'avi', 'webm'].contains(ext);
+    final isAudio = ['mp3', 'wav', 'm4a', 'aac', 'ogg'].contains(ext);
+
+    Uint8List? localBytes;
+    if (localFile != null && (isImage || isText)) {
+      try {
+        localBytes = await localFile.readAsBytes();
+      } catch (_) {}
+    }
+
+    String? textContent;
+    if (isText) {
+      if (localBytes != null) {
+        textContent = utf8.decode(localBytes, allowMalformed: true);
+      } else if (remoteUrl != null) {
+        try {
+          final res = await http.get(Uri.parse(remoteUrl)).timeout(const Duration(seconds: 8));
+          if (res.statusCode == 200) {
+            textContent = utf8.decode(res.bodyBytes, allowMalformed: true);
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (!mounted) return;
+
+    // Untuk PDF yang di-host di Cloudinary /image/upload/, kita bisa menampilkan pratinjau gambar halaman 1
+    String? cloudinaryPdfThumb;
+    if (isPdf && remoteUrl != null && remoteUrl.contains('res.cloudinary.com') && remoteUrl.contains('/image/upload/') && remoteUrl.toLowerCase().endsWith('.pdf')) {
+      cloudinaryPdfThumb = '${remoteUrl.substring(0, remoteUrl.length - 4)}.jpg';
+    }
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final modalBg = isDark ? const Color(0xFF1E2532) : Colors.white;
+        final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+        final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+        return Container(
+          height: MediaQuery.of(ctx).size.height * 0.78,
+          decoration: BoxDecoration(
+            color: modalBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header Pratinjau
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 12, 12),
+                child: Row(
+                  children: [
+                    Icon(_iconForExt(ext), color: _colorForExt(ext), size: 24),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            fileName,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: titleColor,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Pratinjau ${_labelForExt(ext)}',
+                            style: TextStyle(fontSize: 11, color: subColor),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close_rounded, color: subColor),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1, color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+
+              // Konten Pratinjau
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: isImage
+                      ? Center(
+                          child: InteractiveViewer(
+                            minScale: 0.8,
+                            maxScale: 4.0,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(14),
+                              child: localBytes != null
+                                  ? Image.memory(localBytes, fit: BoxFit.contain)
+                                  : (remoteUrl != null
+                                      ? Image.network(
+                                          remoteUrl,
+                                          fit: BoxFit.contain,
+                                          loadingBuilder: (_, child, progress) => progress == null
+                                              ? child
+                                              : const Center(child: CircularProgressIndicator()),
+                                          errorBuilder: (_, __, ___) => Text(
+                                            'Gagal memuat pratinjau gambar.',
+                                            style: TextStyle(color: subColor),
+                                          ),
+                                        )
+                                      : Text('Gambar belum tersedia.', style: TextStyle(color: subColor))),
+                            ),
+                          ),
+                        )
+                      : isText && textContent != null
+                          ? Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF111827) : const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                                ),
+                              ),
+                              child: SingleChildScrollView(
+                                child: SelectableText(
+                                  textContent.length > 15000
+                                      ? '${textContent.substring(0, 15000)}\n\n... (terpotong)'
+                                      : textContent,
+                                  style: TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 12,
+                                    height: 1.5,
+                                    color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : (cloudinaryPdfThumb != null
+                              ? Center(
+                                  child: InteractiveViewer(
+                                    minScale: 0.8,
+                                    maxScale: 3.5,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: Image.network(
+                                        cloudinaryPdfThumb,
+                                        fit: BoxFit.contain,
+                                        loadingBuilder: (_, child, progress) => progress == null
+                                            ? child
+                                            : const Center(child: CircularProgressIndicator()),
+                                        errorBuilder: (_, __, ___) => _genericPreviewPlaceholder(
+                                          ext: ext,
+                                          fileName: fileName,
+                                          isVideo: isVideo,
+                                          isAudio: isAudio,
+                                          hasRemoteUrl: remoteUrl != null,
+                                          isDark: isDark,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : _genericPreviewPlaceholder(
+                                  ext: ext,
+                                  fileName: fileName,
+                                  isVideo: isVideo,
+                                  isAudio: isAudio,
+                                  hasRemoteUrl: remoteUrl != null,
+                                  isDark: isDark,
+                                )),
+                ),
+              ),
+
+              // Tombol Aksi Bawah (Buka Full di Viewer HP / Browser)
+              if (remoteUrl != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                    label: Text(
+                      isPdf
+                          ? 'Buka PDF Lengkap di Browser / Viewer'
+                          : isVideo
+                              ? 'Putar Video'
+                              : isAudio
+                                  ? 'Putar Audio'
+                                  : 'Buka / Unduh Berkas',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    onPressed: () => _launchExternalUrl(remoteUrl),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _genericPreviewPlaceholder({
+    required String ext,
+    required String fileName,
+    required bool isVideo,
+    required bool isAudio,
+    required bool hasRemoteUrl,
+    required bool isDark,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: _colorForExt(ext).withValues(alpha: 0.14),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(_iconForExt(ext), size: 52, color: _colorForExt(ext)),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              fileName,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              hasRemoteUrl
+                  ? 'Ketuk tombol di bawah untuk membuka ${isVideo ? 'video' : isAudio ? 'audio' : 'dokumen'} ini menggunakan aplikasi viewer bawaan HP.'
+                  : 'Berkas siap diserahkan. Setelah klik "Serahkan", berkas ini juga bisa dibuka penuh kapan saja lewat cloud.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.5,
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _iconForExt(String ext) {
+    if (ext == 'pdf') return Icons.picture_as_pdf_rounded;
+    if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].contains(ext)) return Icons.image_rounded;
+    if (['mp4', 'mov', 'mkv', 'avi', 'webm'].contains(ext)) return Icons.videocam_rounded;
+    if (['mp3', 'wav', 'm4a', 'aac', 'ogg'].contains(ext)) return Icons.audiotrack_rounded;
+    if (['xls', 'xlsx', 'csv'].contains(ext)) return Icons.table_chart_rounded;
+    if (['ppt', 'pptx'].contains(ext)) return Icons.slideshow_rounded;
+    if (['zip', 'rar', '7z', 'tar', 'gz'].contains(ext)) return Icons.folder_zip_rounded;
+    if (['sql', 'json', 'py', 'js', 'ts', 'html', 'css', 'dart'].contains(ext)) return Icons.code_rounded;
+    return Icons.description_rounded;
+  }
+
+  Color _colorForExt(String ext) {
+    if (ext == 'pdf') return const Color(0xFFEF4444);
+    if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].contains(ext)) return const Color(0xFF14B8A6);
+    if (['mp4', 'mov', 'mkv', 'avi', 'webm'].contains(ext)) return const Color(0xFF9333EA);
+    if (['mp3', 'wav', 'm4a', 'aac', 'ogg'].contains(ext)) return const Color(0xFF6366F1);
+    if (['xls', 'xlsx', 'csv'].contains(ext)) return const Color(0xFF10B981);
+    if (['ppt', 'pptx'].contains(ext)) return const Color(0xFFF59E0B);
+    if (['zip', 'rar', '7z', 'tar', 'gz'].contains(ext)) return const Color(0xFF64748B);
+    return const Color(0xFF2563EB);
+  }
+
+  String _labelForExt(String ext) {
+    if (ext == 'pdf') return 'Dokumen PDF';
+    if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].contains(ext)) return 'Gambar';
+    if (['mp4', 'mov', 'mkv', 'avi', 'webm'].contains(ext)) return 'Video';
+    if (['mp3', 'wav', 'm4a', 'aac', 'ogg'].contains(ext)) return 'Audio';
+    if (['xls', 'xlsx', 'csv'].contains(ext)) return 'Spreadsheet';
+    if (['ppt', 'pptx'].contains(ext)) return 'Presentasi';
+    if (['zip', 'rar', '7z', 'tar', 'gz'].contains(ext)) return 'Arsip';
+    return 'Berkas (${ext.toUpperCase()})';
   }
 
   /// Buka pemilih file perangkat, mendukung dokumen, media, arsip, spreadsheet, dll
@@ -311,6 +677,8 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
         final isLate = kelas.isLate(key);
         final fileList = kelas.filesFor(key);
         final hasDoc = fileList.isNotEmpty;
+        final submittedLink = kelas.linkFor(key);
+        final hasLink = submittedLink != null && submittedLink.isNotEmpty;
 
         final isDark =
             Theme.of(context).brightness == Brightness.dark;
@@ -848,12 +1216,21 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                     if (isCompleted) ...[
                                       if (kelas.isMarkedOnly(key))
                                         _markedChip(isDark)
-                                      else
+                                      else ...[
                                         ...fileList.map((fn) => _docChip(
                                               fn,
                                               isDark,
+                                              onTap: () => _openFilePreview(kelas, key, fn),
                                               onDelete: null,
                                             )),
+                                        if (hasLink)
+                                          _linkChip(
+                                            submittedLink,
+                                            isDark,
+                                            onTap: () => _launchExternalUrl(submittedLink),
+                                            onDelete: null,
+                                          ),
+                                      ],
                                       const SizedBox(height: 18),
                                       _fullWidthButton(
                                         kelas.isMarkedOnly(key)
@@ -883,7 +1260,7 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                         },
                                       ),
                                     ] else ...[
-                                      if (!hasDoc && _submittedLink == null)
+                                      if (!hasDoc && !hasLink)
                                         Container(
                                           height: 96,
                                           decoration: BoxDecoration(
@@ -923,48 +1300,17 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                         ...fileList.map((fn) => _docChip(
                                               fn,
                                               isDark,
+                                              onTap: () => _openFilePreview(kelas, key, fn),
                                               onDelete: () =>
                                                   _confirmDeleteFile(
                                                       kelas, key, fn),
                                             )),
-                                        if (_submittedLink != null && _submittedLink!.isNotEmpty)
-                                          Container(
-                                            margin: const EdgeInsets.only(top: 8),
-                                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                            decoration: BoxDecoration(
-                                              color: isDark ? const Color(0xFF2E384D) : const Color(0xFFEFF6FF),
-                                              borderRadius: BorderRadius.circular(12),
-                                              border: Border.all(
-                                                color: const Color(0xFF3B82F6),
-                                                width: 1.2,
-                                              ),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                const Icon(Icons.link_rounded, color: Color(0xFF2563EB), size: 20),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Text(
-                                                    _submittedLink!,
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      fontWeight: FontWeight.w600,
-                                                      color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
-                                                    ),
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                                IconButton(
-                                                  icon: const Icon(Icons.close_rounded, size: 18),
-                                                  color: const Color(0xFFEF4444),
-                                                  padding: EdgeInsets.zero,
-                                                  constraints: const BoxConstraints(),
-                                                  onPressed: () {
-                                                    setState(() => _submittedLink = null);
-                                                  },
-                                                ),
-                                              ],
-                                            ),
+                                        if (hasLink)
+                                          _linkChip(
+                                            submittedLink,
+                                            isDark,
+                                            onTap: () => _launchExternalUrl(submittedLink),
+                                            onDelete: () => kelas.setLink(key, null),
                                           ),
                                       ],
                                       const SizedBox(height: 14),
@@ -999,7 +1345,7 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                                   : const Color(0xFF16A34A),
                                               borderColor:
                                                   const Color(0xFF4ADE80),
-                                              onTap: _showAddLinkDialog,
+                                              onTap: () => _showAddLinkDialog(kelas, key),
                                             ),
                                           ),
                                         ],
@@ -1010,7 +1356,7 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                               padding: EdgeInsets.symmetric(vertical: 12),
                                               child: Center(child: CircularProgressIndicator()),
                                             )
-                                          : ((hasDoc || (_submittedLink != null && _submittedLink!.isNotEmpty))
+                                          : ((hasDoc || hasLink)
                                               ? _fullWidthButton(
                                                   'Serahkan',
                                                   color: const Color(0xFF2563EB),
@@ -1021,7 +1367,7 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                                     final success = await kelas.serahkanTugas(
                                                       key,
                                                       taskId: resolvedTaskId,
-                                                      linkRepo: _submittedLink,
+                                                      linkRepo: submittedLink,
                                                     );
                                                     if (mounted) {
                                                       setState(() => _isSubmitting = false);
@@ -1123,77 +1469,165 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
     );
   }
 
-  Widget _docChip(String fileName, bool isDark, {VoidCallback? onDelete}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF354258)
-            : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
+  Widget _docChip(
+    String fileName,
+    bool isDark, {
+    VoidCallback? onTap,
+    VoidCallback? onDelete,
+  }) {
+    final ext = fileName.contains('.') ? fileName.split('.').last.toLowerCase() : '';
+    final extColor = _colorForExt(ext);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
           color: isDark
-              ? const Color(0xFF64748B)
-              : const Color(0xFFE2E8F0),
-          width: 1.2,
+              ? const Color(0xFF354258)
+              : const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark
+                ? const Color(0xFF64748B)
+                : const Color(0xFFE2E8F0),
+            width: 1.2,
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.description_rounded,
-            color: Color(0xFF60A5FA),
-            size: 24,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  fileName,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? Colors.white
-                        : const Color(0xFF0F172A),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Lampiran Tugas Mahasiswa',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isDark
-                        ? const Color(0xFFCBD5E1)
-                        : const Color(0xFF64748B),
-                  ),
-                ),
-              ],
+        child: Row(
+          children: [
+            Icon(
+              _iconForExt(ext),
+              color: extColor,
+              size: 24,
             ),
-          ),
-          if (onDelete != null)
-            IconButton(
-              tooltip: 'Hapus lampiran',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: Icon(
-                Icons.close_rounded,
-                color: isDark ? const Color(0xFFF87171) : const Color(0xFFEF4444),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    fileName,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: isDark
+                          ? Colors.white
+                          : const Color(0xFF0F172A),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${_labelForExt(ext)} • Ketuk untuk pratinjau',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark
+                          ? const Color(0xFF93C5FD)
+                          : const Color(0xFF2563EB),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (onDelete != null)
+              IconButton(
+                tooltip: 'Hapus lampiran',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: isDark ? const Color(0xFFF87171) : const Color(0xFFEF4444),
+                  size: 20,
+                ),
+                onPressed: onDelete,
+              )
+            else
+              const Icon(
+                Icons.visibility_rounded,
+                color: Color(0xFF34D399),
                 size: 20,
               ),
-              onPressed: onDelete,
-            )
-          else
-            const Icon(
-              Icons.check_circle_rounded,
-              color: Color(0xFF34D399),
-              size: 18,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _linkChip(
+    String url,
+    bool isDark, {
+    required VoidCallback onTap,
+    VoidCallback? onDelete,
+  }) {
+    final lower = url.toLowerCase();
+    final String label = lower.contains('figma.com')
+        ? 'Tautan Figma'
+        : (lower.contains('drive.google.com') || lower.contains('docs.google.com'))
+            ? 'Tautan Google Drive'
+            : (lower.contains('github.com') || lower.contains('gitlab.com'))
+                ? 'Repositori GitHub'
+                : 'Tautan Link Tugas';
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF2E384D) : const Color(0xFFEFF6FF),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFF3B82F6),
+            width: 1.2,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.link_rounded, color: Color(0xFF2563EB), size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    url,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
-        ],
+            if (onDelete != null)
+              IconButton(
+                tooltip: 'Hapus tautan',
+                icon: const Icon(Icons.close_rounded, size: 20),
+                color: const Color(0xFFEF4444),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: onDelete,
+              )
+            else
+              const Icon(
+                Icons.open_in_new_rounded,
+                color: Color(0xFF34D399),
+                size: 19,
+              ),
+          ],
+        ),
       ),
     );
   }

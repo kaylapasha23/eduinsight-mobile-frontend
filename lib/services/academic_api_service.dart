@@ -1,30 +1,41 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../database/app_database.dart';
 import '../providers/token_store.dart' as store;
 
 class AcademicApiService {
-  // Mendukung Android Emulator (10.0.2.2), Windows / Desktop / Web (localhost & 127.0.0.1)
-  // serta port 5001 dan port 3000
-  static const List<String> _baseUrls = [
-    'https://eduinsight-backend.vercel.app/api',
-    'http://localhost:3000/api',
-    'http://127.0.0.1:3000/api',
-    'http://10.0.2.2:3000/api',
-    'http://localhost:5001/api',
-    'http://10.0.2.2:5001/api',
-  ];
+  static const String productionBaseUrl = 'https://eduinsight-backend.vercel.app/api';
+
+  // Di APK release langsung gunakan server produksi (tidak membuang waktu mencoba localhost/10.0.2.2)
+  static List<String> get _baseUrls => kReleaseMode
+      ? const [productionBaseUrl]
+      : const [
+          productionBaseUrl,
+          'http://localhost:3000/api',
+          'http://127.0.0.1:3000/api',
+          'http://10.0.2.2:3000/api',
+          'http://localhost:5001/api',
+          'http://10.0.2.2:5001/api',
+        ];
+
+  static String? _cachedWorkingBase;
 
   static Future<http.Response?> _getWithFallback(
     String endpoint, {
     Map<String, String>? headers,
   }) async {
-    for (final base in _baseUrls) {
+    final candidates = _cachedWorkingBase != null
+        ? [_cachedWorkingBase!, ..._baseUrls.where((b) => b != _cachedWorkingBase)]
+        : _baseUrls;
+
+    for (final base in candidates) {
       try {
         final res = await http
             .get(Uri.parse('$base/$endpoint'), headers: headers)
             .timeout(const Duration(seconds: 10));
         if (res.statusCode == 200) {
+          _cachedWorkingBase = base;
           return res;
         }
       } catch (_) {
