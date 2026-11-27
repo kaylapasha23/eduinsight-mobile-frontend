@@ -1,9 +1,7 @@
-import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../../../services/academic_api_service.dart';
 import 'kelas_provider.dart';
@@ -198,273 +196,26 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
     return null;
   }
 
-  /// Modal pratinjau untuk semua jenis media & dokumen (Gambar, Teks/Kode, PDF, Video, Audio, Office, Arsip)
-  Future<void> _openFilePreview(
-    KelasProvider kelas,
-    String key,
-    String fileName,
-  ) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final ext = fileName.contains('.') ? fileName.split('.').last.toLowerCase() : '';
-    final localFile = kelas.platformFileFor(key, fileName);
-    final remoteUrl = _resolveRemoteFileUrl(kelas, key);
+  /// Buka berkas mahasiswa di FileViewerScreen (render asli: PDF, gambar, teks, Office)
+  Future<void> _openStudentFile(KelasProvider kelas, String key, String fileName) async {
+    final local = kelas.platformFileFor(key, fileName);
 
-    final isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].contains(ext);
-    final isText = ['txt', 'csv', 'json', 'sql', 'py', 'js', 'ts', 'html', 'css', 'dart', 'md', 'xml'].contains(ext);
-    final isPdf = ext == 'pdf';
-    final isVideo = ['mp4', 'mov', 'mkv', 'avi', 'webm'].contains(ext);
-    final isAudio = ['mp3', 'wav', 'm4a', 'aac', 'ogg'].contains(ext);
-
-    Uint8List? localBytes;
-    if (localFile != null && (isImage || isText)) {
+    Uint8List? bytes;
+    if (local != null) {
       try {
-        localBytes = await localFile.readAsBytes();
+        bytes = Uint8List.fromList(await local.readAsBytes());
       } catch (_) {}
     }
 
-    String? textContent;
-    if (isText) {
-      if (localBytes != null) {
-        textContent = utf8.decode(localBytes, allowMalformed: true);
-      } else if (remoteUrl != null) {
-        try {
-          final res = await http.get(Uri.parse(remoteUrl)).timeout(const Duration(seconds: 8));
-          if (res.statusCode == 200) {
-            textContent = utf8.decode(res.bodyBytes, allowMalformed: true);
-          }
-        } catch (_) {}
-      }
-    }
-
     if (!mounted) return;
-
-    // Untuk PDF yang di-host di Cloudinary /image/upload/, kita bisa menampilkan pratinjau gambar halaman 1
-    String? cloudinaryPdfThumb;
-    if (isPdf && remoteUrl != null && remoteUrl.contains('res.cloudinary.com') && remoteUrl.contains('/image/upload/') && remoteUrl.toLowerCase().endsWith('.pdf')) {
-      cloudinaryPdfThumb = '${remoteUrl.substring(0, remoteUrl.length - 4)}.jpg';
-    }
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final modalBg = isDark ? const Color(0xFF1E2532) : Colors.white;
-        final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
-        final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-
-        return Container(
-          height: MediaQuery.of(ctx).size.height * 0.78,
-          decoration: BoxDecoration(
-            color: modalBg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header Pratinjau
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 12, 12),
-                child: Row(
-                  children: [
-                    Icon(_iconForExt(ext), color: _colorForExt(ext), size: 24),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            fileName,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: titleColor,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            'Pratinjau ${_labelForExt(ext)}',
-                            style: TextStyle(fontSize: 11, color: subColor),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close_rounded, color: subColor),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-              ),
-              Divider(height: 1, color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
-
-              // Konten Pratinjau
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: isImage
-                      ? Center(
-                          child: InteractiveViewer(
-                            minScale: 0.8,
-                            maxScale: 4.0,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(14),
-                              child: localBytes != null
-                                  ? Image.memory(localBytes, fit: BoxFit.contain)
-                                  : (remoteUrl != null
-                                      ? Image.network(
-                                          remoteUrl,
-                                          fit: BoxFit.contain,
-                                          loadingBuilder: (_, child, progress) => progress == null
-                                              ? child
-                                              : const Center(child: CircularProgressIndicator()),
-                                          errorBuilder: (_, __, ___) => Text(
-                                            'Gagal memuat pratinjau gambar.',
-                                            style: TextStyle(color: subColor),
-                                          ),
-                                        )
-                                      : Text('Gambar belum tersedia.', style: TextStyle(color: subColor))),
-                            ),
-                          ),
-                        )
-                      : isText && textContent != null
-                          ? Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF111827) : const Color(0xFFF8FAFC),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
-                                ),
-                              ),
-                              child: SingleChildScrollView(
-                                child: SelectableText(
-                                  textContent.length > 15000
-                                      ? '${textContent.substring(0, 15000)}\n\n... (terpotong)'
-                                      : textContent,
-                                  style: TextStyle(
-                                    fontFamily: 'monospace',
-                                    fontSize: 12,
-                                    height: 1.5,
-                                    color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
-                                  ),
-                                ),
-                              ),
-                            )
-                          : (cloudinaryPdfThumb != null
-                              ? Center(
-                                  child: InteractiveViewer(
-                                    minScale: 0.8,
-                                    maxScale: 3.5,
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(14),
-                                      child: Image.network(
-                                        cloudinaryPdfThumb,
-                                        fit: BoxFit.contain,
-                                        loadingBuilder: (_, child, progress) => progress == null
-                                            ? child
-                                            : const Center(child: CircularProgressIndicator()),
-                                        errorBuilder: (_, __, ___) => _genericPreviewPlaceholder(
-                                          ext: ext,
-                                          fileName: fileName,
-                                          isVideo: isVideo,
-                                          isAudio: isAudio,
-                                          hasRemoteUrl: remoteUrl != null,
-                                          isDark: isDark,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              : _genericPreviewPlaceholder(
-                                  ext: ext,
-                                  fileName: fileName,
-                                  isVideo: isVideo,
-                                  isAudio: isAudio,
-                                  hasRemoteUrl: remoteUrl != null,
-                                  isDark: isDark,
-                                )),
-                ),
-              ),
-
-              // Tombol Aksi Bawah (Buka Full di Viewer HP / Browser)
-              if (remoteUrl != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                    label: Text(
-                      isPdf
-                          ? 'Buka PDF Lengkap di Browser / Viewer'
-                          : isVideo
-                              ? 'Putar Video'
-                              : isAudio
-                                  ? 'Putar Audio'
-                                  : 'Buka / Unduh Berkas',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    onPressed: () => _launchExternalUrl(remoteUrl),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _genericPreviewPlaceholder({
-    required String ext,
-    required String fileName,
-    required bool isVideo,
-    required bool isAudio,
-    required bool hasRemoteUrl,
-    required bool isDark,
-  }) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: _colorForExt(ext).withValues(alpha: 0.14),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(_iconForExt(ext), size: 52, color: _colorForExt(ext)),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              fileName,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              hasRemoteUrl
-                  ? 'Ketuk tombol di bawah untuk membuka ${isVideo ? 'video' : isAudio ? 'audio' : 'dokumen'} ini menggunakan aplikasi viewer bawaan HP.'
-                  : 'Berkas siap diserahkan. Setelah klik "Serahkan", berkas ini juga bisa dibuka penuh kapan saja lewat cloud.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                height: 1.5,
-                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-              ),
-            ),
-          ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FileViewerScreen(
+          title: fileName,
+          localFilePath: local?.path,
+          fileBytes: bytes,
+          fileUrl: _resolveRemoteFileUrl(kelas, key),
         ),
       ),
     );
@@ -1246,7 +997,7 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                         ...fileList.map((fn) => _docChip(
                                               fn,
                                               isDark,
-                                              onTap: () => _openFilePreview(kelas, key, fn),
+                                              onTap: () => _openStudentFile(kelas, key, fn),
                                               onDelete: null,
                                             )),
                                         if (hasLink)
@@ -1326,7 +1077,7 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                         ...fileList.map((fn) => _docChip(
                                               fn,
                                               isDark,
-                                              onTap: () => _openFilePreview(kelas, key, fn),
+                                              onTap: () => _openStudentFile(kelas, key, fn),
                                               onDelete: () =>
                                                   _confirmDeleteFile(
                                                       kelas, key, fn),

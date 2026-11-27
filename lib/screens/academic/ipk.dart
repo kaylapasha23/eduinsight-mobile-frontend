@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../database/app_database.dart';
+import '../../services/academic_api_service.dart';
 import '../common_widgets.dart';
 import 'academic_widgets.dart';
 
@@ -17,26 +19,123 @@ class SemesterIpk {
   });
 }
 
-const List<SemesterIpk> dataIpk = [
-  SemesterIpk(semester: 'Semester 1', label: 'Smt 1', ipk: '0.00', value: 0.00),
-  SemesterIpk(semester: 'Semester 2', label: 'Smt 2', ipk: '-', value: null),
-  SemesterIpk(semester: 'Semester 3', label: 'Smt 3', ipk: '-', value: null),
-  SemesterIpk(semester: 'Semester 4', label: 'Smt 4', ipk: '-', value: null),
-  SemesterIpk(semester: 'Semester 5', label: 'Smt 5', ipk: '-', value: null),
-  SemesterIpk(semester: 'Semester 6', label: 'Smt 6', ipk: '-', value: null),
-  SemesterIpk(semester: 'Semester 7', label: 'Smt 7', ipk: '-', value: null),
-  SemesterIpk(semester: 'Semester 8', label: 'Smt 8', ipk: '-', value: null),
-];
-
-const List<FlSpot> titikIpkSemester = [
-  FlSpot(1, 0.00),
-  FlSpot(2, 0.00),
-  FlSpot(3, 0.00),
-  FlSpot(4, 0.00),
-];
-
-class IpkScreen extends StatelessWidget {
+class IpkScreen extends StatefulWidget {
   const IpkScreen({super.key});
+
+  @override
+  State<IpkScreen> createState() => _IpkScreenState();
+}
+
+class _IpkScreenState extends State<IpkScreen> {
+  double _ipkKumulatif = 0.0;
+  List<SemesterIpk> _listIpk = [];
+  List<FlSpot> _chartSpots = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+    _refreshFromBackend();
+  }
+
+  Future<void> _loadInitialData() async {
+    try {
+      final cached = await AppDb.instance.getNilaiFromDrift();
+      if (cached.isNotEmpty && mounted) {
+        _applyData(cached);
+      } else {
+        _setDefaultData();
+      }
+    } catch (_) {
+      _setDefaultData();
+    }
+  }
+
+  Future<void> _refreshFromBackend() async {
+    try {
+      final liveNilai = await AcademicApiService.fetchNilaiSemester();
+      if (liveNilai != null && liveNilai.isNotEmpty && mounted) {
+        _applyData(liveNilai);
+        return;
+      }
+    } catch (_) {}
+
+    try {
+      final cached = await AppDb.instance.getNilaiFromDrift();
+      if (cached.isNotEmpty && mounted) {
+        _applyData(cached);
+      }
+    } catch (_) {}
+  }
+
+  void _setDefaultData() {
+    setState(() {
+      _ipkKumulatif = 0.0;
+      _chartSpots = [
+        const FlSpot(1, 0.00),
+      ];
+      _listIpk = [
+        const SemesterIpk(semester: 'Semester 1', label: 'Smt 1', ipk: '0.00', value: 0.00),
+        const SemesterIpk(semester: 'Semester 2', label: 'Smt 2', ipk: '-', value: null),
+        const SemesterIpk(semester: 'Semester 3', label: 'Smt 3', ipk: '-', value: null),
+        const SemesterIpk(semester: 'Semester 4', label: 'Smt 4', ipk: '-', value: null),
+        const SemesterIpk(semester: 'Semester 5', label: 'Smt 5', ipk: '-', value: null),
+        const SemesterIpk(semester: 'Semester 6', label: 'Smt 6', ipk: '-', value: null),
+        const SemesterIpk(semester: 'Semester 7', label: 'Smt 7', ipk: '-', value: null),
+        const SemesterIpk(semester: 'Semester 8', label: 'Smt 8', ipk: '-', value: null),
+      ];
+    });
+  }
+
+  void _applyData(List<Map<String, dynamic>> rawList) {
+    if (rawList.isEmpty) return;
+
+    final firstItem = rawList.first;
+    final double latestIps = (firstItem['ips'] as num?)?.toDouble() ?? 0.0;
+
+    final List<SemesterIpk> items = [];
+    final List<FlSpot> spots = [];
+
+    for (int i = 0; i < 8; i++) {
+      final semNumber = i + 1;
+      if (i < rawList.length) {
+        final semData = rawList[i];
+        final val = (semData['ips'] as num?)?.toDouble() ?? 0.0;
+        final title = semData['judul']?.toString().isNotEmpty == true
+            ? semData['judul'].toString()
+            : 'Semester $semNumber';
+
+        items.add(
+          SemesterIpk(
+            semester: title,
+            label: 'Smt $semNumber',
+            ipk: val.toStringAsFixed(2),
+            value: val,
+          ),
+        );
+        spots.add(FlSpot(semNumber.toDouble(), val.clamp(0.0, 4.0)));
+      } else {
+        items.add(
+          SemesterIpk(
+            semester: 'Semester $semNumber',
+            label: 'Smt $semNumber',
+            ipk: '-',
+            value: null,
+          ),
+        );
+      }
+    }
+
+    if (spots.isEmpty) {
+      spots.add(FlSpot(1, latestIps.clamp(0.0, 4.0)));
+    }
+
+    setState(() {
+      _ipkKumulatif = latestIps;
+      _listIpk = items;
+      _chartSpots = spots;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -152,8 +251,8 @@ class IpkScreen extends StatelessWidget {
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
+            children: [
+              const Text(
                 'Indeks Prestasi Kumulatif',
                 style: TextStyle(
                   fontSize: 13,
@@ -161,22 +260,22 @@ class IpkScreen extends StatelessWidget {
                   color: Colors.white70,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
-                    '0.00',
-                    style: TextStyle(
+                    _ipkKumulatif.toStringAsFixed(2),
+                    style: const TextStyle(
                       fontSize: 34,
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  SizedBox(width: 6),
-                  Text(
+                  const SizedBox(width: 6),
+                  const Text(
                     '/ 4.00',
                     style: TextStyle(
                       fontSize: 14,
@@ -186,8 +285,8 @@ class IpkScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(height: 6),
-              Text(
+              const SizedBox(height: 6),
+              const Text(
                 'Status: Menjalani Semester 1',
                 style: TextStyle(
                   fontSize: 12,
@@ -293,7 +392,7 @@ class IpkScreen extends StatelessWidget {
             gridData: FlGridData(
               show: true,
               drawVerticalLine: false,
-              horizontalInterval: 0.2,
+              horizontalInterval: 1.0,
               getDrawingHorizontalLine: (val) {
                 return FlLine(color: gridColor, strokeWidth: 1);
               },
@@ -309,9 +408,9 @@ class IpkScreen extends StatelessWidget {
                 sideTitles: SideTitles(
                   showTitles: true,
                   reservedSize: 40,
-                  interval: 0.2,
+                  interval: 1.0,
                   getTitlesWidget: (val, meta) {
-                    if (val < 3.19 || val > 4.01) {
+                    if (val < 0.0 || val > 4.0) {
                       return const SizedBox.shrink();
                     }
 
@@ -356,8 +455,8 @@ class IpkScreen extends StatelessWidget {
             borderData: FlBorderData(show: false),
             lineBarsData: [
               LineChartBarData(
-                spots: titikIpkSemester,
-                isCurved: true,
+                spots: _chartSpots.isNotEmpty ? _chartSpots : [const FlSpot(1, 0.00)],
+                isCurved: _chartSpots.length > 1,
                 curveSmoothness: 0.35,
                 color: const Color(0xFF2563EB),
                 barWidth: 3.5,
@@ -396,6 +495,7 @@ class IpkScreen extends StatelessWidget {
   }
 
   Widget _buildSemesterListCard(bool isDark, Color cardBg) {
+    final list = _listIpk;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -414,8 +514,8 @@ class IpkScreen extends StatelessWidget {
         ],
       ),
       child: Column(
-        children: List.generate(dataIpk.length, (index) {
-          final item = dataIpk[index];
+        children: List.generate(list.length, (index) {
+          final item = list[index];
           final bool hasScore = item.ipk != '-';
 
           return Container(
@@ -485,7 +585,9 @@ class IpkScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        hasScore ? '22 SKS Selesai' : 'Belum Ditempuh',
+                        index == 0
+                            ? (hasScore ? '22 SKS Terdaftar (Semester Berjalan)' : 'Semester 1 Berjalan')
+                            : (hasScore ? '22 SKS Selesai' : 'Belum Ditempuh'),
                         style: TextStyle(
                           fontSize: 11,
                           color: isDark

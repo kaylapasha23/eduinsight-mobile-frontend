@@ -1,16 +1,24 @@
-import 'dart:io';
+import 'dart:convert';
+import 'dart:io' show File, Directory;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
-/// Halaman penampil file (berkas dosen & mahasiswa)
-/// Mendukung:
-/// - Presentasi PPTX / PPT (Slide viewer interaktif)
-/// - Media Gambar (PNG, JPG, JPEG, WEBP, GIF)
-/// - Dokumen PDF (dirender asli memakai pdfx)
-/// - File Kode Program & Teks (SQL, JSON, PY, JS, HTML, TXT, dll)
-/// - Dilengkapi tombol silang (X) di pojok atas & tombol kembali ke detail tugas.
+/// Halaman penampil file (berkas dosen & mahasiswa), satu file untuk semua platform.
+///
+/// - PDF     -> pdfx (Android, iOS, Web)
+/// - Office  -> WebView Office Online (butuh URL publik https)
+/// - Gambar  -> dirender langsung dari bytes
+/// - Teks    -> dirender langsung dari bytes
+///
+/// Syarat di web:
+///  1. web/index.html berisi skrip pdf.js (lihat panduan).
+///  2. pubspec.yaml punya `webview_flutter_web`.
 class FileViewerScreen extends StatefulWidget {
   final String title;
   final String? fileUrl;
@@ -30,11 +38,20 @@ class FileViewerScreen extends StatefulWidget {
 }
 
 class _FileViewerScreenState extends State<FileViewerScreen> {
+  static const _backendBase = 'https://eduinsight-backend.vercel.app';
+  static const _timeout = Duration(seconds: 10);
+
   bool _isLoading = true;
   Uint8List? _bytes;
   String? _textContent;
-  int _currentSlide = 0;
   PdfControllerPinch? _pdfController;
+  WebViewController? _webController;
+
+  /// URL absolut untuk dibuka di tab baru / aplikasi lain.
+  String? _externalUrl;
+
+  /// Log percobaan pemuatan (ditampilkan saat gagal).
+  final List<String> _attempts = [];
 
   @override
   void initState() {
@@ -48,97 +65,154 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
     super.dispose();
   }
 
-  bool _isImage(String name) {
-    final lower = name.toLowerCase();
-    return lower.endsWith('.png') ||
-        lower.endsWith('.jpg') ||
-        lower.endsWith('.jpeg') ||
-        lower.endsWith('.webp') ||
-        lower.endsWith('.gif') ||
-        lower.endsWith('.bmp');
+  // ───────────────────────── Deteksi tipe ─────────────────────────
+
+  bool _isImage(String n) {
+    final l = n.toLowerCase();
+    return l.endsWith('.png') ||
+        l.endsWith('.jpg') ||
+        l.endsWith('.jpeg') ||
+        l.endsWith('.webp') ||
+        l.endsWith('.gif') ||
+        l.endsWith('.bmp');
   }
 
-  bool _isPresentation(String name) {
-    final lower = name.toLowerCase();
-    return lower.endsWith('.ppt') || lower.endsWith('.pptx');
+  bool _isOffice(String n) {
+    final l = n.toLowerCase();
+    return l.endsWith('.ppt') ||
+        l.endsWith('.pptx') ||
+        l.endsWith('.doc') ||
+        l.endsWith('.docx') ||
+        l.endsWith('.xls') ||
+        l.endsWith('.xlsx');
   }
 
-  bool _isPdf(String name) {
-    final lower = name.toLowerCase();
-    return lower.endsWith('.pdf');
+  bool _isPdf(String n) => n.toLowerCase().endsWith('.pdf');
+
+  bool _isText(String n) {
+    final l = n.toLowerCase();
+    return l.endsWith('.txt') ||
+        l.endsWith('.sql') ||
+        l.endsWith('.json') ||
+        l.endsWith('.py') ||
+        l.endsWith('.js') ||
+        l.endsWith('.dart') ||
+        l.endsWith('.html') ||
+        l.endsWith('.css') ||
+        l.endsWith('.csv') ||
+        l.endsWith('.md');
   }
 
-  bool _isText(String name) {
-    final lower = name.toLowerCase();
-    return lower.endsWith('.txt') ||
-        lower.endsWith('.sql') ||
-        lower.endsWith('.json') ||
-        lower.endsWith('.py') ||
-        lower.endsWith('.js') ||
-        lower.endsWith('.dart') ||
-        lower.endsWith('.html') ||
-        lower.endsWith('.css') ||
-        lower.endsWith('.csv') ||
-        lower.endsWith('.md');
+  bool get _hasRemoteUrl {
+    final u = widget.fileUrl;
+    return u != null && (u.startsWith('http://') || u.startsWith('https://'));
   }
+
+  bool get _hasLocalPath =>
+      widget.localFilePath != null && widget.localFilePath!.isNotEmpty;
+
+  /// URL publik (https, bukan localhost) yang bisa dibaca Office Online.
+  String? get _publicUrl {
+    final u = _externalUrl;
+    if (u == null || !u.startsWith('https://')) return null;
+    if (u.contains('localhost') || u.contains('127.0.0.1') || u.contains('10.0.2.2')) {
+      return null;
+    }
+    return u;
+  }
+
+  // ───────────────────────── Util ─────────────────────────
+
+  /// Server kadang membalas 200 tapi isinya HTML error, bukan file asli.
+  bool _looksValid(Uint8List data) {
+    if (data.isEmpty) return false;
+    if (_isPdf(widget.title)) {
+      return String.fromCharCodes(data.take(1024)).contains('%PDF-');
+    }
+    return true;
+  }
+
+  void _setBytes(Uint8List data) {
+    _bytes = data;
+    if (_isText(widget.title)) {
+      _textContent = utf8.decode(data, allowMalformed: true);
+    }
+  }
+
+  // ───────────────────────── Pemuatan ─────────────────────────
 
   Future<void> _loadFile() async {
     setState(() {
       _isLoading = true;
+      _bytes = null;
+      _textContent = null;
+      _attempts.clear();
     });
+    _pdfController?.dispose();
+    _pdfController = null;
+    _webController = null;
+
+    debugPrint('VIEWER INIT: title=${widget.title}, url=${widget.fileUrl}, '
+        'local=${widget.localFilePath}, bytes=${widget.fileBytes?.length}, web=$kIsWeb');
+
+    // URL absolut cadangan
+    final raw = widget.fileUrl;
+    if (_hasRemoteUrl) {
+      _externalUrl = raw;
+    } else if (raw != null && raw.isNotEmpty) {
+      _externalUrl = '$_backendBase/${raw.startsWith('/') ? raw.substring(1) : raw}';
+    }
 
     try {
-      // 1. Data biner dari memori
-      if (widget.fileBytes != null && widget.fileBytes!.isNotEmpty) {
-        _bytes = widget.fileBytes;
-        if (_isText(widget.title)) {
-          _textContent = String.fromCharCodes(_bytes!);
-        }
+      final hasLocal =
+          (widget.fileBytes != null && widget.fileBytes!.isNotEmpty) || _hasLocalPath;
+
+      // 0. Office + URL publik: cukup render lewat Office Online, tanpa unduh.
+      if (_isOffice(widget.title) && !hasLocal && _publicUrl != null) {
         if (mounted) setState(() => _isLoading = false);
         return;
       }
 
-      // 2. File dari path lokal fisik
-      if (widget.localFilePath != null && widget.localFilePath!.isNotEmpty && !kIsWeb) {
+      // 1. Bytes dari memori
+      if (widget.fileBytes != null && widget.fileBytes!.isNotEmpty) {
+        _setBytes(widget.fileBytes!);
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+      _attempts.add('Memori: tidak ada bytes');
+
+      // 2. Path lokal (non-web)
+      if (_hasLocalPath && !kIsWeb) {
         final file = File(widget.localFilePath!);
         if (await file.exists()) {
-          _bytes = await file.readAsBytes();
-          if (_isText(widget.title)) {
-            try {
-              _textContent = await file.readAsString();
-            } catch (_) {
-              _textContent = String.fromCharCodes(_bytes!);
-            }
-          }
+          _setBytes(await file.readAsBytes());
           if (mounted) setState(() => _isLoading = false);
           return;
         }
+        _attempts.add('Path lokal tidak ditemukan: ${widget.localFilePath}');
+      } else {
+        _attempts.add('Path lokal: tidak ada${kIsWeb ? ' (web)' : ''}');
       }
 
-      // 3. Cek direktori lokal backend di Windows Desktop / Device
-      if (!kIsWeb) {
-        final localDirs = [
+      // 3. Folder backend lokal (desktop, debug)
+      if (!kIsWeb && kDebugMode && !_hasRemoteUrl) {
+        final dirs = [
           'C:/EduInsight/eduinsight-backend/uploads/tugas',
           '../eduinsight-backend/uploads/tugas',
           'uploads/tugas',
         ];
-        final cleanTarget = widget.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-        for (final dirPath in localDirs) {
-          final dir = Directory(dirPath);
+        final target =
+            widget.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+        for (final d in dirs) {
+          final dir = Directory(d);
           if (await dir.exists()) {
-            final list = await dir.list().toList();
-            for (final f in list) {
+            for (final f in await dir.list().toList()) {
               if (f is File) {
-                final base = f.uri.pathSegments.last.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-                if (base.contains(cleanTarget) || cleanTarget.contains(base)) {
-                  _bytes = await f.readAsBytes();
-                  if (_isText(widget.title)) {
-                    try {
-                      _textContent = await f.readAsString();
-                    } catch (_) {
-                      _textContent = String.fromCharCodes(_bytes!);
-                    }
-                  }
+                final base = f.uri.pathSegments.last
+                    .toLowerCase()
+                    .replaceAll(RegExp(r'[^a-z0-9]'), '');
+                if (base.contains(target) || target.contains(base)) {
+                  _setBytes(await f.readAsBytes());
                   if (mounted) setState(() => _isLoading = false);
                   return;
                 }
@@ -148,61 +222,106 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
         }
       }
 
-      // 4. Ambil dari HTTP backend endpoint
+      // 4. HTTP
       final candidates = <String>[];
-      if (widget.fileUrl != null && widget.fileUrl!.isNotEmpty) {
-        final u = widget.fileUrl!;
-        if (u.startsWith('http://') || u.startsWith('https://')) {
-          candidates.add(u);
+      if (raw != null && raw.isNotEmpty) {
+        if (_hasRemoteUrl) {
+          candidates.add(raw);
         } else {
-          final clean = u.startsWith('/') ? u.substring(1) : u;
-          candidates.add('https://eduinsight-backend.vercel.app/$clean');
-          candidates.add('http://localhost:3000/$clean');
-          candidates.add('http://127.0.0.1:3000/$clean');
-          candidates.add('http://10.0.2.2:3000/$clean');
-          candidates.add('http://localhost:5001/$clean');
+          final clean = raw.startsWith('/') ? raw.substring(1) : raw;
+          candidates.add('$_backendBase/$clean');
+          if (kDebugMode) {
+            candidates.add('http://localhost:5001/$clean');
+            candidates.add('http://localhost:3000/$clean');
+            candidates.add('http://127.0.0.1:3000/$clean');
+            if (!kIsWeb) candidates.add('http://10.0.2.2:3000/$clean');
+          }
         }
-      }
-
-      final encoded = Uri.encodeComponent(widget.title);
-      final bases = [
-        'https://eduinsight-backend.vercel.app',
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'http://10.0.2.2:3000',
-        'http://localhost:5001',
-      ];
-      for (final b in bases) {
-        candidates.add('$b/api/tugas/lampiran/$encoded');
-        candidates.add('$b/uploads/tugas/$encoded');
-        candidates.add('$b/uploads/tugas/${Uri.encodeComponent(widget.title.replaceAll(' ', '_'))}');
+      } else {
+        _attempts.add('fileUrl kosong/null (pemanggil tidak mengirim URL)');
+        final enc = Uri.encodeComponent(widget.title);
+        final bases = <String>[
+          _backendBase,
+          if (kDebugMode) ...[
+            'http://localhost:5001',
+            'http://localhost:3000',
+          ],
+        ];
+        for (final b in bases) {
+          candidates.add('$b/api/tugas/lampiran/$enc');
+          candidates.add('$b/uploads/tugas/$enc');
+        }
       }
 
       for (final url in candidates) {
         try {
-          final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 4));
-          if (res.statusCode == 200 && res.bodyBytes.isNotEmpty) {
-            _bytes = res.bodyBytes;
-            if (_isText(widget.title)) {
-              try {
-                _textContent = res.body;
-              } catch (_) {
-                _textContent = String.fromCharCodes(_bytes!);
-              }
-            }
+          final res = await http.get(Uri.parse(url)).timeout(_timeout);
+          debugPrint('VIEWER: $url -> ${res.statusCode} (${res.bodyBytes.length} B)');
+          if (res.statusCode == 200 && _looksValid(res.bodyBytes)) {
+            _externalUrl = url;
+            _setBytes(res.bodyBytes);
             if (mounted) setState(() => _isLoading = false);
             return;
           }
-        } catch (_) {}
+          _attempts.add(res.statusCode == 200
+              ? '$url -> 200 tapi isinya bukan ${_isPdf(widget.title) ? 'PDF' : 'berkas valid'}'
+              : '$url -> ${res.statusCode}');
+        } catch (e) {
+          debugPrint('VIEWER ERROR: $url -> $e');
+          if (e is http.ClientException) {
+            _attempts.add('$url -> gagal${kIsWeb ? ' (kemungkinan CORS)' : ''}');
+          } else if (e.toString().contains('TimeoutException')) {
+            _attempts.add('$url -> timeout ${_timeout.inSeconds} dtk (server tidak merespons)');
+          } else {
+            _attempts.add('$url -> gagal: ${e.runtimeType}');
+          }
+        }
       }
-    } catch (_) {}
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+    } catch (e) {
+      debugPrint('VIEWER FATAL: $e');
+      _attempts.add('Error tak terduga: $e');
     }
+
+    if (mounted) setState(() => _isLoading = false);
   }
+
+  // ───────────────────────── Buka eksternal ─────────────────────────
+
+  Future<void> _openExternally() async {
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (!kIsWeb) {
+      String? path = widget.localFilePath;
+      if ((path == null || path.isEmpty || !File(path).existsSync()) &&
+          _bytes != null) {
+        final dir = await getTemporaryDirectory();
+        final f = File('${dir.path}/${widget.title}');
+        await f.writeAsBytes(_bytes!);
+        path = f.path;
+      }
+      if (path != null && path.isNotEmpty) {
+        await OpenFilex.open(path);
+        return;
+      }
+    }
+
+    if (_externalUrl != null) {
+      final ok = await launchUrl(
+        Uri.parse(_externalUrl!),
+        mode: LaunchMode.externalApplication,
+      );
+      if (ok) return;
+    }
+
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Berkas belum tersedia untuk dibuka.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  // ───────────────────────── UI ─────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -230,10 +349,16 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
           ),
           overflow: TextOverflow.ellipsis,
         ),
+        actions: [
+          if (_externalUrl != null || _bytes != null || _hasLocalPath)
+            IconButton(
+              tooltip: kIsWeb ? 'Buka di tab baru' : 'Buka dengan aplikasi HP',
+              icon: const Icon(Icons.open_in_new_rounded, color: Colors.white),
+              onPressed: _openExternally,
+            ),
+        ],
       ),
-      body: SafeArea(
-        child: _buildContent(isDark, cardBg, titleColor),
-      ),
+      body: SafeArea(child: _buildContent(isDark, cardBg, titleColor)),
     );
   }
 
@@ -258,7 +383,7 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
       );
     }
 
-    // 1. Tampilan Gambar
+    // 1. Gambar
     if (_isImage(widget.title) && _bytes != null) {
       return SizedBox.expand(
         child: InteractiveViewer(
@@ -277,17 +402,17 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
       );
     }
 
-    // 2. Tampilan Slide Presentasi (PPTX / PPT)
-    if (_isPresentation(widget.title)) {
-      return _buildPresentationViewer(isDark, cardBg, titleColor);
+    // 2. Office
+    if (_isOffice(widget.title)) {
+      return _buildOfficeViewer(isDark, cardBg, titleColor);
     }
 
-    // 3. Tampilan Dokumen PDF
+    // 3. PDF
     if (_isPdf(widget.title)) {
       return _buildPdfDocumentViewer(isDark, cardBg, titleColor);
     }
 
-    // 4. Tampilan Berkas Teks / Kode
+    // 4. Teks / kode
     if (_textContent != null) {
       return Container(
         margin: const EdgeInsets.all(16),
@@ -313,238 +438,74 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
       );
     }
 
-    // 5. Dokumen Umum
+    // 5. Umum
     return _buildGeneralDocumentViewer(isDark, cardBg, titleColor);
   }
 
-  /// Viewer Khusus Slide Presentasi (PowerPoint .pptx / .ppt)
-  Widget _buildPresentationViewer(bool isDark, Color cardBg, Color titleColor) {
-    final slides = [
-      {
-        'title': 'Pertemuan 13: Desain UI/UX Mobile',
-        'subtitle': 'Prinsip Desain Antarmuka & Interaksi Pengguna',
-        'bullets': [
-          'Konsep Dasar User Interface (UI) & User Experience (UX)',
-          'Prinsip Konsistensi & Navigasi Aplikasi Mobile',
-          'Penerapan Design System, Tipografi, dan Color Palette',
-        ],
-      },
-      {
-        'title': 'Heuristic Evaluation & Usability',
-        'subtitle': '10 Prinsip Nielsen Norman Group untuk Mobile App',
-        'bullets': [
-          'Visibility of system status (Status sistem yang jelas)',
-          'Match between system and the real world',
-          'User control and freedom (Tersedia tombol kembali / batal)',
-          'Consistency and standards (Standarisasi komponen visual)',
-        ],
-      },
-      {
-        'title': 'Instruksi Pengerjaan Tugas',
-        'subtitle': 'Panduan Teknis Penyerahan Berkas Mahasiswa',
-        'bullets': [
-          'Pelajari materi presentasi ini secara seksama',
-          'Kerjakan latihan studi kasus sesuai spesifikasi dosen',
-          'Unggah dokumen tugas sebelum tenggat waktu berakhir',
-        ],
-      },
-    ];
+  /// URL yang ditampilkan lewat WebView (iframe di web), tanpa perlu mengunduh bytes.
+  /// - Office : Office Online
+  /// - PDF    : web -> URL langsung (viewer PDF bawaan browser)
+  ///            mobile -> Google Docs viewer (WebView Android tidak bisa render PDF)
+  String? get _embedUrl {
+    final pub = _publicUrl;
+    if (pub == null) return null;
+    if (_isOffice(widget.title)) {
+      return 'https://view.officeapps.live.com/op/embed.aspx?src=${Uri.encodeComponent(pub)}';
+    }
+    if (_isPdf(widget.title)) {
+      return kIsWeb
+          ? pub
+          : 'https://docs.google.com/gview?embedded=true&url=${Uri.encodeComponent(pub)}';
+    }
+    return null;
+  }
 
-    final current = slides[_currentSlide % slides.length];
+  Widget _buildWebEmbed(String url) {
+    _webController ??= WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadRequest(Uri.parse(url));
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Banner Status Berkas
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEA580C).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFEA580C).withValues(alpha: 0.4)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.slideshow_rounded, color: Color(0xFFEA580C), size: 22),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Slide Presentasi PowerPoint • ${(_bytes != null) ? '${(_bytes!.length / 1024).toStringAsFixed(0)} KB' : 'Tersimpan'}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFEA580C),
-                    ),
-                  ),
-                ),
-              ],
+    return Column(
+      children: [
+        Expanded(child: WebViewWidget(controller: _webController!)),
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: _openExternally,
+              icon: const Icon(Icons.open_in_new_rounded, size: 18),
+              label: Text(
+                kIsWeb ? 'Buka di tab baru' : 'Buka dengan aplikasi HP',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
           ),
-          const SizedBox(height: 16),
-
-          // Frame Slide Interaktif
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark
-                    ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-                    : [const Color(0xFFFFFFFF), const Color(0xFFF8FAFC)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'SLIDE ${_currentSlide + 1} / ${slides.length}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF2563EB),
-                        ),
-                      ),
-                    ),
-                    const Icon(Icons.school_rounded, color: Color(0xFF3B82F6), size: 20),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  current['title'] as String,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: titleColor,
-                    height: 1.3,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  current['subtitle'] as String,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB),
-                  ),
-                ),
-                const Divider(height: 28),
-                ...((current['bullets'] as List<String>).map((point) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(top: 6, right: 10),
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF2563EB),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              point,
-                              style: TextStyle(
-                                fontSize: 13,
-                                height: 1.5,
-                                color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ))),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-
-          // Kontrol Navigasi Slide
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: _currentSlide > 0
-                      ? () => setState(() => _currentSlide--)
-                      : null,
-                  icon: const Icon(Icons.arrow_back_ios_rounded, size: 14),
-                  label: const Text('Slide Sebelumnya'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: _currentSlide < slides.length - 1
-                      ? () => setState(() => _currentSlide++)
-                      : null,
-                  label: const Text('Slide Berikutnya'),
-                  icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Tombol Kembali ke Detail Tugas
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-              foregroundColor: isDark ? Colors.white : const Color(0xFF1E293B),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              elevation: 0,
-            ),
-            icon: const Icon(Icons.close_rounded, size: 18),
-            label: const Text(
-              'Tutup & Kembali ke Detail Tugas',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  /// Viewer Dokumen PDF (render asli memakai pdfx)
+  /// Office: WebView Office Online untuk URL publik.
+  Widget _buildOfficeViewer(bool isDark, Color cardBg, Color titleColor) {
+    final hasLocal = _bytes != null || _hasLocalPath;
+    final url = _embedUrl;
+    if (url != null && !hasLocal) return _buildWebEmbed(url);
+    return _buildGeneralDocumentViewer(isDark, cardBg, titleColor);
+  }
+
+  /// PDF: pdfx jika bytes berhasil diunduh, kalau gagal jatuh ke WebView.
   Widget _buildPdfDocumentViewer(bool isDark, Color cardBg, Color titleColor) {
-    // Jika berkas gagal dimuat, tampilkan kartu info biasa
     if (_bytes == null) {
+      final url = _embedUrl;
+      if (url != null) return _buildWebEmbed(url);
       return _buildGeneralDocumentViewer(isDark, cardBg, titleColor);
     }
 
@@ -558,8 +519,13 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
     );
   }
 
-  /// Viewer Dokumen Umum Lainnya
+  /// Kartu info + diagnosis, tampil hanya kalau berkas tidak bisa dirender.
   Widget _buildGeneralDocumentViewer(bool isDark, Color cardBg, Color titleColor) {
+    final loaded = _bytes != null;
+    final canOpen = loaded || _hasLocalPath || _externalUrl != null;
+    final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final panelBg = isDark ? const Color(0xFF171C26) : const Color(0xFFF8FAFC);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -582,7 +548,8 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
                     color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.file_present_rounded, size: 48, color: Color(0xFF2563EB)),
+                  child: const Icon(Icons.file_present_rounded,
+                      size: 48, color: Color(0xFF2563EB)),
                 ),
                 const SizedBox(height: 14),
                 Text(
@@ -596,45 +563,77 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Ukuran Berkas: ${(_bytes != null) ? '${(_bytes!.length / 1024).toStringAsFixed(1)} KB' : 'Tersimpan'}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                  ),
+                  loaded
+                      ? 'Ukuran Berkas: ${(_bytes!.length / 1024).toStringAsFixed(1)} KB'
+                      : 'Berkas tidak berhasil dimuat dari server.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: subColor),
                 ),
-                const SizedBox(height: 18),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF171C26) : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.task_alt_rounded, color: Color(0xFF10B981), size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Berkas telah tersinkronisasi dan berhasil dibuka.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
-                          ),
-                        ),
+                if (!loaded && _attempts.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: panelBg,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: SelectableText(
+                      'Detail:\n${_attempts.join('\n')}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontFamily: 'monospace',
+                        color: subColor,
+                        height: 1.4,
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: 18),
+          if (canOpen)
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              icon: const Icon(Icons.open_in_new_rounded, size: 18),
+              label: Text(
+                kIsWeb ? 'Buka di tab baru' : 'Buka dengan aplikasi HP',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              onPressed: _openExternally,
+            ),
+          if (!loaded) ...[
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF2563EB),
+                side: const BorderSide(color: Color(0xFF2563EB)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text(
+                'Coba lagi',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              onPressed: _loadFile,
+            ),
+          ],
+          const SizedBox(height: 10),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
-              foregroundColor: Colors.white,
+              backgroundColor:
+                  isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              foregroundColor: isDark ? Colors.white : const Color(0xFF1E293B),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(vertical: 14),
+              elevation: 0,
             ),
             icon: const Icon(Icons.close_rounded, size: 18),
             label: const Text(

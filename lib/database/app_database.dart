@@ -87,9 +87,13 @@ class AppDb extends _$AppDb {
         matkul_kode TEXT NOT NULL,
         matkul_sks INTEGER NOT NULL,
         matkul_grade TEXT NOT NULL,
+        matkul_score REAL,
         updated_at INTEGER NOT NULL
       );
     ''');
+    try {
+      await customStatement('ALTER TABLE nilai_cache ADD COLUMN matkul_score REAL');
+    } catch (_) {}
 
     await customStatement('''
       CREATE TABLE IF NOT EXISTS pengumpulan_tugas (
@@ -277,9 +281,10 @@ class AppDb extends _$AppDb {
       final List matkul = s['matkul'] as List? ?? [];
 
       for (final m in matkul) {
+        final double? scoreVal = m['score'] != null ? (m['score'] as num).toDouble() : null;
         await customInsert(
-          'INSERT INTO nilai_cache (semester_judul, tahun_ajaran, ips, total_sks, matkul_nomor, matkul_nama, matkul_kode, matkul_sks, matkul_grade, updated_at) '
-          'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          'INSERT INTO nilai_cache (semester_judul, tahun_ajaran, ips, total_sks, matkul_nomor, matkul_nama, matkul_kode, matkul_sks, matkul_grade, matkul_score, updated_at) '
+          'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           variables: [
             Variable.withString(judul),
             Variable.withString(tahunAjaran),
@@ -290,6 +295,7 @@ class AppDb extends _$AppDb {
             Variable.withString(m['kode'] ?? ''),
             Variable.withInt(m['sks'] ?? 0),
             Variable.withString(m['grade'] ?? 'A'),
+            Variable<double>(scoreVal),
             Variable.withInt(now),
           ],
         );
@@ -320,12 +326,14 @@ class AppDb extends _$AppDb {
         'matkul': <Map<String, dynamic>>[],
       });
 
+      final double? sc = row.readNullable<double>('matkul_score');
       (grouped[judul]!['matkul'] as List<Map<String, dynamic>>).add({
         'nomor': row.read<int>('matkul_nomor'),
         'nama': row.read<String>('matkul_nama'),
         'kode': row.read<String>('matkul_kode'),
         'sks': row.read<int>('matkul_sks'),
         'grade': row.read<String>('matkul_grade'),
+        'score': sc,
       });
     }
 

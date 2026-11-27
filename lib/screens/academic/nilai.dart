@@ -45,13 +45,13 @@ const List<NilaiSemester> dataNilai = [
   NilaiSemester(
     judul: 'Semester Satu',
     tahunAjaran: 'Ganjil Tahun Ajaran 2026/2027',
-    ips: 0.00,
+    ips: 3.88,
     totalSks: 33,
     matkul: [
-      NilaiMatkul(nomor: 1, nama: 'Kecerdasan Buatan', kode: 'VTI51366', sks: 3, grade: '-'),
+      NilaiMatkul(nomor: 1, nama: 'Kecerdasan Buatan', kode: 'VTI51366', sks: 3, grade: 'A', score: 92),
       NilaiMatkul(nomor: 2, nama: 'Pemrograman Web', kode: 'VTI51329', sks: 4, grade: '-'),
       NilaiMatkul(nomor: 3, nama: 'Basis Data Terdistribusi', kode: 'VTI51250', sks: 4, grade: '-'),
-      NilaiMatkul(nomor: 4, nama: 'Keamanan Siber & Jaringan', kode: 'VTI51322', sks: 4, grade: '-'),
+      NilaiMatkul(nomor: 4, nama: 'Keamanan Siber & Jaringan', kode: 'VTI51322', sks: 4, grade: 'A-', score: 87),
       NilaiMatkul(nomor: 5, nama: 'Rekayasa Perangkat Lunak', kode: 'VTI51375', sks: 4, grade: '-'),
       NilaiMatkul(nomor: 6, nama: 'Pemrograman Framework', kode: 'PFA3', sks: 3, grade: '-'),
       NilaiMatkul(nomor: 7, nama: 'Statistika Komputasi', kode: 'VTI51389', sks: 3, grade: '-'),
@@ -99,6 +99,7 @@ class _NilaiScreenState extends State<NilaiScreen> {
             'kode': m.kode,
             'sks': m.sks,
             'grade': m.grade,
+            'score': m.score,
           }).toList(),
         }).toList();
         await AppDb.instance.saveNilaiToDrift(seedList);

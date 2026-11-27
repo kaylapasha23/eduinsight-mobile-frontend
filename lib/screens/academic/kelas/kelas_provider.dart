@@ -120,6 +120,7 @@ class KelasProvider extends ChangeNotifier {
     _cancelled.clear();
     _files.clear();
     _links.clear();
+    _fileUrls.clear();
     _submittedFileUrls.clear();
     _submissionIds.clear();
     _platformFiles.clear();
@@ -192,33 +193,35 @@ class KelasProvider extends ChangeNotifier {
             _userCompleted.add(key);
             _lateTasks.remove(key);
             _cancelled.remove(key);
+
             final fn = mySub['fileName']?.toString();
-            final fu = mySub['fileUrl']?.toString();
             if (fn != null && fn.isNotEmpty) {
               _files[key] = [fn];
             } else {
               _files.remove(key);
             }
+
             final lr = mySub['linkRepo']?.toString().trim();
             if (lr != null && lr.isNotEmpty) {
               _links[key] = lr;
             } else {
               _links.remove(key);
             }
+
             final fu = mySub['fileUrl']?.toString().trim();
             if (fu != null && fu.isNotEmpty) {
               _submittedFileUrls[key] = fu;
+              _fileUrls[key] = [fu];
             } else {
               _submittedFileUrls.remove(key);
+              _fileUrls.remove(key);
             }
+
             final subId = mySub['id']?.toString().trim();
             if (subId != null && subId.isNotEmpty) {
               _submissionIds[key] = subId;
             } else {
               _submissionIds.remove(key);
-            }
-            if (fu != null && fu.isNotEmpty) {
-              _fileUrls[key] = [fu];
             }
           } else {
             // Belum dikumpulkan oleh akun mahasiswa ini
