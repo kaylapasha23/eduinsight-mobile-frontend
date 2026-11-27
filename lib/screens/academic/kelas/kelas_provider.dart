@@ -42,6 +42,9 @@ class KelasProvider extends ChangeNotifier {
   // Tautan link eksternal (Figma, Google Drive, GitHub, dll) per tugas
   final Map<String, String> _links = {};
 
+  // URL remote untuk file submission
+  final Map<String, List<String>> _fileUrls = {};
+
   // URL file & ID pengumpulan yang sudah tersimpan di server/Cloudinary untuk pratinjau di HP
   final Map<String, String> _submittedFileUrls = {};
   final Map<String, String> _submissionIds = {};
@@ -156,6 +159,16 @@ class KelasProvider extends ChangeNotifier {
           final bool isGraded = item['is_graded'] == true || item['isGraded'] == true;
           final num? score = item['score'] ?? item['nilai'];
           final String? id = item['id']?.toString();
+          final String? attachmentName = item['attachment_name']?.toString() ??
+              item['lampiran_nama']?.toString() ??
+              item['lampiran']?.toString();
+          final String? attachmentUrl = item['attachment_url']?.toString() ??
+              item['lampiran_url']?.toString() ??
+              item['lampiranUrl']?.toString();
+          final String? rawDeadline = item['deadline']?.toString() ??
+              item['dueDate']?.toString() ??
+              item['deadline_text']?.toString();
+
           return TaskItem(
             title,
             className,
@@ -165,6 +178,9 @@ class KelasProvider extends ChangeNotifier {
             isGraded: isGraded,
             score: score,
             id: id,
+            attachmentName: attachmentName,
+            attachmentUrl: attachmentUrl,
+            rawDeadline: rawDeadline,
           );
         }).toList();
 
@@ -177,6 +193,7 @@ class KelasProvider extends ChangeNotifier {
             _lateTasks.remove(key);
             _cancelled.remove(key);
             final fn = mySub['fileName']?.toString();
+            final fu = mySub['fileUrl']?.toString();
             if (fn != null && fn.isNotEmpty) {
               _files[key] = [fn];
             } else {
@@ -200,6 +217,9 @@ class KelasProvider extends ChangeNotifier {
             } else {
               _submissionIds.remove(key);
             }
+            if (fu != null && fu.isNotEmpty) {
+              _fileUrls[key] = [fu];
+            }
           } else {
             // Belum dikumpulkan oleh akun mahasiswa ini
             _userCompleted.remove(key);
@@ -209,6 +229,7 @@ class KelasProvider extends ChangeNotifier {
             // Jangan hapus draft lokal jika mahasiswa baru saja memilih file sebelum klik serahkan
             if (_platformFiles[key] == null || _platformFiles[key]!.isEmpty) {
               _files.remove(key);
+              _fileUrls.remove(key);
             }
           }
         }
@@ -347,6 +368,20 @@ class KelasProvider extends ChangeNotifier {
     final list = _files[key];
     if (list != null && list.isNotEmpty) return List.unmodifiable(list);
     if (_initiallyCompleted.contains(key)) return [mockFileName(key)];
+    return const [];
+  }
+
+  /// URL file yang tersimpan di backend (jika ada)
+  List<String> fileUrlsFor(String key) {
+    final list = _fileUrls[key];
+    if (list != null && list.isNotEmpty) return List.unmodifiable(list);
+    return const [];
+  }
+
+  /// PlatformFile yang baru saja dipilih di perangkat
+  List<PlatformFile> platformFilesFor(String key) {
+    final list = _platformFiles[key];
+    if (list != null && list.isNotEmpty) return List.unmodifiable(list);
     return const [];
   }
 

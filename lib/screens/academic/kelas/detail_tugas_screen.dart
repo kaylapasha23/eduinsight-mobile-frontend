@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../services/academic_api_service.dart';
 import 'kelas_provider.dart';
 import 'kelas_screen.dart' show TaskItem;
+import 'file_viewer_screen.dart';
 
 class _NoScrollbarBehavior extends ScrollBehavior {
   const _NoScrollbarBehavior();
@@ -670,7 +671,19 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
         final description = detail?.description ??
             'Tugas perkuliahan semester berjalan. Silakan pelajari instruksi dan kumpulkan dokumen pekerjaan Anda.';
         final deadline = dynamicMatch?.status ?? detail?.deadline ?? 'Rabu, 23.59';
-        final lecturerDocs = detail?.lecturerDocs ?? const <String>[];
+
+        // Gabungkan dokumen pengajar dari detail statis atau dari backend
+        final List<String> lecturerDocs = [];
+        if (detail?.lecturerDocs != null && detail!.lecturerDocs.isNotEmpty) {
+          lecturerDocs.addAll(detail.lecturerDocs);
+        }
+        if (dynamicMatch?.attachmentName != null && dynamicMatch!.attachmentName!.isNotEmpty) {
+          if (!lecturerDocs.contains(dynamicMatch.attachmentName!)) {
+            lecturerDocs.add(dynamicMatch.attachmentName!);
+          }
+        }
+        final lecturerDocUrl = dynamicMatch?.attachmentUrl;
+
         final isGraded = dynamicMatch?.isGraded ?? false;
         final score = dynamicMatch?.score;
         final isCompleted = kelas.isCompleted(key);
@@ -1038,51 +1051,64 @@ class _DetailTugasScreenState extends State<DetailTugasScreen> {
                                     ),
                                     const SizedBox(height: 10),
                                     ...lecturerDocs.map(
-                                      (doc) => Container(
-                                        margin: const EdgeInsets.only(
-                                            bottom: 8),
-                                        padding:
-                                            const EdgeInsets.symmetric(
-                                          horizontal: 14,
-                                          vertical: 12,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: secondaryBg,
-                                          borderRadius:
-                                              BorderRadius.circular(14),
-                                          border: Border.all(
-                                            color: borderColor,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.file_present_rounded,
-                                              size: 20,
-                                              color: Color(0xFF60A5FA),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Expanded(
-                                              child: Text(
-                                                doc,
-                                                style: TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight:
-                                                      FontWeight.w600,
-                                                  color: isDark
-                                                      ? Colors.white
-                                                      : const Color(0xFF1E293B),
-                                                ),
+                                      (doc) => GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => FileViewerScreen(
+                                                title: doc,
+                                                fileUrl: lecturerDocUrl,
                                               ),
                                             ),
-                                            Icon(
-                                              Icons.download_rounded,
-                                              size: 18,
-                                              color: isDark
-                                                  ? const Color(0xFFBFDBFE)
-                                                  : const Color(0xFF64748B),
+                                          );
+                                        },
+                                        child: Container(
+                                          margin: const EdgeInsets.only(
+                                              bottom: 8),
+                                          padding:
+                                              const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 12,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: secondaryBg,
+                                            borderRadius:
+                                                BorderRadius.circular(14),
+                                            border: Border.all(
+                                              color: borderColor,
                                             ),
-                                          ],
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.file_present_rounded,
+                                                size: 20,
+                                                color: Color(0xFF60A5FA),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Text(
+                                                  doc,
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight:
+                                                        FontWeight.w600,
+                                                    color: isDark
+                                                        ? Colors.white
+                                                        : const Color(0xFF1E293B),
+                                                  ),
+                                                ),
+                                              ),
+                                              Icon(
+                                                Icons.visibility_rounded,
+                                                size: 18,
+                                                color: isDark
+                                                    ? const Color(0xFFBFDBFE)
+                                                    : const Color(0xFF64748B),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),

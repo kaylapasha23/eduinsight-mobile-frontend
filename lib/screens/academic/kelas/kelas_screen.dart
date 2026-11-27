@@ -18,6 +18,9 @@ class TaskItem {
   final bool isGraded;
   final num? score;
   final String? id;
+  final String? attachmentName;
+  final String? attachmentUrl;
+  final String? rawDeadline;
 
   const TaskItem(
     this.title,
@@ -28,6 +31,9 @@ class TaskItem {
     this.isGraded = false,
     this.score,
     this.id,
+    this.attachmentName,
+    this.attachmentUrl,
+    this.rawDeadline,
   });
 }
 

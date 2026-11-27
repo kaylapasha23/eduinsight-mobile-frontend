@@ -117,11 +117,7 @@ class _RuangKelasScreenState extends State<RuangKelasScreen> {
                   ),
                   const SizedBox(height: 18),
 
-                  // Stream Pengumuman Dosen
-                  _buildAnnouncementCard(isDark, cardBg, titleColor, subColor),
-                  const SizedBox(height: 14),
-
-                  // Feed Tugas yang diposting dosen di kelas ini
+                  // Feed Tugas yang diposting dosen di kelas ini (hanya list tugas tanpa pengumuman)
                   if (tasksForThisClass.isEmpty)
                     _buildEmptyActivityCard(isDark, cardBg, subColor)
                   else
@@ -365,74 +361,6 @@ class _RuangKelasScreenState extends State<RuangKelasScreen> {
                   ),
                 )),
           ],
-        ],
-      ),
-    );
-  }
-
-  // 3. Kartu Pengumuman Dosen
-  Widget _buildAnnouncementCard(
-    bool isDark,
-    Color cardBg,
-    Color titleColor,
-    Color subColor,
-  ) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark ? const Color(0xFF3B4555) : const Color(0xFFE2E8F0),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: const Color(0xFF3B82F6),
-                child: Text(
-                  widget.dosenPengampu.isNotEmpty ? widget.dosenPengampu[0] : 'D',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.dosenPengampu,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: titleColor,
-                      ),
-                    ),
-                    Text(
-                      'Pengumuman Kelas • Hari ini, 08.00',
-                      style: TextStyle(fontSize: 11, color: subColor),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Divider(
-            height: 1,
-            thickness: 1,
-            color: isDark ? const Color(0xFF3B4555) : const Color(0xFFE2E8F0),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Selamat datang di kelas perkuliahan virtual ${widget.namaMatkul}. Semua modul, silabus, dan lembar kerja penugasan mingguan akan dipublikasikan secara bertahap di forum ini. Pastikan untuk selalu mengecek tenggat waktu pengerjaan tugas Anda.',
-            style: TextStyle(fontSize: 12, color: titleColor, height: 1.4),
-          ),
         ],
       ),
     );

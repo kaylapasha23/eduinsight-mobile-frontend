@@ -10,6 +10,7 @@ import '../academic/academic.dart';
 import '../academic/kelas/kelas_provider.dart';
 import '../common_widgets.dart';
 import '../academic/kelas/detail_tugas_screen.dart';
+import '../academic/kelas/kelas_screen.dart';
 
 // ---------- Model data ----------
 class ClassScheduleItem {
@@ -467,8 +468,76 @@ class _HomeScreenState extends State<HomeScreen> {
                   Consumer<KelasProvider>(
                     builder: (context, kelasProvider, _) {
                       final availableTasks = kelasProvider.dynamicTasks;
+
+                      // Helper: Memeriksa apakah tenggat tugas jatuh pada hari ini atau besok
+                      bool isDueTodayOrTomorrow(TaskItem t) {
+                        final raw = (t.rawDeadline ?? '').toLowerCase().trim();
+                        final statusText = t.status.toLowerCase().trim();
+
+                        // Cek teks seperti "hari ini", "today", "besok", "tomorrow"
+                        if (raw.contains('hari ini') ||
+                            raw.contains('today') ||
+                            statusText.contains('hari ini') ||
+                            statusText.contains('today')) {
+                          return true;
+                        }
+                        if (raw.contains('besok') ||
+                            raw.contains('tomorrow') ||
+                            statusText.contains('besok') ||
+                            statusText.contains('tomorrow')) {
+                          return true;
+                        }
+
+                        // Coba parsing tanggal ISO / format YYYY-MM-DD
+                        DateTime? parsedDate;
+                        try {
+                          final match = RegExp(r'(\d{4})-(\d{1,2})-(\d{1,2})').firstMatch(raw);
+                          if (match != null) {
+                            final y = int.parse(match.group(1)!);
+                            final m = int.parse(match.group(2)!);
+                            final d = int.parse(match.group(3)!);
+                            parsedDate = DateTime(y, m, d);
+                          } else {
+                            parsedDate = DateTime.tryParse(raw);
+                          }
+                        } catch (_) {}
+
+                        if (parsedDate != null) {
+                          final today = DateTime(_now.year, _now.month, _now.day);
+                          final tomorrow = today.add(const Duration(days: 1));
+                          final target = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
+                          return target.isAtSameMomentAs(today) || target.isAtSameMomentAs(tomorrow);
+                        }
+
+                        // Cek nama hari ini & besok (misal "rabu", "kamis")
+                        const indonesianDays = [
+                          'senin',
+                          'selasa',
+                          'rabu',
+                          'kamis',
+                          'jumat',
+                          'sabtu',
+                          'minggu'
+                        ];
+                        final todayDayName = indonesianDays[(_now.weekday - 1) % 7];
+                        final tomorrowDayName = indonesianDays[_now.weekday % 7];
+
+                        if (statusText.contains(todayDayName) || raw.contains(todayDayName)) {
+                          return true;
+                        }
+                        if (statusText.contains(tomorrowDayName) || raw.contains(tomorrowDayName)) {
+                          return true;
+                        }
+
+                        return false;
+                      }
+
+                      // Filter: tugas yang belum selesai, belum terlambat, dan tenggatnya HANYA hari itu dan besok
                       final segeraList = availableTasks
-                          .where((t) => !kelasProvider.isCompleted('${t.className}|${t.title}') && !kelasProvider.isLate('${t.className}|${t.title}'))
+                          .where((t) =>
+                              !kelasProvider.isCompleted('${t.className}|${t.title}') &&
+                              !kelasProvider.isLate('${t.className}|${t.title}') &&
+                              isDueTodayOrTomorrow(t))
                           .toList();
 
                       return Column(
@@ -503,7 +572,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Belum Ada Tugas dari Dosen',
+                                    'Tidak Ada Tugas Mendesak',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
@@ -512,7 +581,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Dosen belum memberikan tugas baru untuk mata kuliahmu.',
+                                    'Tidak ada tenggat tugas untuk hari ini maupun besok.',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontSize: 12,
@@ -525,11 +594,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           else
                             Column(
                               children: segeraList.map((t) {
+                                final isToday = t.status.toLowerCase().contains('hari ini') ||
+                                    (t.rawDeadline ?? '').toLowerCase().contains('hari ini');
+                                final tagText = isToday ? 'Hari ini' : 'Besok';
+
                                 final item = UpcomingTaskItem(
                                   title: t.title,
                                   course: t.className,
                                   deadline: t.status,
-                                  tag: 'Segera',
+                                  tag: tagText,
                                   taskKey: '${t.className}|${t.title}',
                                 );
                                 return _buildUpcomingTaskCard(item, isDark, cardBg);
@@ -707,6 +780,32 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Modern Kehadiran Card
   Widget _buildModernKehadiranCard(bool isDark, Color cardBg) {
+    // Logika warna, ikon, dan status kehadiran:
+    // >= 80%: Hijau, ikon centang, target terpenuhi
+    // 50% - <80%: Oranye/Kuning peringatan, ikon peringatan, waspada
+    // < 50%: Merah, ikon silang/bahaya, tidak aman
+    final Color statusColor;
+    final Color badgeBg;
+    final IconData statusIcon;
+    final String statusText;
+
+    if (_kehadiranPersen >= 80.0) {
+      statusColor = isDark ? const Color(0xFF34D399) : const Color(0xFF10B981);
+      badgeBg = statusColor.withValues(alpha: isDark ? 0.25 : 0.12);
+      statusIcon = Icons.check_circle_outline_rounded;
+      statusText = 'Target min. 80% terpenuhi';
+    } else if (_kehadiranPersen >= 50.0) {
+      statusColor = isDark ? const Color(0xFFFBBF24) : const Color(0xFFF59E0B);
+      badgeBg = statusColor.withValues(alpha: isDark ? 0.25 : 0.12);
+      statusIcon = Icons.warning_amber_rounded;
+      statusText = 'Tingkat kehadiran kurang dari 80%';
+    } else {
+      statusColor = isDark ? const Color(0xFFF87171) : const Color(0xFFEF4444);
+      badgeBg = statusColor.withValues(alpha: isDark ? 0.25 : 0.12);
+      statusIcon = Icons.cancel_outlined;
+      statusText = 'Perlu ditingkatkan. Presensi di bawah 50%';
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -741,14 +840,14 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF10B981).withValues(alpha: 0.25) : const Color(0xFF10B981).withValues(alpha: 0.1),
+                  color: badgeBg,
                   shape: BoxShape.circle,
-                  border: isDark ? Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.7), width: 1.2) : null,
+                  border: isDark ? Border.all(color: statusColor.withValues(alpha: 0.7), width: 1.2) : null,
                 ),
                 child: Icon(
-                  Icons.check_circle_outline_rounded,
+                  statusIcon,
                   size: 16,
-                  color: isDark ? const Color(0xFF34D399) : const Color(0xFF10B981),
+                  color: statusColor,
                 ),
               ),
             ],
@@ -773,18 +872,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   strokeWidth: 4,
                   strokeCap: StrokeCap.round,
                   backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                  color: const Color(0xFF10B981),
+                  color: statusColor,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            'Target min. 80% terpenuhi',
+            statusText,
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w500,
-              color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF059669),
+              color: statusColor,
             ),
           ),
         ],
@@ -1058,7 +1157,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Modern Chart Card dengan keterangan tiap semester & tooltip kontras tinggi
+  // Modern Chart Card dengan sumbu semester 1-8 & tooltip kontras tinggi
   Widget _buildModernChartCard(bool isDark, Color cardBg) {
     // Warna angka dan label yang sangat kontras (terbaca di light maupun dark mode)
     final Color axisTextColor = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
